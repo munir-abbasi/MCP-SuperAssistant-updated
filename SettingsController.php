@@ -23,7 +23,7 @@ class SettingsController extends PluginSettingsController
      */
     public function get(Request $request): JsonResponse
     {
-        $contextId = $this->getRequest()->getContext()->getId();
+        $contextId = $request->getContext()->getId();
 
         $form = new SettingsForm(
             $this->getApiUrl($request)

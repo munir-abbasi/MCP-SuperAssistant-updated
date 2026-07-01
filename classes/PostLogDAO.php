@@ -61,22 +61,6 @@ class PostLogDAO extends EntityDAO
     }
 
     /**
-     * Update an existing post log entry.
-     */
-    public function update(PostLog $postLog): void
-    {
-        $this->_update($postLog);
-    }
-
-    /**
-     * Delete a post log entry by ID.
-     */
-    public function deleteById(int $id): void
-    {
-        $this->_deleteById($id);
-    }
-
-    /**
      * Check if a submission/issue has already been successfully posted.
      *
      * For issue posts (no submission), pass null as $submissionId
@@ -119,24 +103,5 @@ class PostLogDAO extends EntityDAO
         return $this->fromRow((array) $row);
     }
 
-    /**
-     * Get recent post logs for a context, with optional status filter.
-     *
-     * @return array<PostLog>
-     */
-    public function getByContext(int $contextId, ?string $status = null, int $limit = 50): array
-    {
-        $query = DB::table($this->table)
-            ->where('context_id', $contextId);
 
-        if ($status !== null) {
-            $query->where('status', $status);
-        }
-
-        $rows = $query->orderBy('date_posted', 'desc')
-            ->limit($limit)
-            ->get();
-
-        return array_map(fn ($row) => $this->fromRow((array) $row), $rows->all());
-    }
 }

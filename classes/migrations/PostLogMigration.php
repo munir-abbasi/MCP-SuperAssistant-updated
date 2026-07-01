@@ -39,6 +39,11 @@ class PostLogMigration extends Migration
 
     /**
      * Reverse the migration.
+     *
+     * WARNING: This drops the publish_to_facebook_post_logs table and
+     * permanently deletes all post log data (history of what was posted
+     * to Facebook, including success/failure records and Facebook post IDs).
+     * Ensure you have a database backup before rolling back in production.
      */
     public function down(): void
     {

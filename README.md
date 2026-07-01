@@ -147,6 +147,7 @@ plugins/generic/publishToFacebook/
 ├── SettingsController.php             # Settings UI controller
 ├── SettingsForm.php                   # Vue FormComponent settings form
 ├── version.xml                        # Plugin version metadata
+├── phpunit.xml                        # PHPUnit configuration
 ├── classes/
 │   ├── Constants.php                  # Setting key constants
 │   ├── FacebookService.php            # Facebook Graph API client
@@ -156,13 +157,22 @@ plugins/generic/publishToFacebook/
 │   ├── PublicationPostBuilder.php     # Article message + URL builder
 │   └── migrations/
 │       └── PostLogMigration.php       # Database migration
+├── docs/
+│   └── architectural-decisions.md     # Historical design notes (archival)
 ├── formRequests/
 │   └── EditSettingsRequest.php        # Settings form validation
 ├── locale/
 │   └── en_US/
 │       └── locale.po                  # English locale strings
-└── schema/
-    └── log.json                       # PostLog JSON schema
+├── schema/
+│   └── log.json                       # PostLog JSON schema
+└── tests/
+    ├── bootstrap.php                  # Test bootstrap
+    ├── Unit/
+    │   ├── ConstantsTest.php          # Constants unit tests
+    │   └── PostLogTest.php            # PostLog DataObject unit tests
+    └── Integration/
+        └── PostLogDAOTest.php         # PostLogDAO integration tests
 ```
 
 ---
@@ -291,12 +301,70 @@ All endpoints are registered under the `publishToFacebook` API group and require
 
 ---
 
+## Local Development
+
+### Setup
+
+1. **Clone** the plugin into your OJS installation:
+   ```bash
+   cd /path/to/ojs
+   git clone https://github.com/munir-abbasi/OJSOnline-publishToFacebook.git \
+     plugins/generic/publishToFacebook
+   ```
+
+2. **Enable** the plugin in OJS: **Website Settings → Plugins → Generic Plugin List**.
+
+3. **Run migrations**: **Administration → System Info → Expire User Sessions & Upgrade** (triggers `PostLogMigration` to create the `publish_to_facebook_post_logs` table).
+
+### Syntax Checking
+
+```bash
+find plugins/generic/publishToFacebook -name '*.php' -exec php -l {} \;
+```
+
+All PHP files must pass `php -l` without errors or warnings.
+
+### Running Tests
+
+Tests require OJS to be bootstrapped with a test database. From the OJS root:
+
+```bash
+php lib/pkp/vendor/bin/phpunit \
+  -c plugins/generic/publishToFacebook/phpunit.xml
+```
+
+**Test suites:**
+
+| Suite | File | What it covers |
+|---|---|---|
+| Unit | `tests/Unit/ConstantsTest.php` | Setting key constants (no OJS deps) |
+| Unit | `tests/Unit/PostLogTest.php` | PostLog DataObject getters/setters |
+| Integration | `tests/Integration/PostLogDAOTest.php` | PostLogDAO DB queries (requires test DB) |
+
+**Note:** The Constants test is self-contained and can run without OJS bootstrapping if the plugin namespace is autoloaded. The PostLog and DAO tests require OJS framework.
+
+### Migration Rollback
+
+Rolling back the plugin migration drops the `publish_to_facebook_post_logs` table and permanently deletes all post history (success logs, Facebook post IDs, error records). Always take a database backup before reverting.
+
+### Code Style
+
+- Namespace: `APP\plugins\generic\publishToFacebook`
+- PHP 8.0+ strict types where applicable
+- PSR-4 class loading via namespace
+- Use `$this->plugin->getSetting()` / `updateSetting()` for context-scoped settings
+- Use `__()` locale keys, never hardcoded strings
+- Use OJS `dispatcher->url()` for canonical URLs
+- Never let external API failures block OJS publication workflows
+
+---
+
 ## Development & Contribution
 
 1. Fork the repository.
 2. Create a feature branch.
-3. Make changes following OJS 3.5+ plugin conventions (namespace, strict types, locale keys).
-4. Run `php -l` on all modified files for syntax check.
+3. Make changes following OJS 3.5+ plugin conventions and the code style guide above.
+4. Run syntax check and tests before committing.
 5. Submit a pull request.
 
 ---

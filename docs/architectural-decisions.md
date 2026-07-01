@@ -1,3 +1,7 @@
+> **ARCHIVAL — Historical design notes from the pre-modernization phase.**
+> The modernization described here has been fully implemented as of version 1.0.2.0.
+> See [README.md](../README.md) for the current plugin architecture.
+
 That plugin is an old OJS 2 / early OJS 3 style skeleton. For OJS 3.5.x, the modernization is not just cosmetic. The class loading model, namespace conventions, hook registration style, localization, settings, token handling, and external API behavior all need to change.
 
 The old code:

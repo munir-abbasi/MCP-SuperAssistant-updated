@@ -1,6 +1,6 @@
 # Publish to Facebook — OJS 3.5+ Plugin
 
-**Version:** 1.0.1.0  
+**Version:** 1.0.2.0  
 **Author:** Munir Abbasi  
 **Website:** [syntaxhouse.com](https://syntaxhouse.com)  
 **GitHub:** [munir-abbasi](https://github.com/munir-abbasi/)  
@@ -13,7 +13,7 @@
 
 Publish to Facebook is a [PKP](https://pkp.sfu.ca) [Open Journal Systems](https://pkp.sfu.ca/ojs/) (OJS) generic plugin that enables journal managers and editors to publish article links to a configured Facebook Page.
 
-The plugin supports both **manual** (one-click from the submission detail page) and **automatic** (on article publication) posting, with full duplicate prevention, error logging, and retry capability.
+The plugin supports both **manual** (one-click from the submission detail page) and **automatic** (on article or issue publication) posting, with full duplicate prevention, error logging, and retry capability.
 
 ---
 
@@ -22,8 +22,9 @@ The plugin supports both **manual** (one-click from the submission detail page) 
 | Feature | Description |
 |---|---|
 | **Manual posting** | One-click "Publish to Facebook" button on the submission detail page |
-| **Auto-posting** | Automatically post when an article is published (toggle in settings) |
-| **Duplicate prevention** | Prevents the same article from being posted twice |
+| **Auto-posting (articles)** | Automatically post when an article is published (toggle in settings) |
+| **Auto-posting (issues)** | Automatically post when an issue is published from the issue grid |
+| **Duplicate prevention** | Prevents the same article or issue from being posted twice |
 | **Error logging** | Logs all post attempts (success and failure) with timestamps |
 | **Status display** | Shows current post status (posted / error) on submission page |
 | **Retry** | One-click retry for failed posts |
@@ -70,23 +71,40 @@ Go to **Website Settings → Plugins → Publish to Facebook → Settings** (gea
 | **Default article message format** | Message template for article posts (see placeholders below) |
 | **Default issue message format** | Message template for issue posts |
 | **Auto-publish articles** | When enabled, newly published articles are posted automatically |
+| **Auto-publish issues** | When enabled, published issues are posted automatically |
 
-### Message Format Placeholders
+### Article Message Format Placeholders
 
 | Placeholder | Description |
 |---|---|
 | `{$articleTitle}` | The article title |
 | `{$articleUrl}` | The canonical article URL (built via OJS dispatcher) |
-| `{$issueTitle}` | The issue title |
-| `{$issueUrl}` | The canonical issue URL |
 | `{$journalName}` | The journal/press name |
 
-**Default format:**
+**Default article format:**
 ```
 New article published: {$articleTitle}
 {$articleUrl}
 
 {$journalName}
+```
+
+### Issue Message Format Placeholders
+
+| Placeholder | Description |
+|---|---|
+| `{$issueTitle}` | The issue title |
+| `{$volume}` | Issue volume number |
+| `{$number}` | Issue number |
+| `{$year}` | Issue year |
+| `{$datePublished}` | Issue publication date |
+| `{$issueUrl}` | The canonical issue URL (built via OJS dispatcher) |
+| `{$journalName}` | The journal/press name |
+
+**Default issue format:**
+```
+New issue published: {$issueTitle}
+{$issueUrl}
 ```
 
 ---
@@ -101,13 +119,21 @@ New article published: {$articleTitle}
 4. A green **Published to Facebook** status indicator confirms the post.
 5. If the post fails, a red error message and **Retry** button appear.
 
-### Automatic Posting
+### Automatic Article Posting
 
 When enabled in settings, any article that becomes published (status set to `STATUS_PUBLISHED`) is automatically posted to Facebook. Auto-posting:
 
 - Runs after the publication workflow completes
 - Never blocks the publication process (failures are logged silently)
 - Respects duplicate prevention (already-posted articles are skipped)
+
+### Automatic Issue Posting
+
+When enabled in settings, any issue published via the issue grid handler is automatically posted to Facebook. Auto-posting:
+
+- Fires when the **Publish** action is taken on an issue in **Issues → Future Issues**
+- Never blocks the publishing workflow (failures are logged silently)
+- Respects duplicate prevention (already-posted issues are skipped)
 
 ---
 
@@ -126,7 +152,8 @@ plugins/generic/publishToFacebook/
 │   ├── FacebookService.php            # Facebook Graph API client
 │   ├── PostLog.php                    # PostLog data object
 │   ├── PostLogDAO.php                 # PostLog CRUD + dedup queries
-│   ├── PublicationPostBuilder.php     # Message + URL builder
+│   ├── IssuePostBuilder.php           # Issue message + URL builder
+│   ├── PublicationPostBuilder.php     # Article message + URL builder
 │   └── migrations/
 │       └── PostLogMigration.php       # Database migration
 ├── formRequests/
@@ -148,21 +175,33 @@ plugins/generic/publishToFacebook/
 PublishToFacebookPlugin
 │
 ├── register()
-│   ├── Hook::add(...) ──> registerSettingsForm()   [settings hook]
-│   ├── Hook::add(...) ──> addPublishButtonHook()   [submission page JS]
-│   ├── Hook::add(...) ──> registerPostLogSchema()  [schema registration]
-│   ├── Hook::add(...) ──> registerApiController()  [API endpoint]
-│   └── Hook::add(...) ──> addAutoPublishHook()     [auto-pub on publish]
+│   ├── Hook::add(...) ──> registerSettingsForm()        [settings hook]
+│   ├── Hook::add(...) ──> addPublishButtonHook()        [submission page JS]
+│   ├── Hook::add(...) ──> registerPostLogSchema()       [schema registration]
+│   ├── Hook::add(...) ──> registerApiController()       [API endpoint]
+│   ├── Hook::add(...) ──> addAutoPublishHook()          [article auto-pub]
+│   └── Hook::add(...) ──> addAutoPublishIssueHook()     [issue auto-pub]
 │
 ├── SettingsController  ──> EditSettingsRequest ──> Constants
 │
-└── PostController
-    ├── POST /{submissionId}           # Submit to Facebook
-    ├── GET  /history/{submissionId}   # Get post status
+├── PostController (manual article posts)
+│   ├── POST /{submissionId}           # Submit to Facebook
+│   ├── GET  /history/{submissionId}   # Get post status
+│   │
+│   ├── FacebookService                # Graph API call
+│   ├── PublicationPostBuilder         # Article message + URL
+│   └── PostLogDAO                     # Persistence + dedup
+│
+└── Auto hook handlers
+    ├── addAutoPublishHook()
+    │   ├── PublicationPostBuilder     # Article message + URL
+    │   ├── FacebookService            # Graph API call
+    │   └── PostLogDAO                 # Persistence + dedup
     │
-    ├── FacebookService                # Graph API call
-    ├── PublicationPostBuilder         # Message + URL building
-    └── PostLogDAO                     # Persistence + dedup
+    └── addAutoPublishIssueHook()
+        ├── IssuePostBuilder           # Issue message + URL
+        ├── FacebookService            # Graph API call
+        └── PostLogDAO                 # Persistence + dedup
 ```
 
 ### Data Flow (Manual Post)
@@ -181,7 +220,7 @@ PostController::submit()
        └── Returns JSON response
 ```
 
-### Data Flow (Auto-Post)
+### Data Flow (Auto-Post Article)
 
 ```
 [Publication::publish hook fires]
@@ -191,9 +230,28 @@ PublishToFacebookPlugin::handleArticlePublication()
        │
        ├── Check autoPublishArticles setting
        ├── PostLogDAO::hasExistingPost()  ──► skip if duplicate
+       ├── PublicationPostBuilder::buildMessage()
        ├── FacebookService::postLink()
        ├── PostLogDAO::insert() (success or error)
        └── Never blocks publication
+```
+
+### Data Flow (Auto-Post Issue)
+
+```
+[IssueGridHandler::publishIssue hook fires]
+       │
+       ▼
+PublishToFacebookPlugin::addAutoPublishIssueHook()
+       │
+       ├── Check autoPublishIssues setting
+       ├── PostLogDAO::hasExistingPost(null, contextId)  ──► skip if duplicate
+       ├── IssuePostBuilder::buildMessage()
+       ├── IssuePostBuilder::getIssueUrl()
+       │       └── dispatcher->url() ──► issue/view/{bestIssueId}
+       ├── FacebookService::postLink()
+       ├── PostLogDAO::insert() (submissionId=null, contextId set)
+       └── Never blocks issue publication
 ```
 
 ---
@@ -205,7 +263,7 @@ PublishToFacebookPlugin::handleArticlePublication()
 | Column | Type | Description |
 |---|---|---|
 | `post_log_id` | bigint (PK) | Auto-increment primary key |
-| `submission_id` | bigint | OJS submission ID (nullable) |
+| `submission_id` | bigint | OJS submission ID (nullable; `null` for issue posts) |
 | `context_id` | bigint | Journal/context ID |
 | `status` | varchar(20) | `success` or `error` |
 | `facebook_post_id` | varchar(255) | Facebook Graph API post ID (nullable) |
@@ -229,6 +287,8 @@ PublishToFacebookPlugin::handleArticlePublication()
 
 All endpoints are registered under the `publishToFacebook` API group and require logged-in users with appropriate permissions.
 
+> Issue posting is automatic only (triggered by `IssueGridHandler::publishIssue`). There is no manual issue post endpoint — the existing API handles submission/article posting only.
+
 ---
 
 ## Development & Contribution
@@ -245,6 +305,7 @@ All endpoints are registered under the `publishToFacebook` API group and require
 
 | Version | Date | Changes |
 |---|---|---|
+| 1.0.2.0 | 2026-07-01 | Issue auto-posting (IssuePostBuilder, IssueGridHandler hook) |
 | 1.0.1.0 | 2026-07-01 | PostLog migration, auto-posting, retry/status display, PublicationPostBuilder |
 | 1.0.0.0 | — | Initial modernization (namespace, settings, manual post, FacebookService) |
 

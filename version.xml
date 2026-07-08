@@ -3,8 +3,9 @@
 <version>
 	<application>publishToFacebook</application>
 	<type>plugins.generic</type>
-	<release>1.0.3.0</release>
+	<release>1.0.4.0</release>
 	<date>2026-07-02</date>
+	<compatibility>3.5.0.0</compatibility>
 	<lazy-load>1</lazy-load>
 	<class>PublishToFacebookPlugin</class>
 </version>

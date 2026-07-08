@@ -21,12 +21,16 @@ use APP\plugins\generic\publishToFacebook\classes\PublicationPostBuilder;
 use APP\plugins\generic\publishToFacebook\PostController;
 use Carbon\Carbon;
 use PKP\core\APIRouter;
-use PKP\core\PKPRequest;
 use PKP\linkAction\LinkAction;
 use PKP\linkAction\request\VueModal;
 use PKP\plugins\GenericPlugin;
 use PKP\plugins\Hook;
 use PKP\services\PKPSchemaService;
+
+// Note: The manual posting button (addPublishButtonHook) was removed because
+// OJS 3.5 uses Vue.js for the submission details page. The legacy
+// Templates::Submission::SubmissionDetails::Main hook no longer fires.
+// Manual posting is still available via the PostController API endpoint.
 
 class PublishToFacebookPlugin extends GenericPlugin
 {
@@ -70,7 +74,9 @@ class PublishToFacebookPlugin extends GenericPlugin
         });
 
         // Register hooks unconditionally; runtime getEnabled() checks inside each handler
-        $this->addPublishButtonHook();
+        // Note: addPublishButtonHook() removed — OJS 3.5 uses Vue.js for the submission
+        // details page, so the legacy Templates::Submission::SubmissionDetails::Main hook
+        // no longer fires. Manual posting is available via the PostController API endpoint.
         $this->addAutoPublishHook();
         $this->addAutoPublishIssueHook();
 
@@ -143,136 +149,6 @@ class PublishToFacebookPlugin extends GenericPlugin
     public function getDescription(): string
     {
         return __('plugins.generic.publishToFacebook.description');
-    }
-
-    /**
-     * Register the template hook that adds the Publish to Facebook button
-     * on the submission detail page.
-     */
-    private function addPublishButtonHook(): void
-    {
-        Hook::add('Templates::Submission::SubmissionDetails::Main', function (string $hookName, array $params): bool {
-            $output =& $params[2];
-            $smarty = $params[0];
-            $templateMgr = $params[3] ?? $smarty;
-
-            if (!$this->getEnabled()) {
-                return Hook::CONTINUE;
-            }
-
-            $submission = $smarty->getTemplateVars('submission');
-            if (!$submission) {
-                return Hook::CONTINUE;
-            }
-
-            // Only show for published submissions
-            $publication = $submission->getCurrentPublication();
-            if (!$publication || !$publication->getData('datePublished')) {
-                return Hook::CONTINUE;
-            }
-
-            $request = \Application::get()->getRequest();
-            $context = $request->getContext();
-
-            // Generate the API URL for the post endpoint
-            $apiUrl = $request->getDispatcher()->url(
-                $request,
-                Application::ROUTE_API,
-                $context->getPath(),
-                $this->postController->getHandlerPath()
-            );
-
-            $submissionId = $submission->getId();
-            $publishUrl = $apiUrl;
-            $historyUrl = $apiUrl . '/history/' . $submissionId;
-            $buttonLabel = __('plugins.generic.publishToFacebook.post.button');
-            $retryLabel = __('plugins.generic.publishToFacebook.post.retry');
-            $postingLabel = __('plugins.generic.publishToFacebook.post.posting');
-            $postedLabel = __('plugins.generic.publishToFacebook.post.status.posted');
-
-            $output .= <<<HTML
-<div class="pkp_structure_narrow" style="margin-top:1rem">
-    <div id="publishToFacebookStatus" style="margin-bottom:0.5rem"></div>
-    <button
-        type="button"
-        class="pkpButton"
-        id="publishToFacebookBtn"
-        style="display:none"
-        onclick="publishToFacebook()"
-    >{$buttonLabel}</button>
-    <div id="publishToFacebookResult" style="margin-top:0.5rem"></div>
-</div>
-<script>
-var publishToFacebookSubmissionId = {$submissionId};
-var publishToFacebookApiUrl = '{$publishUrl}';
-var publishToFacebookHistoryUrl = '{$historyUrl}';
-
-// Load post status on page load
-(function() {
-    fetch(publishToFacebookHistoryUrl)
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-        var btn = document.getElementById('publishToFacebookBtn');
-        var status = document.getElementById('publishToFacebookStatus');
-        if (!data.exists) {
-            btn.style.display = '';
-            btn.textContent = '{$buttonLabel}';
-            return;
-        }
-        if (data.status === 'success') {
-            status.innerHTML = '<div class="pkp_notification success">' +
-                '<span class="pkp_notification_content">{$postedLabel}</span></div>';
-            return;
-        }
-        // Error state — show error + retry button
-        status.innerHTML = '<div class="pkp_notification error">' +
-            '<span class="pkp_notification_content">' +
-            (data.errorMessage || 'Unknown error') + '</span></div>';
-        btn.style.display = '';
-        btn.textContent = '{$retryLabel}';
-    })
-    .catch(function() {
-        // Silently hide the button if history fetch fails
-        document.getElementById('publishToFacebookBtn').style.display = '';
-    });
-})();
-
-function publishToFacebook() {
-    var btn = document.getElementById('publishToFacebookBtn');
-    var result = document.getElementById('publishToFacebookResult');
-    btn.disabled = true;
-    btn.textContent = '{$postingLabel}';
-    result.innerHTML = '';
-    fetch(publishToFacebookApiUrl, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({submissionId: publishToFacebookSubmissionId})
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-        btn.disabled = false;
-        if (data.success) {
-            btn.style.display = 'none';
-            document.getElementById('publishToFacebookStatus').innerHTML =
-                '<div class="pkp_notification success">' +
-                '<span class="pkp_notification_content">' + data.message + '</span></div>';
-        } else {
-            btn.textContent = '{$retryLabel}';
-            result.innerHTML = '<div class="pkp_notification error">' +
-                '<span class="pkp_notification_content">' + (data.error || 'Unknown error') + '</span></div>';
-        }
-    })
-    .catch(function(err) {
-        btn.disabled = false;
-        btn.textContent = '{$retryLabel}';
-        result.innerHTML = '<div class="pkp_notification error">' +
-            '<span class="pkp_notification_content">Request failed: ' + err.message + '</span></div>';
-    });
-}
-</script>
-HTML;
-            return Hook::CONTINUE;
-        });
     }
 
     /**
@@ -470,6 +346,9 @@ HTML;
             return $actions;
         }
         $context = $request->getContext();
+        if (!$context) {
+            return $actions;
+        }
         $apiUrl = $request->getDispatcher()->url(
             $request,
             Application::ROUTE_API,

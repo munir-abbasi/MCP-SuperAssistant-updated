@@ -37,8 +37,8 @@ The plugin supports **automatic** posting (on article or issue publication) with
 
 - OJS 3.5.0 or later
 - PHP 8.3 or later
-- A Facebook Page with a long-lived Page Access Token authorized to publish to that Page
-- Facebook App permissions required by the current Meta Graph API for Page publishing. Verify the exact permission set in Meta's current documentation before production use.
+- A Facebook Page access token for the target Page, requested by someone who can perform the Page `CREATE_CONTENT` task
+- Meta Page feed publishing docs list `pages_manage_posts`, `pages_read_engagement`, and `pages_show_list` for Page access/token workflows; verify these permissions and app review status for your Page/app before production use
 - Server with `allow_url_fopen` or `curl` enabled
 
 ---
@@ -66,7 +66,7 @@ Go to **Website Settings → Plugins → Publish to Facebook → Settings** (gea
 | Setting | Description |
 |---|---|
 | **Facebook Page ID** | The numeric ID of your Facebook Page |
-| **Facebook Page Access Token** | A long-lived Page Access Token authorized to publish to the configured Page |
+| **Facebook Page Access Token** | A long-lived Page Access Token for the configured Page; Meta Page feed publishing docs require a token requested by someone with the Page `CREATE_CONTENT` task and list `pages_manage_posts`, `pages_read_engagement`, and `pages_show_list` for Page access/token workflows |
 | **Default article message format** | Message template for article posts (see placeholders below) |
 | **Default issue message format** | Message template for issue posts |
 | **Auto-publish articles** | When enabled, newly published articles are posted automatically |
@@ -318,6 +318,16 @@ find plugins/generic/publishToFacebook -name '*.php' -exec php -l {} \;
 
 All PHP files must pass `php -l` without errors or warnings.
 
+To verify against the supported PHP baseline when PHP 8.3 is installed:
+
+```bash
+php8.3 -v
+find plugins/generic/publishToFacebook -name '*.php' -exec php8.3 -l {} \;
+php8.3 plugins/generic/publishToFacebook/tests/validatePluginMetadata.php
+```
+
+If `php8.3` is not available, PHP 8.3 compatibility remains unverified even if checks pass on a newer local PHP version.
+
 ### Running Tests
 
 Tests require OJS to be bootstrapped with a test database. From the OJS root:
@@ -336,6 +346,22 @@ php lib/pkp/vendor/bin/phpunit \
 | Integration | `tests/Integration/PostLogDAOTest.php` | PostLogDAO DB queries (requires test DB) |
 
 **Note:** The Constants test is self-contained and can run without OJS bootstrapping if the plugin namespace is autoloaded. The PostLog and DAO tests require OJS framework.
+
+If PHPUnit is not installed in the OJS checkout, these tests cannot be executed from the plugin repository alone. Install/use the OJS development dependencies first, then run the command above from the OJS root so `BASE_SYS_DIR`, the service container, schema service, and test database are available.
+
+### Runtime Smoke Test Checklist
+
+Run these checks in a non-production OJS 3.5 instance before release:
+
+1. Install plugin at `plugins/generic/publishToFacebook`.
+2. Enable, disable, and re-enable it from **Website Settings → Plugins**.
+3. Open the settings modal, save valid settings, reject invalid settings, and confirm a blank access token preserves an existing token.
+4. Verify non-manager users cannot access `publishToFacebook` or `publishToFacebookPost` API routes.
+5. Verify state-changing `PUT`/`POST` requests reject missing/invalid CSRF tokens for browser-authenticated requests.
+6. Verify journal A cannot read or post journal B submissions/history.
+7. Publish a test article with auto-publish enabled and confirm a scoped log row is inserted.
+8. Publish a test issue with auto-publish enabled and confirm the workflow note above is acceptable for your release policy.
+9. Confirm no new fatal/error log entries appear after settings save, manual API post, article publish, issue publish, disable, and re-enable.
 
 ### Migration Rollback and Uninstall Safety
 

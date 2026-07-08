@@ -34,7 +34,7 @@ msgid "plugins.generic.publishToFacebook.settings.pageId.help"
 msgstr "The numeric ID of the Facebook Page to post to."
 
 msgid "plugins.generic.publishToFacebook.settings.accessToken.help"
-msgstr "A long-lived Facebook Page Access Token authorized to publish to the configured Page. Verify required Meta permissions before production use."
+msgstr "A long-lived Page Access Token for the configured Page. Meta Page feed publishing docs require a token from someone with the Page CREATE_CONTENT task and list pages_manage_posts, pages_read_engagement, and pages_show_list for Page access/token workflows."
 
 msgid "plugins.generic.publishToFacebook.settings.messageFormat.article.help"
 msgstr "Available placeholders: {$articleTitle}, {$articleUrl}, {$journalName}"

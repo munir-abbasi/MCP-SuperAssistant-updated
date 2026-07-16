@@ -252,7 +252,7 @@ In such cases, use better models which are meant for tool calling or have better
 ### Manual Installation (Development)
 
 #### Release Version
-1. Download the latest release from [Releases](https://github.com/munir-abbasi/MCP-SuperAssistant-updated/releases/releases/tag/v0.6.1):
+1. Download the latest release from [Releases](https://github.com/munir-abbasi/MCP-SuperAssistant-updated/releases/tag/v0.6.1):
    - **Chrome/Chromium**: `MCP-SuperAssistant-0.6.1-chrome.zip`
    - **Firefox**: `MCP-SuperAssistant-0.6.1-firefox.xpi`
 2. For Chrome/Chromium, unzip the ZIP, open `chrome://extensions/`, enable Developer mode, and choose **Load unpacked**.

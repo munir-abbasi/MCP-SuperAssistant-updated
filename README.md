@@ -282,9 +282,11 @@ pnpm build
 pnpm zip
 ```
 
-## Maintainer and contributor
+## Credits
 
-[Munir Abbasi](https://github.com/munir-abbasi) is the sole maintainer and contributor recorded for this repository.
+This project is a fork of [srbhptl39/MCP-SuperAssistant](https://github.com/srbhptl39/MCP-SuperAssistant), the original MCP SuperAssistant browser extension. All core architecture and implementation credit goes to the original author.
+
+[Munir Abbasi](https://github.com/munir-abbasi) maintains this updated fork with stabilization fixes and continued development.
 
 ## License
 

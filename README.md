@@ -22,8 +22,6 @@ Brings MCP to ChatGPT, Perplexity, Grok, Gemini, Google AI Studio, OpenRouter, K
    ![Latest Release](https://img.shields.io/github/v/release/munir-abbasi/MCP-SuperAssistant-updated?style=flat-square&label=Latest%20Release&color=brightgreen)
    ![GitHub Stars](https://img.shields.io/github/stars/munir-abbasi/MCP-SuperAssistant-updated?style=flat-square&label=Stars)
    ![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)
-   ![Chrome Users](https://img.shields.io/chrome-web-store/users/kngiafgkdnlkgmefdafaibkibegkcaef?style=flat-square&label=Chrome%20Users)
-   ![Firefox Users](https://img.shields.io/amo/users/mcp-superassistant?style=flat-square&label=Firefox%20Users)
    ![Build Status](https://img.shields.io/badge/Status-Active-success?style=flat-square)
 
 </div>
@@ -31,9 +29,11 @@ Brings MCP to ChatGPT, Perplexity, Grok, Gemini, Google AI Studio, OpenRouter, K
 ## Installation
 
 <div align="center" style="display: flex; justify-content: center; gap: 20px; align-items: center;">
-   <a href="https://chromewebstore.google.com/detail/mcp-superassistant/kngiafgkdnlkgmefdafaibkibegkcaef?hl=en"><img src="https://developer.chrome.com/static/docs/webstore/branding/image/HRs9MPufa1J1h5glNhut.png" alt="Chrome Web Store" width="200" height="auto" style="vertical-align: middle;" /></a>
-   <a href="https://addons.mozilla.org/en-US/firefox/addon/mcp-superassistant/"><img src="https://blog.mozilla.org/addons/files/2015/11/get-the-addon.png" alt="Firefox Add-ons" width="200" height="auto" style="vertical-align: middle;" /></a>
+   <a href="https://github.com/munir-abbasi/MCP-SuperAssistant-updated/releases/tag/v0.6.1"><img src="https://developer.chrome.com/static/docs/webstore/branding/image/HRs9MPufa1J1h5glNhut.png" alt="Chrome/Chromium (manual install)" width="200" height="auto" style="vertical-align: middle;" /></a>
+   <a href="https://github.com/munir-abbasi/MCP-SuperAssistant-updated/releases/tag/v0.6.1"><img src="https://blog.mozilla.org/addons/files/2015/11/get-the-addon.png" alt="Firefox (manual install)" width="200" height="auto" style="vertical-align: middle;" /></a>
 </div>
+
+> **Note:** v0.6.1 is not yet published to the Chrome Web Store or Firefox Add-ons. Download the latest release directly from [GitHub Releases](https://github.com/munir-abbasi/MCP-SuperAssistant-updated/releases/tag/v0.6.1).
 
 <br>
 

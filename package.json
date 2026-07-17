@@ -1,7 +1,7 @@
 {
   "name": "mcp-superassistant",
   "version": "0.6.2-rc.1",
-  "description": "MCP SuperAssistant",
+  "description": "MCP-powered tool execution for 15+ AI chat platforms — Chrome & Firefox browser extension",
   "license": "MIT",
   "private": true,
   "sideEffects": false,

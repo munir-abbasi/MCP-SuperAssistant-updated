@@ -23,7 +23,7 @@
     "@extension/shared": "workspace:*",
     "@extension/storage": "workspace:*",
     "@cfworker/json-schema": "^4.1.1",
-    "@modelcontextprotocol/sdk": "1.25.2",
+    "@modelcontextprotocol/sdk": "1.29.0",
     "zod": "^4.3.5",
     "vite-plugin-node-polyfills": "^0.23.0",
     "webextension-polyfill": "^0.12.0",

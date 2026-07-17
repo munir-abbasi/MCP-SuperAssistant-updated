@@ -10,7 +10,7 @@
     "fixture-server": "node fixture-server.mjs"
   },
   "devDependencies": {
-    "@modelcontextprotocol/sdk": "1.25.2",
+    "@modelcontextprotocol/sdk": "1.29.0",
     "playwright": "1.61.1"
   }
 }

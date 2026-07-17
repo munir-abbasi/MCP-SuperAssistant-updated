@@ -1,23 +1,24 @@
 
-<div align="center">
-   <!-- <img src="chrome-extension/public/icon-34.png" alt="MCP SuperAssistant Logo" width="100" height="100"> -->
+
+<div align=\"center\">
+   <!-- <img src=\"chrome-extension/public/icon-34.png\" alt=\"MCP SuperAssistant Logo\" width=\"100\" height=\"100\"> -->
    <h1>MCP SuperAssistant</h1>
 </div>
 
-<p align="center">
-Brings MCP to ChatGPT, Perplexity, Grok, Gemini, Google AI Studio, OpenRouter, Kimi, Github Copilot, Mistral and more...
+<p align=\"center\">
+Turn any AI chat into an MCP agent — execute tools, query databases, run code, and control your system directly from the conversation.
 </p>
 
-<p align="center">
-   <a href="https://github.com/munir-abbasi/MCP-SuperAssistant-updated/releases"><strong>Download the latest release</strong></a>
+<p align=\"center\">
+   <a href=\"https://github.com/munir-abbasi/MCP-SuperAssistant-updated/releases\"><strong>Download the latest release</strong></a>
 </p>
 
 <!-- ![MCP SuperAssistant](chrome-extension/public/Cover3.jpg) -->
-<div align="center">
- <img src="chrome-extension/public/Cover5.jpg" alt="MCP SuperAssistant Cover" width="800">
+<div align=\"center\">
+ <img src=\"chrome-extension/public/Cover5.jpg\" alt=\"MCP SuperAssistant Cover\" width=\"800\">
 </div>
 
-<div align="center">
+<div align=\"center\">
    
    ![Latest Release](https://img.shields.io/github/v/release/munir-abbasi/MCP-SuperAssistant-updated?style=flat-square&label=Latest%20Release&color=brightgreen)
    ![GitHub Stars](https://img.shields.io/github/stars/munir-abbasi/MCP-SuperAssistant-updated?style=flat-square&label=Stars)
@@ -28,9 +29,9 @@ Brings MCP to ChatGPT, Perplexity, Grok, Gemini, Google AI Studio, OpenRouter, K
 
 ## Installation
 
-<div align="center" style="display: flex; justify-content: center; gap: 20px; align-items: center;">
-   <a href="https://github.com/munir-abbasi/MCP-SuperAssistant-updated/releases/tag/v0.6.2-rc.1"><img src="https://developer.chrome.com/static/docs/webstore/branding/image/HRs9MPufa1J1h5glNhut.png" alt="Chrome/Chromium (manual install)" width="200" height="auto" style="vertical-align: middle;" /></a>
-   <a href="https://github.com/munir-abbasi/MCP-SuperAssistant-updated/releases/tag/v0.6.2-rc.1"><img src="https://blog.mozilla.org/addons/files/2015/11/get-the-addon.png" alt="Firefox (manual install)" width="200" height="auto" style="vertical-align: middle;" /></a>
+<div align=\"center\" style=\"display: flex; justify-content: center; gap: 20px; align-items: center;\">
+   <a href=\"https://github.com/munir-abbasi/MCP-SuperAssistant-updated/releases/tag/v0.6.2-rc.1\"><img src=\"https://developer.chrome.com/static/docs/webstore/branding/image/HRs9MPufa1J1h5glNhut.png\" alt=\"Chrome/Chromium (manual install)\" width=\"200\" height=\"auto\" style=\"vertical-align: middle;\" /></a>
+   <a href=\"https://github.com/munir-abbasi/MCP-SuperAssistant-updated/releases/tag/v0.6.2-rc.1\"><img src=\"https://blog.mozilla.org/addons/files/2015/11/get-the-addon.png\" alt=\"Firefox (manual install)\" width=\"200\" height=\"auto\" style=\"vertical-align: middle;\" /></a>
 </div>
 
 > **Note:** v0.6.2-rc.1 is a pre-release. It is not published to the Chrome Web Store or Firefox Add-ons. Download the latest release directly from [GitHub Releases](https://github.com/munir-abbasi/MCP-SuperAssistant-updated/releases/tag/v0.6.2-rc.1).
@@ -43,7 +44,7 @@ MCP SuperAssistant is a Chrome extension that integrates the Model Context Proto
 
 ### Version 0.6.2-rc.1 pre-release
 
-This release candidate builds on v0.6.1 with a critical discovery-state fix (failed `tools/list` no longer appears as healthy zero-tools), the first Chrome runtime qualification evidence, a qualification documentation suite, and a package-contract E2E guard that prevents the previous zero-test-passing CI pipeline.
+This release candidate builds on v0.6.1 with a critical discovery-state fix (failed \`tools/list\` no longer appears as healthy zero-tools), the first Chrome runtime qualification evidence, a qualification documentation suite, and a package-contract E2E guard that prevents the previous zero-test-passing CI pipeline.
 
 See [CHANGELOG.md](CHANGELOG.md) and [STABILIZATION_STATUS.md](STABILIZATION_STATUS.md) for the verified scope and remaining browser-matrix work.
 
@@ -103,9 +104,9 @@ The Model Context Protocol (MCP) is an open standard developed by Anthropic that
 - **Auto-Submit Mode**: Automatically submit chat input after result insertion
 - **Push Content Mode**: Option to push page content instead of overlaying
 - **Preferences Persistence**: Remembers sidebar position, size, and settings
-- **Dark/Light Mode Support**: Adapts to the AI platform's theme
+- **Dark/Light Mode Support**: Adapts to the AI platform theme
 
-```mermaid
+\`\`\`mermaid
 flowchart TD
     A[AI Chat Interface] -->|Generate| B[Tool Calls]
     B -->|Detect| C[Extension Detects Tool Calls]
@@ -114,7 +115,7 @@ flowchart TD
     E -->|Return Results| D
     D -->|Return Results| C
     C -->|Insert| F[Add Results Back to Chat]
-```
+\`\`\`
 
 ### Connecting to Local Proxy Server
 
@@ -122,50 +123,50 @@ To connect the Chrome extension to a local server for proxying connections:
 
 #### Run MCP SuperAssistant Proxy via npx:
 
-1. Create a `config.json` file with your MCP server details. For example, to use the [Desktop Commander](https://github.com/wonderwhy-er/DesktopCommanderMCP):
+1. Create a \`config.json\` file with your MCP server details. For example, to use the [Desktop Commander](https://github.com/wonderwhy-er/DesktopCommanderMCP):
 
 
    **Example config.json:**
-   ```json
+   \`\`\`json
    {
-     "mcpServers": {
-       "desktop-commander": {
-         "command": "npx",
-         "args": [
-           "-y",
-           "@wonderwhy-er/desktop-commander"
+     \"mcpServers\": {
+       \"desktop-commander\": {
+         \"command\": \"npx\",
+         \"args\": [
+           \"-y\",
+           \"@wonderwhy-er/desktop-commander\"
          ]
        }
      }
    }
-   ```
+   \`\`\`
    config.json also support other MCP server configurations like remote MCP server URLs.
    Try composio mcp, zappier mcp, or smithery or any other remote MCP server.
 
    **Or use existing config file location from Cursor or other tools:**
-   ```
+   \`\`\`
    macOS: ~/Library/Application Support/Claude/claude_desktop_config.json
-   Windows: %APPDATA%\Claude\claude_desktop_config.json
-   ```
+   Windows: %APPDATA%\\Claude\\claude_desktop_config.json
+   \`\`\`
 
 2. Start the MCP SuperAssistant Proxy server using one of the following commands:
 
-   ```bash
+   \`\`\`bash
    npx -y @srbhptl39/mcp-superassistant-proxy@latest --config ./config.json --outputTransport sse
-   ```
+   \`\`\`
    or 
-   ```bash
+   \`\`\`bash
    npx -y @srbhptl39/mcp-superassistant-proxy --config ./config.json --outputTransport streamableHttp
-   ```
+   \`\`\`
    or
-   ```bash
+   \`\`\`bash
    npx -y @srbhptl39/mcp-superassistant-proxy --config ./config.json --outputTransport ws
-   ```
+   \`\`\`
 
    **View all available options:**
-   ```bash
+   \`\`\`bash
    npx -y @srbhptl39/mcp-superassistant-proxy@latest --help
-   ```
+   \`\`\`
    
    This is useful for:
    - Proxying remote MCP servers
@@ -176,28 +177,28 @@ To connect the Chrome extension to a local server for proxying connections:
 
 1. Start the proxy server using one of the commands above
 2. Open the MCP SuperAssistant sidebar in one of the supported AI platforms, this should show the sidebar UI
-3. Click on the server status indicator (usually showing as "Disconnected")
-4. Enter the local server URL (default: `http://localhost:3006/sse`)
+3. Click on the server status indicator (usually showing as \"Disconnected\")
+4. Enter the local server URL (default: \`http://localhost:3006/sse\`)
    URL format depends on the --outputTransport method used:
-   - For SSE: `http://localhost:3006/sse`
-   - For Streamable HTTP: `http://localhost:3006/mcp`
-   - For WebSocket: `ws://localhost:3006/message`
+   - For SSE: \`http://localhost:3006/sse\`
+   - For Streamable HTTP: \`http://localhost:3006/mcp\`
+   - For WebSocket: \`ws://localhost:3006/message\`
    - Choose the appropriate transport method (SSE or Streamable HTTP or WebSocket) 
    - You can add any remote MCP server URL here as well, if it supports CORS or is proxied via this local proxy server. Try [Composio mcp](https://mcp.composio.dev/), [Zappier mcp](https://zapier.com/mcp), or [smithery](https://smithery.ai/) or any other remote MCP server.
-5. Click "Connect" to establish the connection
-6. The status indicator should change to "Connected" if successful
+5. Click \"Connect\" to establish the connection
+6. The status indicator should change to \"Connected\" if successful
 
 ## Usage
 Example Workflow:
 1. Navigate to a supported AI platform example chatgpt.
 2. The MCP SuperAssistant sidebar will appear on the right side of the page
 3. Configure your MCP Tools to enable and disable the tools you want to use.
-4. In the message prompt area, hover the 'MCP' button to see the available tools and their descriptions.
-5. MCP SuperAssistant requires to add an MCP working instructions prompt to the chat, to give details of its new capabilities and how to use the tools. Use the 'Insert' or attach button to add the instructions prompt.
+4. In the message prompt area, hover the MCP button to see the available tools and their descriptions.
+5. MCP SuperAssistant requires to add an MCP working instructions prompt to the chat, to give details of its new capabilities and how to use the tools. Use the Insert or attach button to add the instructions prompt.
 6. Once the instructions prompt is added, Now you can ask it to read files or any related MCP tool operations.
 7. When AI wants to use any tool it will show a custom tool call card with the tool name and parameters.
-8. User can manually execute the tool call by clicking on the "RUN" button on the tool call card, or if Auto-Execute mode is enabled, it will execute automatically.
-9. Automation can be achieved by enabling Auto-Execute and Auto-Submit modes, by clicking on the 'MCP' button and configuring the Auto modes.
+8. User can manually execute the tool call by clicking on the \"RUN\" button on the tool call card, or if Auto-Execute mode is enabled, it will execute automatically.
+9. Automation can be achieved by enabling Auto-Execute and Auto-Submit modes, by clicking on the MCP button and configuring the Auto modes.
 
 
 ## Tips & Tricks
@@ -233,7 +234,7 @@ This page covers the most common issues users encounter with MCP SuperAssistant 
 - First start the npx mcp-SuperAssistant-proxy server and then reload/restart the extension from chrome://extensions/ page.
 - Check the proxy server logs for any errors or issues.
 - Ensure that your firewall or antivirus software is not blocking the connection.
-- Make sure the server shows the proper connected status and exposes the `/sse` endpoint.
+- Make sure the server shows the proper connected status and exposes the \`/sse\` endpoint.
 
 ### 4. Incorrect tool call format 
 
@@ -243,24 +244,24 @@ In such cases, use better models which are meant for tool calling or have better
 - Ask explicitily to use the tools by mentioning them in the prompt.
 - This Below is an example of correct MCP function call format, which is rendered by MCP SuperAssistant extension:
 
-```
-```jsonl
-{"type": "function_call_start", "name": "function_name", "call_id": 1}
-{"type": "description", "text": "Short 1 line of what this function does"}
-{"type": "parameter", "key": "parameter_1", "value": "value_1"}
-{"type": "parameter", "key": "parameter_2", "value": "value_2"}
-{"type": "function_call_end", "call_id": 1}
-```
-```
+\`\`\`
+\`\`\`jsonl
+{\"type\": \"function_call_start\", \"name\": \"function_name\", \"call_id\": 1}
+{\"type\": \"description\", \"text\": \"Short 1 line of what this function does\"}
+{\"type\": \"parameter\", \"key\": \"parameter_1\", \"value\": \"value_1\"}
+{\"type\": \"parameter\", \"key\": \"parameter_2\", \"value\": \"value_2\"}
+{\"type\": \"function_call_end\", \"call_id\": 1}
+\`\`\`
+\`\`\`
 
 ### Manual Installation (Development)
 
 #### Release Version
 1. Download the latest release from [Releases](https://github.com/munir-abbasi/MCP-SuperAssistant-updated/releases/tag/v0.6.2-rc.1):
-   - **Chrome/Chromium**: `MCP-SuperAssistant-0.6.2-rc.1-chrome.zip`
-   - **Firefox**: `MCP-SuperAssistant-0.6.2-rc.1-firefox.xpi`
-2. For Chrome/Chromium, unzip the ZIP, open `chrome://extensions/`, enable Developer mode, and choose **Load unpacked**.
-3. For Firefox, open `about:debugging#/runtime/this-firefox`, choose **Load Temporary Add-on**, and select the XPI for local testing.
+   - **Chrome/Chromium**: \`MCP-SuperAssistant-0.6.2-rc.1-chrome.zip\`
+   - **Firefox**: \`MCP-SuperAssistant-0.6.2-rc.1-firefox.xpi\`
+2. For Chrome/Chromium, unzip the ZIP, open \`chrome://extensions/\`, enable Developer mode, and choose **Load unpacked**.
+3. For Firefox, open \`about:debugging#/runtime/this-firefox\`, choose **Load Temporary Add-on**, and select the XPI for local testing.
 4. Follow [Connecting to Local Proxy Server](#connecting-to-local-proxy-server) to connect to your MCP server.
 
 ## Development
@@ -272,7 +273,7 @@ In such cases, use better models which are meant for tool calling or have better
 
 ### Setup
 
-```bash
+\`\`\`bash
 # Install dependencies
 pnpm install
 
@@ -284,7 +285,7 @@ pnpm build
 
 # Create zip package for distribution
 pnpm zip
-```
+\`\`\`
 
 ## Credits
 

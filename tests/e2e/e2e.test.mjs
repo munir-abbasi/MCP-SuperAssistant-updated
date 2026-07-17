@@ -48,7 +48,7 @@ test('packaged extension files match the selected browser contract', async () =>
 
   // Then: the package command produced a non-empty extension artifact and the manifest matches the target.
   assert.equal(manifest.manifest_version, 3);
-  assert.equal(manifest.version, '0.6.1');
+  assert.equal(manifest.version, '0.6.2-rc.1');
   assert.equal(manifest.name, 'MCP SuperAssistant');
   assert.ok(backgroundStats.size > 0);
   assert.ok(contentScriptStats.size > 0);

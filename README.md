@@ -29,11 +29,11 @@ Brings MCP to ChatGPT, Perplexity, Grok, Gemini, Google AI Studio, OpenRouter, K
 ## Installation
 
 <div align="center" style="display: flex; justify-content: center; gap: 20px; align-items: center;">
-   <a href="https://github.com/munir-abbasi/MCP-SuperAssistant-updated/releases/tag/v0.6.1"><img src="https://developer.chrome.com/static/docs/webstore/branding/image/HRs9MPufa1J1h5glNhut.png" alt="Chrome/Chromium (manual install)" width="200" height="auto" style="vertical-align: middle;" /></a>
-   <a href="https://github.com/munir-abbasi/MCP-SuperAssistant-updated/releases/tag/v0.6.1"><img src="https://blog.mozilla.org/addons/files/2015/11/get-the-addon.png" alt="Firefox (manual install)" width="200" height="auto" style="vertical-align: middle;" /></a>
+   <a href="https://github.com/munir-abbasi/MCP-SuperAssistant-updated/releases/tag/v0.6.2-rc.1"><img src="https://developer.chrome.com/static/docs/webstore/branding/image/HRs9MPufa1J1h5glNhut.png" alt="Chrome/Chromium (manual install)" width="200" height="auto" style="vertical-align: middle;" /></a>
+   <a href="https://github.com/munir-abbasi/MCP-SuperAssistant-updated/releases/tag/v0.6.2-rc.1"><img src="https://blog.mozilla.org/addons/files/2015/11/get-the-addon.png" alt="Firefox (manual install)" width="200" height="auto" style="vertical-align: middle;" /></a>
 </div>
 
-> **Note:** v0.6.1 is not yet published to the Chrome Web Store or Firefox Add-ons. Download the latest release directly from [GitHub Releases](https://github.com/munir-abbasi/MCP-SuperAssistant-updated/releases/tag/v0.6.1).
+> **Note:** v0.6.2-rc.1 is a pre-release. It is not published to the Chrome Web Store or Firefox Add-ons. Download the latest release directly from [GitHub Releases](https://github.com/munir-abbasi/MCP-SuperAssistant-updated/releases/tag/v0.6.2-rc.1).
 
 <br>
 
@@ -41,11 +41,15 @@ Brings MCP to ChatGPT, Perplexity, Grok, Gemini, Google AI Studio, OpenRouter, K
 
 MCP SuperAssistant is a Chrome extension that integrates the Model Context Protocol (MCP) tools with AI platforms like Perplexity, ChatGPT, Google Gemini, Google AI Studio, Grokand more. It allows users to execute MCP tools directly from these platforms enhancing the capabilities of web-based AI assistants.
 
-### Version 0.6.1 stabilization release
+### Version 0.6.2-rc.1 pre-release
 
-This release hardens MCP tool discovery and execution in browser-extension CSP environments. It adds CSP-safe MCP schema handling, exact SDK pinning, deterministic regression coverage for tool schemas and Streamable HTTP responses, and reliable Chrome ZIP/Firefox XPI packaging. See [CHANGELOG.md](CHANGELOG.md) and [STABILIZATION_STATUS.md](STABILIZATION_STATUS.md) for the verified scope and remaining browser-matrix work.
+This release candidate builds on v0.6.1 with a critical discovery-state fix (failed `tools/list` no longer appears as healthy zero-tools), the first Chrome runtime qualification evidence, a qualification documentation suite, and a package-contract E2E guard that prevents the previous zero-test-passing CI pipeline.
+
+See [CHANGELOG.md](CHANGELOG.md) and [STABILIZATION_STATUS.md](STABILIZATION_STATUS.md) for the verified scope and remaining browser-matrix work.
 
 ## Currently Supported Platforms
+
+> Current user-observed working sites include [Google Gemini](https://gemini.google.com/), [Qwen Chat](https://chat.qwen.ai/), and [Z.ai Chat](https://chat.z.ai/). See [STABILIZATION_STATUS.md](STABILIZATION_STATUS.md) for the separate release-qualification matrix.
 
 - [ChatGPT](https://chatgpt.com/)
 - [Google Gemini](https://gemini.google.com/)
@@ -59,7 +63,7 @@ This release hardens MCP tool discovery and execution in browser-extension CSP e
 - [Mistral AI](https://chat.mistral.ai/)
 - [Kimi](https://kimi.com/)
 - [Qwen Chat](https://chat.qwen.ai/)
-- [Z Chat](https://chat.z.ai/)
+- [Z.ai Chat](https://chat.z.ai/)
 
 
 ## Demo Video
@@ -90,7 +94,7 @@ The Model Context Protocol (MCP) is an open standard developed by Anthropic that
 
 ## Key Features
 
-- **Multiple AI Platform Support**: Works with ChatGPT, Perplexity, Google Gemini, Grok, Google AI Studio, OpenRouter Chat, DeepSeek, Kagi, T3 Chat, GitHub Copilot, Mistral AI, Kimi, Qwen Chat, Z Chat and more
+- **Multiple AI Platform Support**: Works with ChatGPT, Perplexity, Google Gemini, Grok, Google AI Studio, OpenRouter Chat, DeepSeek, Kagi, T3 Chat, GitHub Copilot, Mistral AI, Kimi, Qwen Chat, Z.ai Chat and more
 - **Tool Detection**: Automatically detects MCP tool calls in AI responses
 - **Tool Execution**: Execute MCP tools with a single click
 - **Tool Result Integration**: Seamlessly insert tool execution results back into the AI conversation
@@ -252,9 +256,9 @@ In such cases, use better models which are meant for tool calling or have better
 ### Manual Installation (Development)
 
 #### Release Version
-1. Download the latest release from [Releases](https://github.com/munir-abbasi/MCP-SuperAssistant-updated/releases/tag/v0.6.1):
-   - **Chrome/Chromium**: `MCP-SuperAssistant-0.6.1-chrome.zip`
-   - **Firefox**: `MCP-SuperAssistant-0.6.1-firefox.xpi`
+1. Download the latest release from [Releases](https://github.com/munir-abbasi/MCP-SuperAssistant-updated/releases/tag/v0.6.2-rc.1):
+   - **Chrome/Chromium**: `MCP-SuperAssistant-0.6.2-rc.1-chrome.zip`
+   - **Firefox**: `MCP-SuperAssistant-0.6.2-rc.1-firefox.xpi`
 2. For Chrome/Chromium, unzip the ZIP, open `chrome://extensions/`, enable Developer mode, and choose **Load unpacked**.
 3. For Firefox, open `about:debugging#/runtime/this-firefox`, choose **Load Temporary Add-on**, and select the XPI for local testing.
 4. Follow [Connecting to Local Proxy Server](#connecting-to-local-proxy-server) to connect to your MCP server.

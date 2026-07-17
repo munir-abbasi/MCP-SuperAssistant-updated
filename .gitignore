@@ -9,6 +9,10 @@
 **/build
 **/dist-zip
 /artifacts/
+!/artifacts/
+/artifacts/*
+!/artifacts/qualification/
+!/artifacts/qualification/.gitkeep
 chrome-extension/manifest.js
 chrome-extension/pre-build.tsconfig.tsbuildinfo
 eslint.config.js
@@ -31,6 +35,13 @@ tsconfig.tsbuildinfo
 .trash/*
 mcp-superassistant-proxy/bun.lock
 # pnpm-lock.yaml
+
+# Planning files
+.omo/
+
+# Root-level release artifacts (generated, not committed)
+/MCP-SuperAssistant-*-chrome.zip
+/MCP-SuperAssistant-*-firefox.xpi
 
 # Added by Task Master AI
 # Logs

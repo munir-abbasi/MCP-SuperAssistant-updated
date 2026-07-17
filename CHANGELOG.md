@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.6.2-rc.1 - 2026-07-17
+
+### Fixed
+
+- McpClient discovery-state: failed `listTools()` now clears the cache, marks state as disconnected, emits a failure event, and rethrows — preventing a stale healthy/zero-tools appearance.
+- analytics.ts: privacy and compatibility adjustments.
+
+### Added
+
+- Discovery-state regression tests: primitive discovery failure while transport health is true, and stale-cache invalidation after forced failure.
+- Qualification documentation suite: support matrix, baseline freeze, known limitations, package baseline, issue coverage ledger, manual browser protocol, and E2E harness plan.
+- Package-contract E2E guard: verifies browser target, manifest shape, core file presence, and archive integrity before CI reports success.
+- Manual Chrome runtime smoke: extension loaded, content scripts activated, filesystem MCP tools discovered and executed on Z.ai, Qwen AI, and gemini.google.com.
+
+### Changed
+
+- Version bumped to 0.6.2-rc.1.
+
+### Verification boundary
+
+All prior v0.6.1 gates continue to pass. New tests (7 total) and package-contract E2E guard pass. Chrome manual smoke qualifies basic browser runtime. Firefox and full guided browser protocol deferred to v0.6.2.
+
 ## 0.6.1 - 2026-07-15
 
 ### Fixed

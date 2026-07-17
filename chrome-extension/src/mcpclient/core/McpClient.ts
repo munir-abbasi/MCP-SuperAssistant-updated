@@ -447,15 +447,13 @@ export class McpClient extends EventEmitter<AllEvents> {
     } catch (error) {
       logger.error('[McpClient] Failed to get primitives:', error);
 
-      // Check if connection is still healthy after error
-      if (!(await this.isHealthy())) {
-        this.isConnectedFlag = false;
-        this.emit('connection:status-changed', {
-          isConnected: false,
-          type: this.activePlugin?.metadata.transportType || null,
-          error: 'Connection lost while getting primitives',
-        });
-      }
+      this.clearPrimitivesCache();
+      this.isConnectedFlag = false;
+      this.emit('connection:status-changed', {
+        isConnected: false,
+        type: this.activePlugin?.metadata.transportType || null,
+        error: 'Primitive discovery failed',
+      });
 
       throw error;
     }

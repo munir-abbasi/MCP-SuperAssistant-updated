@@ -1,0 +1,16 @@
+{
+  "name": "@extension/e2e",
+  "version": "0.6.1",
+  "private": true,
+  "sideEffects": false,
+  "type": "module",
+  "scripts": {
+    "e2e": "node --test e2e.test.mjs fixture-server.test.mjs",
+    "e2e:browser": "node --test e2e-browser.test.mjs",
+    "fixture-server": "node fixture-server.mjs"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "1.25.2",
+    "playwright": "1.61.1"
+  }
+}

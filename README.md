@@ -40,7 +40,7 @@ Turn any AI chat into an MCP agent — execute tools, query databases, run code,
 
 ## Overview
 
-MCP SuperAssistant is a Chrome extension that integrates the Model Context Protocol (MCP) tools with AI platforms like Perplexity, ChatGPT, Google Gemini, Google AI Studio, Grokand more. It allows users to execute MCP tools directly from these platforms enhancing the capabilities of web-based AI assistants.
+MCP SuperAssistant is a Chrome extension that integrates the Model Context Protocol (MCP) tools with AI platforms like Perplexity, ChatGPT, Google Gemini, Google AI Studio, Grok, and more. It allows users to execute MCP tools directly from these platforms enhancing the capabilities of web-based AI assistants.
 
 ### Version 0.6.2-rc.1 pre-release
 
@@ -244,15 +244,13 @@ In such cases, use better models which are meant for tool calling or have better
 - Ask explicitily to use the tools by mentioning them in the prompt.
 - This Below is an example of correct MCP function call format, which is rendered by MCP SuperAssistant extension:
 
-\`\`\`
-\`\`\`jsonl
-{\"type\": \"function_call_start\", \"name\": \"function_name\", \"call_id\": 1}
-{\"type\": \"description\", \"text\": \"Short 1 line of what this function does\"}
-{\"type\": \"parameter\", \"key\": \"parameter_1\", \"value\": \"value_1\"}
-{\"type\": \"parameter\", \"key\": \"parameter_2\", \"value\": \"value_2\"}
-{\"type\": \"function_call_end\", \"call_id\": 1}
-\`\`\`
-\`\`\`
+```jsonl
+{"type": "function_call_start", "name": "function_name", "call_id": 1}
+{"type": "description", "text": "Short 1 line of what this function does"}
+{"type": "parameter", "key": "parameter_1", "value": "value_1"}
+{"type": "parameter", "key": "parameter_2", "value": "value_2"}
+{"type": "function_call_end", "call_id": 1}
+```
 
 ### Manual Installation (Development)
 

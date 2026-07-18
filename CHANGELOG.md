@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.3-rc.4 - 2026-07-18
+
+### Fixed
+
+- Fixed JSON function-call extraction for Qwen-style polluted or compact JSONL output. Detection already found JSON function calls in noisy DOM text, but later name/call-id extraction still assumed one clean JSON object per line, causing rendered fallback labels like `function` and generated `block-*` IDs. Extraction now reuses the robust JSON-object candidate normalization path before deriving function name, call ID, description, and parameters.
+
+### Changed
+
+- Added regression coverage for compact/noisy JSONL function-call text and incomplete streaming `function_call_start` fallback extraction.
+
 ## 0.6.3-rc.3 - 2026-07-18
 
 ### Fixed

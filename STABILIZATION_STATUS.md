@@ -1,12 +1,12 @@
 # MCP SuperAssistant stabilization status
 
-Release candidate: `v0.6.3-rc.3` for `munir-abbasi/MCP-SuperAssistant-updated`.
+Release candidate: `v0.6.3-rc.4` for `munir-abbasi/MCP-SuperAssistant-updated`.
 
 Stabilization base: upstream snapshot `c26168ee2c5708a3a65ef5afd88cda1a97c81734` (`v0.6.0`).
 
-## Current addendum: v0.6.3-rc.3
+## Current addendum: v0.6.3-rc.4
 
-This candidate supersedes `v0.6.3-rc.2`, which still referenced `icon-16.png` in the packaged manifest but did not include that file in the ZIP/XPI. Chrome rejected the unpacked extension before runtime with `Could not load icon 'icon-16.png' specified in 'icons'`. The source now includes `chrome-extension/public/icon-16.png`, and the package-contract E2E test verifies every manifest icon path exists in `dist`. The manifest continues to use numeric `version` (`0.6.3`) and preserves the release-candidate label in `version_name` (`0.6.3-rc.3`). It also retains the post-v0.6.2 reconnect/tool-call hang fix after primitive discovery failure. The responsible source boundary for that fix is `McpClient.performConnection()`: a failed forced primitive refresh can mark `isConnectedFlag` false while the old client/plugin/transport are still alive. Reconnect now calls `cleanup()` regardless of `isConnectedFlag`, and successful MCP client connection no longer leaves the 30-second timeout timer pending.
+This candidate supersedes `v0.6.3-rc.3`, which fixed package loadability but still showed a Qwen runtime parser symptom where compact/noisy JSONL function-call output could render as fallback `function` with a generated `block-*` ID. The active JSON detector already handled polluted DOM text, but later function-name/call-id extraction assumed clean newline-delimited JSON objects. `v0.6.3-rc.4` normalizes JSON object candidates before extracting function name, call ID, description, and parameters, and keeps incomplete streaming fallback behavior. It also retains the post-v0.6.2 reconnect/tool-call hang fix, numeric manifest `version` (`0.6.3`), `version_name` (`0.6.3-rc.4`), and the `icon-16.png` package hotfix.
 
 Validation completed in this session:
 
@@ -14,18 +14,22 @@ Validation completed in this session:
 | --- | --- |
 | `pnpm -F chrome-extension exec eslint tests/mcp-client-discovery-state.test.ts` | PASS |
 | `pnpm -F chrome-extension exec eslint manifest.ts` | PASS |
+| `pnpm -F chrome-extension exec eslint tests/json-function-parser.test.ts` | PASS |
+| `pnpm -F chrome-extension exec node --import tsx --test tests/json-function-parser.test.ts` | PASS, 2 tests |
 | `pnpm -F chrome-extension exec node --import tsx --test tests/mcp-client-discovery-state.test.ts` | PASS, 4 tests |
-| `pnpm -F chrome-extension test` | PASS, 14 tests |
+| `pnpm -F chrome-extension test` | PASS, 16 tests |
 | `pnpm -F chrome-extension type-check` | PASS |
-| `pnpm -F chrome-extension lint` | Known broad baseline/pre-existing failure from previous pass: 849 errors; not rerun for rc.3 |
+| `pnpm -F @extension/content-script type-check` | FAIL: broad baseline/pre-existing errors unrelated to rc.4 parser patch |
+| Targeted ESLint on changed parser/renderer source | FAIL: broad baseline/pre-existing lint debt in touched legacy files; new test file lint passed |
+| `pnpm -F chrome-extension lint` | Known broad baseline/pre-existing failure from previous pass: 849 errors; not rerun for rc.4 |
 | `pnpm e2e` | PASS, 15 tests |
 | `pnpm e2e:firefox` | PASS, 15 tests |
-| Final Chrome artifact | `dist-zip/extension-20260718-160502.zip`, SHA-256 `7e461782ec66f0b89de0f012024be5fa626ddf4d901bfeae0402a9889f99534e` |
-| Final Firefox artifact | `dist-zip/extension-20260718-160543.xpi`, SHA-256 `3f665b3a0524b1720dd623dd0737837bd1d36bb9c9363e3bd71c6cb784775942` |
-| Manifest version/icon preflight | PASS: both artifacts contain manifest `version: 0.6.3`, `version_name: 0.6.3-rc.3`, Qwen host permission, and all declared icon files including `icon-16.png` |
+| Final Chrome artifact | `dist-zip/extension-20260718-172428.zip`, SHA-256 `ba5530e82bcc5cc0e1fc7b26f86d8c7037c266770ccbee867b827eb45f133f9e` |
+| Final Firefox artifact | `dist-zip/extension-20260718-172505.xpi`, SHA-256 `da289526b1107729531c47f2cafd44ad26a6274ec1eeb8f5bc6018fbe3db3f62` |
+| Manifest version/icon preflight | PASS: both artifacts contain manifest `version: 0.6.3`, `version_name: 0.6.3-rc.4`, Qwen host permission, and all declared icon files including `icon-16.png` |
 | Package integrity/codegen scan | PASS: `unzip -t` clean for both archives; no `unsafe-eval`, `eval(`, `new Function`, or `Function(` token hits in packaged `.js`, `.json`, or `.html` files |
 
-Browser runtime verification for chat.qwen.ai, Chrome, Firefox, SSE, and Streamable HTTP was not run in this session and must not be claimed from automated tests/builds alone.
+Browser runtime verification for chat.qwen.ai, Chrome, Firefox, SSE, and Streamable HTTP was not run in this session and must not be claimed from automated tests/builds alone. The Qwen parser issue is covered by deterministic parser reproduction, not live browser confirmation.
 
 ## Verified in this checkout
 

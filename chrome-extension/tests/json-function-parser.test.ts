@@ -1,0 +1,33 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+
+(globalThis as unknown as { window: { location: { href: string } } }).window = {
+  location: { href: 'https://chat.qwen.ai/' },
+};
+
+const parser = await import('../../pages/content/src/render_prescript/src/parser/jsonFunctionParser.ts');
+
+test('extracts JSON function info from Qwen-style polluted compact JSONL', () => {
+  const content =
+    'Rendered wrapper text {"type":"function_call_start","name":"list_directory","call_id":1} ' +
+    '{"type":"description","text":"List the current directory"} ' +
+    '{"type":"parameter","key":"path","value":"."} ' +
+    '{"type":"function_call_end","call_id":1} trailing UI text';
+
+  assert.deepEqual(parser.extractJSONFunctionInfo(content), {
+    functionName: 'list_directory',
+    callId: '1',
+    description: 'List the current directory',
+  });
+  assert.deepEqual(parser.extractJSONParameters(content), { path: '.' });
+});
+
+test('preserves streaming fallback extraction for incomplete JSON function starts', () => {
+  const content = 'jsonl {"type":"function_call_start","name":"read_file","call_id":2';
+
+  assert.deepEqual(parser.extractJSONFunctionInfo(content), {
+    functionName: 'read_file',
+    callId: '2',
+    description: null,
+  });
+});

@@ -222,6 +222,42 @@ function reconstructJSONObjects(lines: string[]): string[] {
 }
 
 /**
+ * Normalize function-call JSON into parseable candidate lines.
+ * Qwen and some syntax highlighters can wrap or compact JSONL objects into
+ * noisy text. Detection already extracts clean JSON objects from that shape;
+ * extraction must use the same normalization or rendered blocks fall back to
+ * generic `function` / generated `block-*` labels.
+ */
+const getJSONFunctionCandidateLines = (content: string): string[] => {
+  const jsonObjects = extractJSONObjects(content);
+  if (jsonObjects.length > 0) {
+    return jsonObjects;
+  }
+
+  let lines = content.split(/\r?\n|\u2028|\u2029/);
+
+  const isSingleLineFormat = lines.length === 1 && (content.match(/\{/g) || []).length > 1;
+  if (isSingleLineFormat) {
+    const splitContent = content.split(/\}\s*\{/);
+    return splitContent.map((part, index, array) => {
+      if (index === 0) return part + '}';
+      if (index === array.length - 1) return '{' + part;
+      return '{' + part + '}';
+    });
+  }
+
+  const isPrettyPrinted =
+    lines.length > 1 &&
+    (content.includes('{\n') || content.includes('{ \n') || lines.some(line => line.trim() === '{'));
+
+  if (isPrettyPrinted) {
+    lines = reconstructJSONObjects(lines);
+  }
+
+  return lines;
+};
+
+/**
  * Check if content contains JSON-style function calls
  * Returns detailed information about the JSON function call state
  */
@@ -500,7 +536,7 @@ export const extractJSONFunctionInfo = (
   callId: string | null;
   description: string | null;
 } => {
-  const lines = content.split('\n');
+  const lines = getJSONFunctionCandidateLines(content);
   let functionName: string | null = null;
   let callId: string | null = null;
   let description: string | null = null;
@@ -560,7 +596,7 @@ export const extractJSONParameters = (content: string): Record<string, any> => {
     return parameters;
   }
 
-  const lines = content.split('\n');
+  const lines = getJSONFunctionCandidateLines(content);
 
   // First pass: Extract from complete, parseable JSON lines
   for (const line of lines) {

@@ -4,7 +4,7 @@ import { CONFIG } from '../core/config';
 import { safelySetContent } from '../utils/index';
 import { storeExecutedFunction, generateContentSignature } from '../mcpexecute/storage';
 import { checkAndDisplayFunctionHistory, createHistoryPanel, updateHistoryPanel } from './functionHistory';
-import { extractJSONParameters, stripLanguageTags, extractCleanContent } from '../parser/jsonFunctionParser';
+import { extractJSONFunctionInfo, extractJSONParameters, extractCleanContent } from '../parser/jsonFunctionParser';
 import { createLogger } from '@extension/shared/lib/logger';
 
 // Add type declarations for the global adapter and mcpClient access
@@ -600,24 +600,9 @@ export const addExecuteButton = (blockDiv: HTMLDivElement, rawContent: string): 
       logger.debug('[Execute Button] Extracted JSON parameters:', parameters);
     }
 
-    // Extract call_id from JSON
-    const lines = rawContent.split('\n');
-    let extractedCallId: string | null = null;
-    for (const line of lines) {
-      try {
-        const trimmed = stripLanguageTags(line);
-        if (!trimmed) continue;
-
-        const parsed = JSON.parse(trimmed);
-        if (parsed.type === 'function_call_start' && parsed.call_id) {
-          extractedCallId = parsed.call_id.toString();
-          break;
-        }
-      } catch (e) {
-        // Skip invalid lines
-      }
-    }
-    callId = extractedCallId || `call-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    // Extract call_id from JSON using the same normalization as detection.
+    const jsonInfo = extractJSONFunctionInfo(rawContent);
+    callId = jsonInfo.callId || `call-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
   } else {
     // XML format
     parameters = extractFunctionParameters(rawContent);
@@ -826,22 +811,7 @@ const extractFunctionName = (rawContent: string): string | null => {
   const isJSON = rawContent.includes('"type"') && rawContent.includes('function_call_start');
 
   if (isJSON) {
-    // Extract from JSON format
-    const lines = rawContent.split('\n');
-    for (const line of lines) {
-      try {
-        const trimmed = stripLanguageTags(line);
-        if (!trimmed) continue;
-
-        const parsed = JSON.parse(trimmed);
-        if (parsed.type === 'function_call_start' && parsed.name) {
-          return parsed.name;
-        }
-      } catch (e) {
-        // Skip invalid JSON lines
-      }
-    }
-    return null;
+    return extractJSONFunctionInfo(rawContent).functionName;
   }
 
   // XML format

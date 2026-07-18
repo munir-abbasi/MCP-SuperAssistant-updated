@@ -140,10 +140,12 @@ export class McpClient extends EventEmitter<AllEvents> {
       logger.debug(`Connecting to ${uri} via ${type}`);
       this.emit('client:connecting', { uri, type });
 
-      // Disconnect from current connection if exists
-      if (this.isConnectedFlag) {
-        await this.disconnect();
-      }
+      // Always clean up any existing connection state, regardless of isConnectedFlag.
+      // After a discovery failure (getPrimitives), isConnectedFlag may be false even
+      // though the transport and client are still alive.  Skipping cleanup here leaks
+      // those resources and can cause the new transport to conflict with the old one,
+      // leading to tool-call hangs.
+      await this.cleanup();
 
       // Get the plugin configuration
       const finalConfig = {
@@ -202,14 +204,11 @@ export class McpClient extends EventEmitter<AllEvents> {
 
       // Add timeout to prevent hanging
       const connectionTimeout = 30000; // 30 seconds
-      const connectionPromise = this.client.connect(transport);
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => {
-          reject(new Error(`MCP client connection timeout after ${connectionTimeout}ms`));
-        }, connectionTimeout);
-      });
-
-      await Promise.race([connectionPromise, timeoutPromise]);
+      await this.withTimeout(
+        this.client.connect(transport),
+        connectionTimeout,
+        `MCP client connection timeout after ${connectionTimeout}ms`,
+      );
       logger.debug(`MCP client connected successfully`);
 
       // Store connection state
@@ -341,7 +340,13 @@ export class McpClient extends EventEmitter<AllEvents> {
 
     try {
       logger.debug(`Calling tool: ${toolName}`);
-      const result = await this.activePlugin.callTool(this.client, toolName, args);
+      const toolCallTimeout =
+        this.config.global.timeout > 0 ? this.config.global.timeout : DEFAULT_CLIENT_CONFIG.global.timeout;
+      const result = await this.withTimeout(
+        this.activePlugin.callTool(this.client, toolName, args),
+        toolCallTimeout,
+        `Tool call timeout after ${toolCallTimeout}ms for ${toolName}`,
+      );
 
       const duration = Date.now() - startTime;
       this.emit('tool:call-completed', { toolName, result, duration });
@@ -389,6 +394,21 @@ export class McpClient extends EventEmitter<AllEvents> {
       }
 
       throw toolError;
+    }
+  }
+
+  private async withTimeout<T>(operation: Promise<T>, timeoutMs: number, timeoutMessage: string): Promise<T> {
+    let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutHandle = setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs);
+    });
+
+    try {
+      return await Promise.race([operation, timeoutPromise]);
+    } finally {
+      if (timeoutHandle !== null) {
+        clearTimeout(timeoutHandle);
+      }
     }
   }
 

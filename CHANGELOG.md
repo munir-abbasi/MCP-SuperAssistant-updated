@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.6.3-rc.1 - 2026-07-18
+
+### Fixed
+
+- MCP reconnect after discovery failure: `McpClient.performConnection()` now always cleans up existing client, plugin, transport, cache, and timers before opening a new connection, even when `isConnectedFlag` was already marked false by a failed primitive discovery refresh.
+- MCP connection timeout handling now clears the timeout timer after successful connection, preventing successful reconnect tests from leaving a pending 30-second timer.
+
+### Added
+
+- Regression coverage for reconnecting after a `tools/list`/primitive discovery failure and then completing a tool call.
+- Regression coverage for bounding a tool call that never resolves.
+
+### Verification boundary
+
+Automated validation in this checkout: targeted discovery-state test PASS, `pnpm -F chrome-extension test` PASS (14 tests), `pnpm -F chrome-extension type-check` PASS, targeted ESLint for the edited discovery-state test PASS, `pnpm e2e` PASS (15 tests), `pnpm e2e:firefox` PASS (15 tests), and package integrity/CSP-token scan PASS for the final Chrome ZIP and Firefox XPI. Repository-wide `pnpm -F chrome-extension lint` still fails on broad baseline/pre-existing lint debt. Chrome/Firefox runtime verification on chat.qwen.ai was not run in this session.
+
 ## 0.6.2-rc.1 - 2026-07-17
 
 ### Fixed

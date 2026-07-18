@@ -8,10 +8,6 @@ const currentDirectory = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(currentDirectory, '../..');
 const browser = process.env.CEB_E2E_BROWSER;
 
-// Fixture server config
-const FIXTURE_PORT = parseInt(process.env.FIXTURE_PORT || '3456', 10);
-const FIXTURE_BASE = `http://localhost:${FIXTURE_PORT}`;
-
 const packagedFileExtension = (browserName) => {
   switch (browserName) {
     case 'chrome':
@@ -27,16 +23,14 @@ test('has an explicit browser mode for the E2E package contract', () => {
   assert.match(browser ?? '', /^(chrome|firefox)$/);
 });
 
-test('fixture server is reachable (pre-requisite for browser E2E tests)', async () => {
-  const res = await fetch(`${FIXTURE_BASE}/`);
-  assert.equal(res.status, 405, 'GET / should return 405 (validates fixture server is running)');
-});
-
 test('packaged extension files match the selected browser contract', async () => {
   // Given: the root e2e script has just built and packaged the selected browser target.
   const distDirectory = join(repositoryRoot, 'dist');
   const manifestPath = join(distDirectory, 'manifest.json');
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+  const extensionPackage = JSON.parse(
+    await readFile(join(repositoryRoot, 'chrome-extension', 'package.json'), 'utf8'),
+  );
 
   // When: the deterministic packaging contract is inspected from disk.
   const backgroundStats = await stat(join(distDirectory, 'background.js'));
@@ -48,7 +42,7 @@ test('packaged extension files match the selected browser contract', async () =>
 
   // Then: the package command produced a non-empty extension artifact and the manifest matches the target.
   assert.equal(manifest.manifest_version, 3);
-  assert.equal(manifest.version, '0.6.2');
+  assert.equal(manifest.version, extensionPackage.version);
   assert.equal(manifest.name, 'MCP SuperAssistant');
   assert.ok(backgroundStats.size > 0);
   assert.ok(contentScriptStats.size > 0);

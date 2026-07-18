@@ -5,6 +5,7 @@ import { eventBus } from '../events/event-bus';
 import type { ServerConfig, ConnectionStatus } from '../types/stores';
 import { logMessage } from '../utils/helpers';
 import { pluginRegistry } from '../plugins';
+import { extractToolUpdateTools } from './tool-update-payload';
 
 /**
  * McpClient – Enhanced wrapper around ContextBridge for communicating with the
@@ -188,7 +189,7 @@ class McpClient {
     // Listen for tool-list updates (broadcast by background when primitives change)
     contextBridge.onMessage('mcp:tool-update', message => {
       try {
-        const tools = Array.isArray(message.payload) ? message.payload : [];
+        const tools = extractToolUpdateTools(message.payload);
         logMessage(`[McpClient] Received tool update: ${tools.length} tools`);
         this.handleToolUpdate(tools);
       } catch (error) {
@@ -393,7 +394,7 @@ class McpClient {
         'background',
         'mcp:call-tool',
         { toolName, args, adapterName }, // Pass adapter name to background
-        { timeout: 30_000 }
+        { timeout: 30_000, retries: 0 },
       );
 
       logMessage(`[McpClient] Tool call successful: ${toolName}`);

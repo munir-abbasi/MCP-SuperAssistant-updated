@@ -11,10 +11,13 @@ import {
   resetMcpConnectionState,
   resetMcpConnectionStateForRecovery,
   normalizeToolsFromPrimitives as normalizeTools,
-  createMcpClient,
-  type TransportType,
-  type ConnectionRequest
 } from '../mcpclient/index';
+import {
+  DEFAULT_CONNECTION_TYPE,
+  DEFAULT_SSE_URL,
+  getDefaultServerUrlForConnectionType,
+  type ConnectionType,
+} from './server-defaults';
 import { sendAnalyticsEvent, trackError, collectDemographicData } from '../../utils/analytics';
 import { analyticsService } from '../../utils/analytics-service';
 
@@ -38,17 +41,7 @@ import type {
 } from '../../../pages/content/src/types/messages';
 import { createLogger } from '@extension/shared/lib/logger';
 
-// Default MCP server URLs
-
 const logger = createLogger('BACKGROUND');
-
-const DEFAULT_SSE_URL = 'http://localhost:3006/sse';
-const DEFAULT_WEBSOCKET_URL = 'ws://localhost:3006/message';
-const DEFAULT_STREAMABLE_HTTP_URL = 'http://localhost:3006';
-
-// Connection type management
-type ConnectionType = TransportType;
-const DEFAULT_CONNECTION_TYPE: ConnectionType = 'sse';
 
 // Remote Config Manager
 let remoteConfigManager: RemoteConfigManager | null = null;
@@ -70,11 +63,7 @@ async function initializeServerConfig(): Promise<void> {
     
     // Load connection type first to determine default URL
     connectionType = (result.mcpConnectionType as ConnectionType) || DEFAULT_CONNECTION_TYPE;
-    const defaultUrl = connectionType === 'websocket' 
-      ? DEFAULT_WEBSOCKET_URL 
-      : connectionType === 'streamable-http'
-        ? DEFAULT_STREAMABLE_HTTP_URL
-        : DEFAULT_SSE_URL;
+    const defaultUrl = getDefaultServerUrlForConnectionType(connectionType);
     
     serverUrl = result.mcpServerUrl || defaultUrl;
     isInitialized = true;
@@ -700,7 +689,13 @@ async function handleMcpMessage(
         }
 
         logger.debug(`Calling tool: ${toolName} from adapter: ${adapterName || 'unknown'}`);
-        result = await callToolWithBackwardsCompatibility(getServerUrl(), toolName, args || {}, adapterName);
+        result = await callToolWithBackwardsCompatibility(
+          getServerUrl(),
+          toolName,
+          args || {},
+          adapterName,
+          connectionType,
+        );
         logger.debug(`Tool call completed: ${toolName}`);
         break;
       }
@@ -814,10 +809,11 @@ async function handleMcpMessage(
 
       case 'mcp:get-server-config': {
         const stored = await chrome.storage.local.get(['mcpServerUrl', 'mcpConnectionType']);
-        const defaultUrl = connectionType === 'websocket' ? DEFAULT_WEBSOCKET_URL : DEFAULT_SSE_URL;
+        const storedConnectionType = (stored.mcpConnectionType as ConnectionType | undefined) || connectionType;
+        const defaultUrl = getDefaultServerUrlForConnectionType(storedConnectionType);
         result = { 
           uri: stored.mcpServerUrl || defaultUrl,
-          connectionType: stored.mcpConnectionType || connectionType
+          connectionType: storedConnectionType,
         };
         break;
       }
@@ -1179,4 +1175,3 @@ async function initializeRemoteConfig(): Promise<void> {
     // Don't throw - let the extension continue without remote config
   }
 }
-

@@ -1,31 +1,31 @@
-# MCP SuperAssistant v0.6.2
+# MCP SuperAssistant v0.6.3-rc.1
 
-This release builds on v0.6.1 with a critical discovery-state fix, first browser runtime qualification evidence, and full Chrome + Firefox release artifacts.
+This release candidate addresses a post-v0.6.2 reconnect/tool-call hang class observed after primitive discovery failure.
 
-## What's new
+## What's changed
 
-- **Discovery-state fix**: When `tools/list` fails after a connection was established, McpClient now clears the cache, marks the state as disconnected, emits a failure event, and rethrows. Previously it could appear as a healthy connection with zero tools.
-- **First Chrome runtime evidence**: Manual smoke test confirmed extension loading, content script activation, and filesystem MCP tool discovery/execution on Z.ai, Qwen AI, and gemini.google.com.
-- **Full Firefox qualification**: XPI packaged, loaded as temporary add-on, and manual smoke tested.
-- **Qualification documentation suite**: Full support matrix, baseline freeze, known limitations, package baseline, issue coverage ledger, manual browser protocol, and E2E harness plan.
-- **Package-contract E2E guard**: CI now verifies browser target, manifest shape, file presence, and archive integrity — preventing the previous zero-test-passing build pipeline.
+- Always clean up stale MCP client, plugin, transport, cache, and timers before reconnecting after discovery failure.
+- Clear successful connection timeout timers instead of leaving the 30-second timer pending.
+- Add regression tests for reconnect-after-discovery-failure and bounded never-resolving tool calls.
 
-## Verified gates
+## Verified in this session
 
-- 7 extension tests (5 existing + 2 new discovery-state) — PASS
-- Type checking — PASS
-- Chrome and Firefox production builds — PASS
-- Package-contract E2E guard (Chrome + Firefox mode) — PASS
-- MCP protocol E2E suite (13/13) — PASS
-- Manual Chrome smoke on 3 chat sites — PASS
-- Manual Firefox smoke — PASS
-- Guided browser protocol (Chrome + Firefox) — PASS
+- Targeted discovery-state test — PASS.
+- `pnpm -F chrome-extension test` — PASS, 14 tests.
+- `pnpm -F chrome-extension type-check` — PASS.
+- Targeted ESLint for the edited discovery-state test — PASS.
+- `pnpm e2e` — PASS, 15 tests.
+- `pnpm e2e:firefox` — PASS, 15 tests.
+- Final artifacts:
+  - Chrome ZIP: `dist-zip/extension-20260718-152459.zip`, SHA-256 `823ac9ff14984d92c755393d309366bd3c8f3da8e52b9fa2eb37a51bb94d1f93`.
+  - Firefox XPI: `dist-zip/extension-20260718-152536.xpi`, SHA-256 `f231674de060c198645c5ac64a57ce732ffcce245a4f4bc518c7c91d2fc3ae97`.
 
-## Known limitations
+## Not verified in this session
 
-- Legacy SSE and WebSocket transports not tested
-- Site adapter contracts not fully automated
-- Lifecycle/exactly-once coverage not fully automated
-- Fixture server E2E requires manual infrastructure setup
+- Chrome runtime on chat.qwen.ai.
+- Firefox runtime on chat.qwen.ai.
+- Live SSE and Streamable HTTP tool execution through the browser extension.
+- Repository-wide package lint: `pnpm -F chrome-extension lint` still fails on broad baseline/pre-existing lint debt.
+- Exact `.nvmrc` runtime reproducibility: local build used Node `v24.12.0`; `.nvmrc` declares `22.12.0`.
 
-See `STABILIZATION_STATUS.md` and `docs/qualification/` for the complete verification boundary.
+Do not promote this candidate beyond RC status until the browser/runtime matrix is manually verified.

@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 
 const packageJson = JSON.parse(readFileSync('./package.json', 'utf8'));
+const manifestVersion = packageJson.version.split('-')[0];
 
 /**
  * @prop default_locale
@@ -26,7 +27,8 @@ const manifest = {
       id: 'saurabh@mcpsuperassistant.ai',
     },
   },
-  version: packageJson.version,
+  version: manifestVersion,
+  version_name: packageJson.version,
   description: 'MCP SuperAssistant',
   host_permissions: [
     '*://*.perplexity.ai/*',
@@ -47,7 +49,6 @@ const manifest = {
     '*://*.kimi.com/*',
     '*://*.chat.z.ai/*',
     '*://*.chat.qwen.ai/*',
-
   ],
 
   permissions: ['storage', 'clipboardWrite'],
@@ -163,7 +164,6 @@ const manifest = {
       js: ['content/index.iife.js'],
       run_at: 'document_idle',
     },
-
   ],
   // devtools_page: 'devtools/index.html',
   web_accessible_resources: [

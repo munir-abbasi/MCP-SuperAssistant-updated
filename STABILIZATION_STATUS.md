@@ -1,26 +1,28 @@
 # MCP SuperAssistant stabilization status
 
-Release candidate: `v0.6.3-rc.1` for `munir-abbasi/MCP-SuperAssistant-updated`.
+Release candidate: `v0.6.3-rc.2` for `munir-abbasi/MCP-SuperAssistant-updated`.
 
 Stabilization base: upstream snapshot `c26168ee2c5708a3a65ef5afd88cda1a97c81734` (`v0.6.0`).
 
-## Current addendum: v0.6.3-rc.1
+## Current addendum: v0.6.3-rc.2
 
-This candidate addresses the post-v0.6.2 reconnect/tool-call hang class after primitive discovery failure. The responsible source boundary is `McpClient.performConnection()`: a failed forced primitive refresh can mark `isConnectedFlag` false while the old client/plugin/transport are still alive. Reconnect now calls `cleanup()` regardless of `isConnectedFlag`, and successful MCP client connection no longer leaves the 30-second timeout timer pending.
+This candidate supersedes `v0.6.3-rc.1`, which packaged the prerelease label in manifest `version` and was rejected by Chrome. The manifest now uses numeric `version` (`0.6.3`) and preserves the release-candidate label in `version_name` (`0.6.3-rc.2`). It also retains the post-v0.6.2 reconnect/tool-call hang fix after primitive discovery failure. The responsible source boundary for that fix is `McpClient.performConnection()`: a failed forced primitive refresh can mark `isConnectedFlag` false while the old client/plugin/transport are still alive. Reconnect now calls `cleanup()` regardless of `isConnectedFlag`, and successful MCP client connection no longer leaves the 30-second timeout timer pending.
 
 Validation completed in this session:
 
 | Gate | Result |
 | --- | --- |
 | `pnpm -F chrome-extension exec eslint tests/mcp-client-discovery-state.test.ts` | PASS |
+| `pnpm -F chrome-extension exec eslint manifest.ts` | PASS |
 | `pnpm -F chrome-extension exec node --import tsx --test tests/mcp-client-discovery-state.test.ts` | PASS, 4 tests |
 | `pnpm -F chrome-extension test` | PASS, 14 tests |
 | `pnpm -F chrome-extension type-check` | PASS |
-| `pnpm -F chrome-extension lint` | FAIL, 849 broad baseline/pre-existing errors |
+| `pnpm -F chrome-extension lint` | Known broad baseline/pre-existing failure from previous pass: 849 errors; not rerun for rc.2 |
 | `pnpm e2e` | PASS, 15 tests |
 | `pnpm e2e:firefox` | PASS, 15 tests |
-| Final Chrome artifact | `dist-zip/extension-20260718-152459.zip`, SHA-256 `823ac9ff14984d92c755393d309366bd3c8f3da8e52b9fa2eb37a51bb94d1f93` |
-| Final Firefox artifact | `dist-zip/extension-20260718-152536.xpi`, SHA-256 `f231674de060c198645c5ac64a57ce732ffcce245a4f4bc518c7c91d2fc3ae97` |
+| Final Chrome artifact | `dist-zip/extension-20260718-155015.zip`, SHA-256 `a4ae7e07c44f083b2a6342f6dcea2ced9a146f8ecf5ff8af0342ffe303f2ff0f` |
+| Final Firefox artifact | `dist-zip/extension-20260718-155051.xpi`, SHA-256 `afad6c7664c6823df95ab031c39283504ed8cde1d4f104fd61aef2ae114658f2` |
+| Manifest version preflight | PASS: both artifacts contain manifest `version: 0.6.3`, `version_name: 0.6.3-rc.2`, and Qwen host permission |
 | Package integrity/codegen scan | PASS: `unzip -t` clean for both archives; no `unsafe-eval`, `eval(`, `new Function`, or `Function(` token hits in packaged `.js`, `.json`, or `.html` files |
 
 Browser runtime verification for chat.qwen.ai, Chrome, Firefox, SSE, and Streamable HTTP was not run in this session and must not be claimed from automated tests/builds alone.

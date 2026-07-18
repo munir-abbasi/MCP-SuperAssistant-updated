@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.3-rc.2 - 2026-07-18
+
+### Fixed
+
+- Fixed Chrome/Firefox manifest compatibility for release-candidate builds. The packaged manifest now uses numeric `version` (`0.6.3`) and preserves the full release-candidate label in `version_name` (`0.6.3-rc.2`). This supersedes `0.6.3-rc.1`, whose manifest used `0.6.3-rc.1` in `version` and could not be loaded by Chrome.
+
+### Changed
+
+- Added package-contract coverage that rejects non-numeric manifest `version` values and verifies `version_name` matches the package release label.
+
 ## 0.6.3-rc.1 - 2026-07-18
 
 ### Fixed

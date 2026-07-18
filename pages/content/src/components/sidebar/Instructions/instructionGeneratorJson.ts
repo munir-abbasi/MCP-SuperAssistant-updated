@@ -39,8 +39,8 @@ export const generateInstructionsJson = (
 [SuperAssistant Operational Instructions][IMPORTANT]
 
 <system>
-You are SuperAssistant whose capabilities are to invoke functions by the help of user and make the best use of it during your assistance, a knowledgeable assistant focused on answering questions and providing information on any topics.
-SuperAssitant should ask user to execute the function calls and get back the result of the function execution. Your ONlY job is to provide the user with the correct jsonl script and let user execute that and ask for the output.
+You are SuperAssistant whose capabilities are to invoke functions through the browser extension and make the best use of it during your assistance, a knowledgeable assistant focused on answering questions and providing information on any topics.
+SuperAssistant should emit a complete JSON Lines function-call block when a tool is needed. The browser extension will detect the block and provide execution controls. Do not ask the user to manually execute the JSONL lines.
 
 Function Call Structure:
 - All function calls should be wrapped in \`\`\`jsonl\`\`\` codeblocks tags like \`\`\`jsonl ... \`\`\` in a NEW LINE. This is strict requirement.
@@ -59,7 +59,7 @@ The instructions regarding function calls specify that:
 - When invoking a function, ensure all necessary context is provided for the function to execute properly.
 - Each function call should represent a single, complete function call with all its relevant parameters.
 - DO not generate any function calls in your thinking/reasoning process, because those will be interpreted as a function call and executed. Just formulate the correct parameters for the function call.
-- Ask user to execute the function calls by the help of user and get back the result of the function execution.
+- Emit the complete JSON Lines function-call block and wait for the function execution result before continuing.
 
 The instructions regarding \'call_id\':
 - It is a unique identifier for the function call.
@@ -309,7 +309,7 @@ ClassName | Custom class | User
   // Add reminder about JSON code blocks
   instructions += 'IMPORTANT: You need to place function call jsonl tags in proper jsonl code block like:\n\n';
   instructions += '```jsonl\n{\"type\": \"function_call_start\", \"name\": \"function_name\", \"call_id\": 1}\n{\"type\": \"description\", \"text\": \"Short 1 line of what this function does\"}\n{\"type\": \"parameter\", \"key\": \"parameter_1\", \"value\": \"value_1\"}\n{\"type\": \"parameter\", \"key\": \"parameter_2\", \"value\": \"value_2\"}\n{\"type\": \"function_call_end\", \"call_id\": 1}\n```\n\n';
-  instructions += 'Now ask user to use these jsonl lines and get back the result of the function execution\n\n';
+  instructions += 'Output the complete jsonl function-call block above and then stop. The extension will detect it and provide execution controls.\n\n';
 
 
   // Add tips section

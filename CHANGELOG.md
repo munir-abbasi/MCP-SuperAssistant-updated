@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.6.3-rc.5 - 2026-07-18
+
+### Fixed
+
+- Bounded Qwen JSON function-call spinner handling by monitoring the actual rendered function-block ID after rendering. This allows the existing abrupt-end monitor to find incomplete JSON function blocks and move them out of indefinite loading instead of leaving a continuous spinner beside fallback labels.
+- Improved partial JSON function-call extraction when Qwen prefixes natural-language text before an incomplete `function_call_start` object, so the renderer can recover the function name and call ID more often instead of displaying `function` / generated `block-*` fallback values.
+
+### Changed
+
+- Adjusted JSONL instructions so models emit a complete function-call block and stop for extension-provided execution controls, rather than asking the user to manually execute JSONL lines.
+- Added regression coverage for polluted partial JSON function-call starts.
+
 ## 0.6.3-rc.4 - 2026-07-18
 
 ### Fixed

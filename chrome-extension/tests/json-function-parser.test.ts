@@ -31,3 +31,13 @@ test('preserves streaming fallback extraction for incomplete JSON function start
     description: null,
   });
 });
+
+test('extracts partial JSON function info with polluted text before the opening brace', () => {
+  const content = 'Please execute this call: {"type":"function_call_start","name":"list_files","call_id":3';
+
+  assert.deepEqual(parser.extractJSONFunctionInfo(content), {
+    functionName: 'list_files',
+    callId: '3',
+    description: null,
+  });
+});

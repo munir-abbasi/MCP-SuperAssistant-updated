@@ -1,5 +1,7 @@
 # Package Baseline Evidence for v0.6.3-rc.4
 
+Superseded: `v0.6.3-rc.4` improved Qwen JSONL extraction but was followed by a live Qwen report where an incomplete function block still showed a continuous spinner. Use `v0.6.3-rc.5` or later.
+
 Status: release-candidate package/archive and deterministic parser evidence only. This document records automated build, package, manifest, icon, archive integrity, and Qwen-style JSONL parser regression evidence for `v0.6.3-rc.4`. It does not record live browser runtime qualification.
 
 ## Candidate Context

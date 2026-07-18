@@ -553,6 +553,11 @@ export const extractJSONFunctionInfo = (
         '',
       );
 
+      const jsonStart = trimmed.indexOf('{');
+      if (jsonStart > 0) {
+        trimmed = trimmed.substring(jsonStart);
+      }
+
       if (trimmed.startsWith('{') && trimmed.includes('"type"') && trimmed.includes('function_call_start')) {
         // Try to extract name from partial JSON
         const nameMatch = trimmed.match(/"name"\s*:\s*"([^"]+)"/);

@@ -171,7 +171,8 @@ export const checkForUnprocessedFunctionCalls = (): number => {
       const result = renderFunctionCall(element as HTMLPreElement, { current: false });
       if (result) {
         processedCount++;
-        monitorNode(element, blockId);
+        const renderedBlockId = element.getAttribute('data-block-id') || blockId;
+        monitorNode(element, renderedBlockId);
       }
     }
   }

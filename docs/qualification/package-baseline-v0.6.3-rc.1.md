@@ -1,6 +1,6 @@
 # Package Baseline Evidence for v0.6.3-rc.1
 
-Superseded: this candidate was package/archive-verified but not browser-loadable in Chrome because the manifest `version` was `0.6.3-rc.1`. Chrome requires numeric dot-separated manifest versions. Use `v0.6.3-rc.2` or later.
+Superseded: this candidate was package/archive-verified but not browser-loadable in Chrome because the manifest `version` was `0.6.3-rc.1`. Chrome requires numeric dot-separated manifest versions. Use `v0.6.3-rc.3` or later.
 
 Status: release-candidate package/archive evidence only. This document records automated build, package, manifest, and archive integrity evidence for `v0.6.3-rc.1`. It does not record live browser runtime qualification.
 

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.3-rc.3 - 2026-07-18
+
+### Fixed
+
+- Fixed Chrome/Firefox manifest icon packaging for release-candidate builds. The packaged manifest referenced `icon-16.png`, but `v0.6.3-rc.2` did not include that file, causing Chrome to reject the unpacked extension with `Could not load icon 'icon-16.png' specified in 'icons'`. The source now includes a real 16x16 PNG icon generated from the existing extension icon asset.
+
+### Changed
+
+- Added package-contract coverage that verifies every icon path declared by the generated manifest exists in `dist` before E2E packaging passes.
+
 ## 0.6.3-rc.2 - 2026-07-18
 
 ### Fixed

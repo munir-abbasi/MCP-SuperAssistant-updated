@@ -1,12 +1,12 @@
 # MCP SuperAssistant stabilization status
 
-Release candidate: `v0.6.3-rc.2` for `munir-abbasi/MCP-SuperAssistant-updated`.
+Release candidate: `v0.6.3-rc.3` for `munir-abbasi/MCP-SuperAssistant-updated`.
 
 Stabilization base: upstream snapshot `c26168ee2c5708a3a65ef5afd88cda1a97c81734` (`v0.6.0`).
 
-## Current addendum: v0.6.3-rc.2
+## Current addendum: v0.6.3-rc.3
 
-This candidate supersedes `v0.6.3-rc.1`, which packaged the prerelease label in manifest `version` and was rejected by Chrome. The manifest now uses numeric `version` (`0.6.3`) and preserves the release-candidate label in `version_name` (`0.6.3-rc.2`). It also retains the post-v0.6.2 reconnect/tool-call hang fix after primitive discovery failure. The responsible source boundary for that fix is `McpClient.performConnection()`: a failed forced primitive refresh can mark `isConnectedFlag` false while the old client/plugin/transport are still alive. Reconnect now calls `cleanup()` regardless of `isConnectedFlag`, and successful MCP client connection no longer leaves the 30-second timeout timer pending.
+This candidate supersedes `v0.6.3-rc.2`, which still referenced `icon-16.png` in the packaged manifest but did not include that file in the ZIP/XPI. Chrome rejected the unpacked extension before runtime with `Could not load icon 'icon-16.png' specified in 'icons'`. The source now includes `chrome-extension/public/icon-16.png`, and the package-contract E2E test verifies every manifest icon path exists in `dist`. The manifest continues to use numeric `version` (`0.6.3`) and preserves the release-candidate label in `version_name` (`0.6.3-rc.3`). It also retains the post-v0.6.2 reconnect/tool-call hang fix after primitive discovery failure. The responsible source boundary for that fix is `McpClient.performConnection()`: a failed forced primitive refresh can mark `isConnectedFlag` false while the old client/plugin/transport are still alive. Reconnect now calls `cleanup()` regardless of `isConnectedFlag`, and successful MCP client connection no longer leaves the 30-second timeout timer pending.
 
 Validation completed in this session:
 
@@ -17,12 +17,12 @@ Validation completed in this session:
 | `pnpm -F chrome-extension exec node --import tsx --test tests/mcp-client-discovery-state.test.ts` | PASS, 4 tests |
 | `pnpm -F chrome-extension test` | PASS, 14 tests |
 | `pnpm -F chrome-extension type-check` | PASS |
-| `pnpm -F chrome-extension lint` | Known broad baseline/pre-existing failure from previous pass: 849 errors; not rerun for rc.2 |
+| `pnpm -F chrome-extension lint` | Known broad baseline/pre-existing failure from previous pass: 849 errors; not rerun for rc.3 |
 | `pnpm e2e` | PASS, 15 tests |
 | `pnpm e2e:firefox` | PASS, 15 tests |
-| Final Chrome artifact | `dist-zip/extension-20260718-155015.zip`, SHA-256 `a4ae7e07c44f083b2a6342f6dcea2ced9a146f8ecf5ff8af0342ffe303f2ff0f` |
-| Final Firefox artifact | `dist-zip/extension-20260718-155051.xpi`, SHA-256 `afad6c7664c6823df95ab031c39283504ed8cde1d4f104fd61aef2ae114658f2` |
-| Manifest version preflight | PASS: both artifacts contain manifest `version: 0.6.3`, `version_name: 0.6.3-rc.2`, and Qwen host permission |
+| Final Chrome artifact | `dist-zip/extension-20260718-160502.zip`, SHA-256 `7e461782ec66f0b89de0f012024be5fa626ddf4d901bfeae0402a9889f99534e` |
+| Final Firefox artifact | `dist-zip/extension-20260718-160543.xpi`, SHA-256 `3f665b3a0524b1720dd623dd0737837bd1d36bb9c9363e3bd71c6cb784775942` |
+| Manifest version/icon preflight | PASS: both artifacts contain manifest `version: 0.6.3`, `version_name: 0.6.3-rc.3`, Qwen host permission, and all declared icon files including `icon-16.png` |
 | Package integrity/codegen scan | PASS: `unzip -t` clean for both archives; no `unsafe-eval`, `eval(`, `new Function`, or `Function(` token hits in packaged `.js`, `.json`, or `.html` files |
 
 Browser runtime verification for chat.qwen.ai, Chrome, Firefox, SSE, and Streamable HTTP was not run in this session and must not be claimed from automated tests/builds alone.

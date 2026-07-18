@@ -35,6 +35,13 @@ test('packaged extension files match the selected browser contract', async () =>
   // When: the deterministic packaging contract is inspected from disk.
   const backgroundStats = await stat(join(distDirectory, 'background.js'));
   const contentScriptStats = await stat(join(distDirectory, 'content', 'index.iife.js'));
+  const iconStats = await Promise.all(
+    Object.values(manifest.icons ?? {}).map(async (iconPath) => {
+      const stats = await stat(join(distDirectory, iconPath));
+      assert.ok(stats.size > 0, `Expected manifest icon ${iconPath} to exist in dist`);
+      return stats;
+    }),
+  );
   const archiveExtension = packagedFileExtension(browser);
   const archiveNames = (await readdir(join(repositoryRoot, 'dist-zip'))).filter((name) =>
     name.endsWith(archiveExtension),
@@ -48,6 +55,7 @@ test('packaged extension files match the selected browser contract', async () =>
   assert.equal(manifest.name, 'MCP SuperAssistant');
   assert.ok(backgroundStats.size > 0);
   assert.ok(contentScriptStats.size > 0);
+  assert.ok(iconStats.length > 0, 'Expected manifest to declare at least one icon');
   assert.ok(archiveNames.length > 0, `Expected a ${archiveExtension} artifact in dist-zip`);
 
   if (browser === 'chrome') {

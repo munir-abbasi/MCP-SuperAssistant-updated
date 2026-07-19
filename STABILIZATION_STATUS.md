@@ -1,12 +1,12 @@
 # MCP SuperAssistant stabilization status
 
-Release candidate: `v0.6.3-rc.5` for `munir-abbasi/MCP-SuperAssistant-updated`.
+Release candidate: `v0.6.3-rc.6` for `munir-abbasi/MCP-SuperAssistant-updated`.
 
 Stabilization base: upstream snapshot `c26168ee2c5708a3a65ef5afd88cda1a97c81734` (`v0.6.0`).
 
-## Current addendum: v0.6.3-rc.5
+## Current addendum: v0.6.3-rc.6
 
-This candidate supersedes `v0.6.3-rc.4`, which improved Qwen JSONL extraction but still allowed live Qwen output to show a fallback `function` / generated `block-*` row with a continuous spinner. The strongest inspected cause was that mutation processing generated a monitoring ID before rendering, while `renderFunctionCall()` could assign a different `data-block-id`; the abrupt-end monitor then queried the wrong function-block ID and could not mark incomplete JSON output as stalled/abrupt-ended. `v0.6.3-rc.5` monitors the actual rendered block ID, improves polluted partial JSON start extraction, and rewords JSONL instructions so models emit a complete function-call block for extension execution controls instead of asking the user to execute JSONL manually. It also retains the post-v0.6.2 reconnect/tool-call hang fix, numeric manifest `version` (`0.6.3`), `version_name` (`0.6.3-rc.5`), and the `icon-16.png` package hotfix.
+This candidate supersedes `v0.6.3-rc.5`. Diagnostics from live Qwen output showed that Qwen copied the generic `<thoughts>` response-format scaffold and emitted only a single `function_call_start` JSONL line without required parameters or `function_call_end`. `v0.6.3-rc.6` routes only Qwen hosts through a strict JSONL-only instruction template that forbids visible planning tags, manual-execution wording, JSON-array wording, and partial function-call output. Non-Qwen hosts retain the generic template and existing ChatGPT/Gemini addenda. This candidate also retains the post-v0.6.2 reconnect/tool-call hang fix, numeric manifest `version` (`0.6.3`), `version_name` (`0.6.3-rc.6`), `icon-16.png` package hotfix, Qwen JSONL parser normalization, and bounded incomplete-block handling.
 
 Validation completed in this session:
 
@@ -15,21 +15,23 @@ Validation completed in this session:
 | `pnpm -F chrome-extension exec eslint tests/mcp-client-discovery-state.test.ts` | PASS |
 | `pnpm -F chrome-extension exec eslint manifest.ts` | PASS |
 | `pnpm -F chrome-extension exec eslint tests/json-function-parser.test.ts` | PASS |
+| `pnpm -F chrome-extension exec eslint tests/instruction-generator-qwen.test.ts` | PASS |
 | `pnpm -F chrome-extension exec node --import tsx --test tests/json-function-parser.test.ts` | PASS, 3 tests |
+| `pnpm -F chrome-extension exec node --import tsx --test tests/instruction-generator-qwen.test.ts` | PASS, 2 tests |
 | `pnpm -F chrome-extension exec node --import tsx --test tests/mcp-client-discovery-state.test.ts` | PASS, 4 tests |
-| `pnpm -F chrome-extension test` | PASS, 17 tests |
+| `pnpm -F chrome-extension test` | PASS, 19 tests |
 | `pnpm -F chrome-extension type-check` | PASS |
-| `pnpm -F @extension/content-script type-check` | FAIL: broad baseline/pre-existing errors unrelated to rc.5 parser/observer patch |
-| Targeted ESLint on changed parser/renderer source | FAIL: broad baseline/pre-existing lint debt in touched legacy files; new test file lint passed |
-| `pnpm -F chrome-extension lint` | Known broad baseline/pre-existing failure from previous pass: 849 errors; not rerun for rc.5 |
+| `pnpm -F @extension/content-script type-check` | FAIL: broad baseline/pre-existing errors unrelated to rc6 instruction-template patch |
+| Targeted ESLint on changed instruction-generator source | FAIL: broad baseline/pre-existing lint debt in touched legacy file; new test file lint passed |
+| `pnpm -F chrome-extension lint` | Known broad baseline/pre-existing failure from previous pass: 849 errors; not rerun for rc6 |
 | `pnpm e2e` | PASS, 15 tests |
 | `pnpm e2e:firefox` | PASS, 15 tests |
-| Final Chrome artifact | `dist-zip/extension-20260718-180830.zip`, SHA-256 `ecb4d6f8db3358142e71ba7cea165e8f3011df620b5e788c03155562f52ed77d` |
-| Final Firefox artifact | `dist-zip/extension-20260718-180906.xpi`, SHA-256 `3c6ad152bf970d633a11f487bb8eb537c5385f184b9d5f583f5926576b4d54ff` |
-| Manifest version/icon preflight | PASS: both artifacts contain manifest `version: 0.6.3`, `version_name: 0.6.3-rc.5`, Qwen host permission, and all declared icon files including `icon-16.png` |
+| Final Chrome artifact | `dist-zip/extension-20260719-061323.zip`, SHA-256 `531b7c620bda0ae9cc8637357b4863759fafc1486d48eed4715eba31a94d1028` |
+| Final Firefox artifact | `dist-zip/extension-20260719-061403.xpi`, SHA-256 `ef51c6206009d6f889b95ea234da36eeacd8704cff1efbeadfb9ff8489d884c9` |
+| Manifest version/icon preflight | PASS: both artifacts contain manifest `version: 0.6.3`, `version_name: 0.6.3-rc.6`, Qwen host permission, and all declared icon files including `icon-16.png` |
 | Package integrity/codegen scan | PASS: `unzip -t` clean for both archives; no `unsafe-eval`, `eval(`, `new Function`, or `Function(` token hits in packaged `.js`, `.json`, or `.html` files |
 
-Browser runtime verification for chat.qwen.ai, Chrome, Firefox, SSE, and Streamable HTTP was not run in this session and must not be claimed from automated tests/builds alone. The Qwen spinner issue is covered by source-path inspection and deterministic parser/packaging evidence, not live browser confirmation.
+Browser runtime verification for chat.qwen.ai, Chrome, Firefox, SSE, and Streamable HTTP was not run in this session and must not be claimed from automated tests/builds alone. The Qwen instruction-template issue is covered by deterministic instruction-generation tests and package evidence, not live browser confirmation.
 
 ## Verified in this checkout
 

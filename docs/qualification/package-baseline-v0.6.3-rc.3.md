@@ -1,6 +1,6 @@
 # Package Baseline Evidence for v0.6.3-rc.3
 
-> Superseded: `v0.6.3-rc.3` fixed package loadability but was followed by Qwen runtime reports where polluted/compact JSONL function-call output could render as fallback `function` / `block-*` and incomplete function blocks could keep spinning. Use `v0.6.3-rc.5` or later.
+> Superseded: `v0.6.3-rc.3` fixed package loadability but was followed by Qwen runtime reports where polluted/compact JSONL function-call output could render as fallback `function` / `block-*`, incomplete function blocks could keep spinning, and the generic instruction template could be copied into live output. Use `v0.6.3-rc.6` or later.
 
 Status: release-candidate package/archive evidence only. This document records automated build, package, manifest, icon, and archive integrity evidence for `v0.6.3-rc.3`. It does not record live browser runtime qualification.
 

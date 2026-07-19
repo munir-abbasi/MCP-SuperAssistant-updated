@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.6.3-rc.6 - 2026-07-19
+
+### Fixed
+
+- Added a Qwen-specific strict JSONL instruction template so Qwen no longer receives the generic `<thoughts>`/response-format scaffold that it copied into live output. The Qwen path now requires exactly one complete fenced `jsonl` function-call block with `function_call_start`, all required `parameter` lines, and the matching `function_call_end`, then tells the model to stop and wait for the extension result.
+
+### Changed
+
+- Preserved the existing generic, ChatGPT, and Gemini instruction behavior for non-Qwen hosts while routing only Qwen hosts through the stricter template.
+- Added regression coverage proving Qwen instructions omit `<thoughts>`, manual-execution wording, JSON-array wording, and custom XML-style tags while the non-Qwen generic template remains unchanged.
+
 ## 0.6.3-rc.5 - 2026-07-18
 
 ### Fixed

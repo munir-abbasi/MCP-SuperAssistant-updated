@@ -1,6 +1,6 @@
 # MCP SuperAssistant Qualification Support Matrix
 
-Status: qualification baseline for v0.6.3-rc.5.
+Status: qualification baseline for v0.6.3-rc.6.
 
 This matrix records what is qualified for the next code-bearing release candidate. It must not be read as a promise that every manifest match pattern or README-listed site is fully supported.
 
@@ -16,9 +16,9 @@ This matrix records what is qualified for the next code-bearing release candidat
 | Field | Value | Evidence |
 | --- | --- | --- |
 | Repository | `munir-abbasi/MCP-SuperAssistant-updated` | Verified: `git remote -v` |
-| Active branch | `release/v0.6.3-rc.5` | Verified: `git status --short --branch` |
-| Base HEAD before rc5 commit | `1d4a255c5af85ba504b9ef03abbe4dde4b82b283` (`fix(qwen): Normalize JSON function-call extraction`), with dirty working-tree changes for v0.6.3-rc.5 before the next commit | Verified: `git log --oneline -1`; `git status --short` |
-| Package version | `0.6.3-rc.5` | Verified: root and extension package manifests |
+| Active branch | `release/v0.6.3-rc.6` | Verified: `git status --short --branch` |
+| Base HEAD before rc6 commit | `fb5728efab1961dd205d5cabf92d00905de4f718` (`fix(qwen): Bound incomplete function-call spinner`), with dirty working-tree changes for v0.6.3-rc.6 before the next commit | Verified: `git log --oneline -1`; `git status --short` |
+| Package version | `0.6.3-rc.6` | Verified: root and extension package manifests |
 | Node required | `.nvmrc` `22.12.0`; engines `>=22.12.0` | Verified: `.nvmrc`, root `package.json` |
 | Node available in this pass | `v24.12.0` | Verified: `node -v` |
 | pnpm required/available | `9.15.1` / `9.15.1` | Verified: root `packageManager`, `pnpm -v` |
@@ -28,8 +28,8 @@ This matrix records what is qualified for the next code-bearing release candidat
 
 | Browser | OS | Artifact | Artifact hash | Install/load verification | Runtime verification | Status | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Chrome/Chromium | Linux | `dist-zip/extension-20260718-180830.zip` | `ecb4d6f8db3358142e71ba7cea165e8f3011df620b5e788c03155562f52ed77d` | Manifest/icon preflight only; not loaded in browser | Not run in browser | Package verified; runtime unqualified | `package-baseline-v0.6.3-rc.5.md`; manifest `version` is numeric and all declared icon files are present; runtime loading/tool execution on chat.qwen.ai still required. |
-| Firefox stable | Linux | `dist-zip/extension-20260718-180906.xpi` | `3c6ad152bf970d633a11f487bb8eb537c5385f184b9d5f583f5926576b4d54ff` | Manifest/icon preflight only; not loaded in browser | Not run in browser | Package verified; runtime unqualified | `package-baseline-v0.6.3-rc.5.md`; temporary add-on/runtime loading still required. |
+| Chrome/Chromium | Linux | `dist-zip/extension-20260719-061323.zip` | `531b7c620bda0ae9cc8637357b4863759fafc1486d48eed4715eba31a94d1028` | Manifest/icon preflight only; not loaded in browser | Not run in browser | Package verified; runtime unqualified | `package-baseline-v0.6.3-rc.6.md`; manifest `version` is numeric and all declared icon files are present; runtime loading/tool execution on chat.qwen.ai still required. |
+| Firefox stable | Linux | `dist-zip/extension-20260719-061403.xpi` | `ef51c6206009d6f889b95ea234da36eeacd8704cff1efbeadfb9ff8489d884c9` | Manifest/icon preflight only; not loaded in browser | Not run in browser | Package verified; runtime unqualified | `package-baseline-v0.6.3-rc.6.md`; temporary add-on/runtime loading still required. |
 
 Notes:
 
@@ -41,8 +41,8 @@ Notes:
 
 | Transport | Scenario | Current qualification status | Release blocker? | Evidence |
 | --- | --- | --- | --- | --- |
-| Streamable HTTP | JSON response framing | Deterministic test pass in this tranche | Yes, for release promotion | `pnpm -F chrome-extension test` PASS 17/17; `pnpm e2e`/`pnpm e2e:firefox` PASS 15/15 package/protocol tests |
-| Streamable HTTP | SSE-framed POST response | Deterministic test pass in this tranche | Yes, for release promotion | `pnpm -F chrome-extension test` PASS 17/17; `pnpm e2e`/`pnpm e2e:firefox` PASS 15/15 package/protocol tests |
+| Streamable HTTP | JSON response framing | Deterministic test pass in this tranche | Yes, for release promotion | `pnpm -F chrome-extension test` PASS 19/19; `pnpm e2e`/`pnpm e2e:firefox` PASS 15/15 package/protocol tests |
+| Streamable HTTP | SSE-framed POST response | Deterministic test pass in this tranche | Yes, for release promotion | `pnpm -F chrome-extension test` PASS 19/19; `pnpm e2e`/`pnpm e2e:firefox` PASS 15/15 package/protocol tests |
 | Streamable HTTP | reconnect after `tools/list`/primitive discovery failure | Deterministic test pass in this tranche; browser runtime still unqualified | Yes | `chrome-extension/tests/mcp-client-discovery-state.test.ts`; targeted test PASS 4/4; package tests PASS 14/14 |
 | Streamable HTTP | stale cache followed by discovery failure | Deterministic test pass in this tranche; browser runtime still unqualified | Yes | `chrome-extension/tests/mcp-client-discovery-state.test.ts`; package tests PASS 14/14 |
 | Legacy SSE | Discovery and tool execution | Unknown | Yes if advertised as supported | Must be tested or downgraded before release promotion |
@@ -58,9 +58,9 @@ Manifest match patterns are broader than the qualified support matrix. A site is
 | One non-ProseMirror site | To be selected | Not qualified yet | Need same adapter contract evidence as ChatGPT | Required to avoid single-editor false confidence |
 | Perplexity | Manifest match only | Experimental/unqualified | No current adapter contract evidence in this pass | Do not advertise as fully qualified yet |
 | Grok/X/Twitter | Manifest match only | Experimental/unqualified | No current adapter contract evidence in this pass | Do not advertise as fully qualified yet |
-| Gemini/AiStudio | `gemini.google.com` | Not verified for v0.6.3-rc.5 | Previous manual evidence exists for an older candidate, but this RC was not runtime-tested | Keep as experimental pending full adapter contract |
-| Z.ai | Manifest match | Not verified for v0.6.3-rc.5 | Previous manual evidence exists for an older candidate, but this RC was not runtime-tested | Keep as experimental pending full adapter contract |
-| Qwen AI | Manifest match | Parser/spinner regressions covered; live runtime not verified for v0.6.3-rc.5 | Deterministic parser test covers polluted/compact JSONL and polluted partial starts; source-path inspection fixed the monitor ID mismatch that could leave JSON blocks spinning. This session did not load the final Chrome ZIP or Firefox XPI on chat.qwen.ai | Required before claiming the reported Qwen regression is fixed in-browser |
+| Gemini/AiStudio | `gemini.google.com` | Not verified for v0.6.3-rc.6 | Previous manual evidence exists for an older candidate, but this RC was not runtime-tested | Keep as experimental pending full adapter contract |
+| Z.ai | Manifest match | Not verified for v0.6.3-rc.6 | Previous manual evidence exists for an older candidate, but this RC was not runtime-tested | Keep as experimental pending full adapter contract |
+| Qwen AI | Manifest match | Parser/spinner/instruction regressions covered; live runtime not verified for v0.6.3-rc.6 | Deterministic parser tests cover polluted/compact JSONL and polluted partial starts; source-path inspection fixed the monitor ID mismatch; instruction-generator tests verify Qwen receives a strict JSONL template without `<thoughts>` or manual-execution wording while non-Qwen generic behavior remains intact. This session did not load the final Chrome ZIP or Firefox XPI on chat.qwen.ai | Required before claiming the reported Qwen regression is fixed in-browser |
 
 ## Release promotion gates
 
@@ -82,4 +82,4 @@ A release candidate must not be promoted as stable until all applicable gates ha
 
 ## Current conclusion
 
-v0.6.3-rc.5 has package/archive and deterministic test evidence for the reconnect-after-discovery-failure fix, numeric manifest version hotfix, manifest icon packaging hotfix, Qwen-style polluted/compact JSONL parser extraction hotfix, and bounded-spinner monitor-ID hotfix. Chrome and Firefox archives were built and integrity-checked, package/protocol E2E passed for both browser targets, and manifest preflight confirms numeric `version`, `version_name` release labeling, and all declared icon files present. The final artifacts were not loaded in Chrome or Firefox, and chat.qwen.ai live tool execution with SSE and Streamable HTTP was not verified in this session. Do not promote beyond RC or claim the reported Qwen runtime regression is fixed in-browser until the manual runtime matrix is completed.
+v0.6.3-rc.6 has package/archive and deterministic test evidence for the reconnect-after-discovery-failure fix, numeric manifest version hotfix, manifest icon packaging hotfix, Qwen-style polluted/compact JSONL parser extraction hotfix, bounded-spinner monitor-ID hotfix, and Qwen-specific strict JSONL instruction template. Chrome and Firefox archives were built and integrity-checked, package/protocol E2E passed for both browser targets, and manifest preflight confirms numeric `version`, `version_name` release labeling, and all declared icon files present. The final artifacts were not loaded in Chrome or Firefox, and chat.qwen.ai live tool execution with SSE and Streamable HTTP was not verified in this session. Do not promote beyond RC or claim the reported Qwen runtime regression is fixed in-browser until the manual runtime matrix is completed.

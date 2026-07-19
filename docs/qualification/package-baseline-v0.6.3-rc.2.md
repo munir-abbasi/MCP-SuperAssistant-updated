@@ -1,6 +1,6 @@
 # Package Baseline Evidence for v0.6.3-rc.2
 
-> Superseded: `v0.6.3-rc.2` was package/archive-verified for numeric manifest version fields but was not Chrome-loadable because the manifest referenced `icon-16.png` and the ZIP/XPI did not include that file. Use `v0.6.3-rc.5` or later.
+> Superseded: `v0.6.3-rc.2` was package/archive-verified for numeric manifest version fields but was not Chrome-loadable because the manifest referenced `icon-16.png` and the ZIP/XPI did not include that file. Use `v0.6.3-rc.6` or later.
 
 Status: release-candidate package/archive evidence only. This document records automated build, package, manifest, and archive integrity evidence for `v0.6.3-rc.2`. It does not record live browser runtime qualification.
 

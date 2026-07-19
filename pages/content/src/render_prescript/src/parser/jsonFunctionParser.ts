@@ -279,9 +279,13 @@ export const containsJSONFunctionCalls = (block: HTMLElement): FunctionInfo => {
   }
 
   // Priority 1: Check if this element IS the hidden pre from codemirror-accessor
-  // Hidden pre elements have id="cm-hidden-pre-*" or data-cm-source attribute
+  // Hidden pre elements have id="cm-hidden-pre-*" or data-cm-source attribute.
+  // Qwen Monaco extraction uses the same hidden-pre contract with monaco-* names.
   const isHiddenPre = block.id?.startsWith('cm-hidden-pre-') ||
-    block.hasAttribute('data-cm-source');
+    block.id?.startsWith('monaco-hidden-pre-') ||
+    block.hasAttribute('data-cm-source') ||
+    block.hasAttribute('data-monaco-source') ||
+    block.classList?.contains('qwen-monaco-extracted');
   if (isHiddenPre && block.textContent) {
     content = block.textContent.trim();
     if (CONFIG.debug) {

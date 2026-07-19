@@ -29,7 +29,8 @@
   ];
 
   // Track monitored editors and their data
-  const monitoredEditors = new WeakSet();
+  // This must be iterable so stopMonitoring() can remove attached listeners.
+  const monitoredEditors = new Set();
   const editorData = new WeakMap();
   const eventListeners = new WeakMap();
   const hiddenEditors = new WeakSet();
@@ -41,8 +42,14 @@
   // Monaco Editor Support for Qwen
   // ============================================
 
-  function extractMonacoContent(monacoEditor) {
+  function extractMonacoContent(monacoEditor, qwenBlock) {
     try {
+      const modelContent = extractMonacoModelContent(monacoEditor);
+      if (modelContent) return modelContent;
+
+      const reactBackedContent = extractQwenReactBackedContent(qwenBlock || monacoEditor);
+      if (reactBackedContent) return reactBackedContent;
+
       // Extract content from Monaco's view-lines structure
       const viewLines = monacoEditor.querySelectorAll('.view-lines .view-line');
       if (viewLines.length === 0) return null;
@@ -72,6 +79,135 @@
     }
   }
 
+  function extractQwenReactBackedContent(rootElement) {
+    try {
+      if (!rootElement?.querySelectorAll) return null;
+
+      const candidateRoots = [rootElement, ...Array.from(rootElement.querySelectorAll('*')).slice(0, 80)];
+      let bestCandidate = null;
+
+      for (const node of candidateRoots) {
+        const propertyNames = Object.getOwnPropertyNames(node).filter(name =>
+          name.startsWith('__reactProps$') || name.startsWith('__reactFiber$')
+        );
+
+        for (const propertyName of propertyNames) {
+          const candidate = findJsonlFunctionCallInObject(node[propertyName]);
+          if (candidate && (!bestCandidate || candidate.length > bestCandidate.length)) {
+            bestCandidate = candidate;
+          }
+        }
+      }
+
+      return bestCandidate;
+    } catch (error) {
+      console.debug('[codemirror] Qwen React-backed extraction unavailable:', error);
+      return null;
+    }
+  }
+
+  function findJsonlFunctionCallInObject(value) {
+    const seen = new WeakSet();
+    const queue = [{ value, depth: 0 }];
+    let inspected = 0;
+    let bestCandidate = null;
+
+    while (queue.length > 0 && inspected < 400) {
+      const current = queue.shift();
+      inspected++;
+
+      const currentValue = current.value;
+      if (typeof currentValue === 'string') {
+        const candidate = normalizeJsonlFunctionCallCandidate(currentValue);
+        if (candidate && (!bestCandidate || candidate.length > bestCandidate.length)) {
+          bestCandidate = candidate;
+        }
+        continue;
+      }
+
+      if (!currentValue || typeof currentValue !== 'object' || current.depth >= 7) continue;
+      if (seen.has(currentValue)) continue;
+      seen.add(currentValue);
+
+      if (typeof Node !== 'undefined' && currentValue instanceof Node) continue;
+
+      let keys = [];
+      try {
+        keys = Object.keys(currentValue).slice(0, 60);
+      } catch (error) {
+        continue;
+      }
+
+      for (const key of keys) {
+        if (key === '_owner' || key === 'return' || key === 'child' || key === 'sibling' || key === 'alternate' || key === 'stateNode') {
+          continue;
+        }
+
+        try {
+          queue.push({ value: currentValue[key], depth: current.depth + 1 });
+        } catch (error) {
+          // Ignore inaccessible properties and continue bounded search.
+        }
+      }
+    }
+
+    return bestCandidate;
+  }
+
+  function normalizeJsonlFunctionCallCandidate(text) {
+    if (!text || text.length > 200000 || !text.includes('function_call_start')) return null;
+
+    const lines = text
+      .replace(/\r\n/g, '\n')
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.startsWith('{') && line.includes('"type"'));
+
+    if (lines.length === 0) return null;
+
+    const jsonl = lines.join('\n');
+    if (!jsonl.includes('function_call_start') || !jsonl.includes('function_call_end')) return null;
+
+    return jsonl;
+  }
+
+  function extractMonacoModelContent(monacoEditor) {
+    try {
+      const uri = monacoEditor.getAttribute?.('data-uri');
+      const monaco = window.monaco;
+      const editor = monaco?.editor;
+
+      if (!uri || !editor) return null;
+
+      const directModel = getMonacoModelByUri(editor, monaco, uri);
+      const content = directModel?.getValue?.();
+
+      if (content && typeof content === 'string') {
+        return content;
+      }
+    } catch (error) {
+      console.debug('[codemirror] Monaco model extraction unavailable:', error);
+    }
+
+    return null;
+  }
+
+  function getMonacoModelByUri(editor, monaco, uri) {
+    try {
+      const parsedUri = monaco?.Uri?.parse?.(uri);
+      const model = parsedUri ? editor.getModel?.(parsedUri) : null;
+      if (model) return model;
+    } catch (error) {
+      // Fall back to enumerating models below.
+    }
+
+    try {
+      return editor.getModels?.().find(model => model?.uri?.toString?.() === uri) || null;
+    } catch (error) {
+      return null;
+    }
+  }
+
   function getQwenCodeBlockLanguage(qwenBlock) {
     // Try to detect the language from the header
     const header = qwenBlock.querySelector('.qwen-markdown-code-header > div:first-child');
@@ -95,8 +231,8 @@
       if (existingPre) {
         const monacoEditor = qwenBlock.querySelector('.monaco-editor');
         if (monacoEditor) {
-          const content = extractMonacoContent(monacoEditor);
-          if (content && content !== existingPre.textContent) {
+          const content = extractMonacoContent(monacoEditor, qwenBlock);
+          if (content && isCompleteJsonlFunctionCall(content) && content !== existingPre.textContent) {
             existingPre.textContent = content;
           }
         }
@@ -107,11 +243,17 @@
     const monacoEditor = qwenBlock.querySelector('.monaco-editor');
     if (!monacoEditor) return;
 
-    const content = extractMonacoContent(monacoEditor);
+    const content = extractMonacoContent(monacoEditor, qwenBlock);
     if (!content) return;
 
     // Check if this contains function call patterns
     if (!detectFunctionCallPattern(content)) return;
+
+    // Qwen Monaco often exposes only the first rendered viewport line while
+    // generation is still streaming. If we hide/process that partial line, the
+    // extracted pre is frozen as an incomplete call and the UI stalls. Wait for
+    // the complete JSONL call before replacing the Qwen code block.
+    if (!isCompleteJsonlFunctionCall(content)) return;
 
     const language = getQwenCodeBlockLanguage(qwenBlock);
     const uniqueId = generateUniqueId();
@@ -139,6 +281,11 @@
     qwenBlock.parentNode.insertBefore(preElement, qwenBlock.nextSibling);
   }
 
+  function isCompleteJsonlFunctionCall(content) {
+    if (!content || typeof content !== 'string') return false;
+    return content.includes('function_call_start') && content.includes('function_call_end');
+  }
+
   function scanForQwenMonacoBlocks() {
     try {
       const qwenBlocks = document.querySelectorAll('pre.qwen-markdown-code');
@@ -148,6 +295,16 @@
     } catch (error) {
       console.warn('[codemirror] Error scanning Qwen Monaco blocks:', error);
     }
+  }
+
+  function updateQwenMonacoBlockForNode(node) {
+    const element = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+    const qwenBlock = element?.closest?.('pre.qwen-markdown-code');
+
+    if (!qwenBlock) return false;
+
+    processQwenMonacoBlock(qwenBlock);
+    return true;
   }
 
   function detectFunctionCallPattern(content) {
@@ -391,6 +548,12 @@
     eventListeners.delete(cmEditor);
   }
 
+  function cleanupEditor(cmEditor) {
+    removeEditorEventListeners(cmEditor);
+    monitoredEditors.delete(cmEditor);
+    editorData.delete(cmEditor);
+  }
+
   function processEditor(cmEditor) {
     if (monitoredEditors.has(cmEditor)) {
       // Just update content for existing editors
@@ -449,10 +612,12 @@
 
           // Check for removed nodes to clean up
           for (const node of mutation.removedNodes) {
-            if (node.nodeType === Node.ELEMENT_NODE && node.classList?.contains('cm-editor')) {
-              removeEditorEventListeners(node);
-              monitoredEditors.delete(node);
-              editorData.delete(node);
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              if (node.classList?.contains('cm-editor')) {
+                cleanupEditor(node);
+              }
+
+              node.querySelectorAll?.('.cm-editor').forEach(cleanupEditor);
             }
           }
         }
@@ -468,6 +633,9 @@
         // Check for content changes in existing editors
         if (mutation.type === 'childList' || mutation.type === 'characterData') {
           const target = mutation.target;
+
+          updateQwenMonacoBlockForNode(target);
+
           const cmEditor = target.closest?.('.cm-editor');
           if (cmEditor && monitoredEditors.has(cmEditor)) {
             // Direct content update for existing editor
@@ -512,9 +680,10 @@
     }
 
     // Clean up all event listeners
-    for (const cmEditor of monitoredEditors) {
-      removeEditorEventListeners(cmEditor);
+    for (const cmEditor of Array.from(monitoredEditors)) {
+      cleanupEditor(cmEditor);
     }
+    monitoredEditors.clear();
 
     // Clean up hidden pre elements
     cleanupHiddenPreElements();

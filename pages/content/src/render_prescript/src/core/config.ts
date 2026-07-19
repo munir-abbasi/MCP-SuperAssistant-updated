@@ -197,9 +197,24 @@ export const WEBSITE_CONFIGS: Array<{
     {
       urlPattern: 'chat.qwen.ai',
       config: {
-        // Prioritize hidden pre elements from codemirror-accessor (clean content)
-        targetSelectors: ['pre[id^="cm-hidden-pre-"]', 'pre[data-cm-source]', 'pre', 'code'],
-        streamingContainerSelectors: ['pre', 'code'],
+        // Qwen renders code blocks through Monaco and virtualizes the visible DOM,
+        // often exposing only the first line in the original pre. Only process
+        // hidden pre elements created by codemirror-accessor after full content is
+        // available; parsing the original Qwen wrapper creates stale stalled UI.
+        targetSelectors: [
+          'pre[id^="cm-hidden-pre-"]',
+          'pre[data-cm-source]',
+          'pre[id^="monaco-hidden-pre-"]',
+          'pre[data-monaco-source]',
+          'pre.qwen-monaco-extracted',
+        ],
+        streamingContainerSelectors: [
+          'pre[id^="cm-hidden-pre-"]',
+          'pre[data-cm-source]',
+          'pre[id^="monaco-hidden-pre-"]',
+          'pre[data-monaco-source]',
+          'pre.qwen-monaco-extracted',
+        ],
         function_result_selector: ['.user-message-text-content', 'div.user-message-content'],
         useCodeMirrorExtraction: true
       },

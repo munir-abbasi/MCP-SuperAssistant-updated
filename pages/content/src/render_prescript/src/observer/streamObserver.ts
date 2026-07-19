@@ -618,12 +618,8 @@ export const monitorNode = (node: HTMLElement, blockId: string): void => {
         abruptlyEndedStreams.delete(blockId);
       }
 
-      // Find the nearest element that contains our monitored node
-      let target = node;
-      while (target && !CONFIG.targetSelectors.includes(target.tagName.toLowerCase())) {
-        target = target.parentElement as HTMLElement;
-        if (!target) break;
-      }
+      const targetSelector = CONFIG.targetSelectors.join(',');
+      const target = node.matches(targetSelector) ? node : node.closest<HTMLElement>(targetSelector);
 
       if (target) {
         // Log significant changes if debugging is enabled
@@ -671,6 +667,10 @@ export const checkStreamingUpdates = (): void => {
 
   // Find all elements in these containers
   for (const container of targetContainers) {
+    if (CONFIG.targetSelectors.some(selector => container.matches(selector))) {
+      renderFunctionCall(container as HTMLPreElement, { current: false });
+    }
+
     for (const selector of CONFIG.targetSelectors) {
       const elements = container.querySelectorAll<HTMLElement>(selector);
       for (const element of elements) {

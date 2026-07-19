@@ -64,6 +64,8 @@ export class SidebarManager extends BaseSidebarManager {
   private lastRenderTime: number = 0; // CRITICAL FIX: Throttle renders
   private isInitializing: boolean = false; // CRITICAL FIX: Prevent multiple simultaneous initializations
   private initializationTimeout: NodeJS.Timeout | null = null; // Debounce initialization
+  private hostRecoveryObserver: MutationObserver | null = null;
+  private hostRecoveryTimeout: NodeJS.Timeout | null = null;
 
   private constructor(siteType: SiteType) {
     super(siteType);
@@ -334,6 +336,7 @@ export class SidebarManager extends BaseSidebarManager {
         this.shadowHost.classList.add('initialized');
       }
       this._isVisible = true;
+      this.startHostRecoveryObserver();
 
       // REMOVED: Don't sync visibility state here - we're reading it, not setting it
       // The visibility state should only be updated when user explicitly toggles
@@ -422,6 +425,7 @@ export class SidebarManager extends BaseSidebarManager {
         this.shadowHost.style.opacity = '1';
         this.shadowHost.classList.add('initialized');
         this._isVisible = true;
+        this.startHostRecoveryObserver();
 
         // REMOVED: Don't sync visibility state during fallback initialization
         // We should respect the stored state, not overwrite it
@@ -443,6 +447,80 @@ export class SidebarManager extends BaseSidebarManager {
       logMessage(
         `[SidebarManager] Even fallback initialization failed: ${error instanceof Error ? error.message : String(error)}`,
       );
+    }
+  }
+
+  private startHostRecoveryObserver(): void {
+    if (this.siteType !== 'chatgpt' || this.hostRecoveryObserver) {
+      return;
+    }
+
+    this.hostRecoveryObserver = new MutationObserver(() => {
+      if (this.shadowHost && !document.documentElement.contains(this.shadowHost)) {
+        this.scheduleHostRecovery('shadow host removed from document');
+      }
+    });
+
+    this.hostRecoveryObserver.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+    });
+  }
+
+  private stopHostRecoveryObserver(): void {
+    if (this.hostRecoveryObserver) {
+      this.hostRecoveryObserver.disconnect();
+      this.hostRecoveryObserver = null;
+    }
+
+    if (this.hostRecoveryTimeout) {
+      clearTimeout(this.hostRecoveryTimeout);
+      this.hostRecoveryTimeout = null;
+    }
+  }
+
+  private scheduleHostRecovery(reason: string): void {
+    if (this.hostRecoveryTimeout) {
+      return;
+    }
+
+    this.hostRecoveryTimeout = setTimeout(() => {
+      this.hostRecoveryTimeout = null;
+
+      if (this.isInitializing) {
+        this.scheduleHostRecovery('sidebar still initializing after host removal');
+        return;
+      }
+
+      if (!this.shouldRecoverVisibleSidebar()) {
+        logMessage(
+          `[SidebarManager] Skipping sidebar host recovery: stored state no longer wants sidebar visible (${reason})`,
+        );
+        return;
+      }
+
+      if (!this.shadowHost || document.documentElement.contains(this.shadowHost)) {
+        return;
+      }
+
+      logMessage(`[SidebarManager] Recovering ChatGPT sidebar after host removal: ${reason}`);
+      super.destroy();
+      window.activeSidebarManager = this;
+      this.showWithToolOutputs();
+    }, 300);
+  }
+
+  private shouldRecoverVisibleSidebar(): boolean {
+    try {
+      const zustandState = JSON.parse(localStorage.getItem('mcp-super-assistant-ui-store') || '{}');
+      const mcpEnabled = zustandState.state?.mcpEnabled ?? true;
+      const sidebarState = zustandState.state?.sidebar;
+      const isVisible = sidebarState && typeof sidebarState.isVisible === 'boolean' ? sidebarState.isVisible : true;
+
+      return mcpEnabled && isVisible;
+    } catch (error) {
+      logMessage(`[SidebarManager] Error reading sidebar state for host recovery: ${error}`);
+      return true;
     }
   }
 
@@ -600,6 +678,8 @@ export class SidebarManager extends BaseSidebarManager {
    * Override the parent destroy method to also remove the window reference and clear singleton
    */
   public destroy(): void {
+    this.stopHostRecoveryObserver();
+
     // Remove the window reference
     if (window.activeSidebarManager === this) {
       window.activeSidebarManager = undefined;

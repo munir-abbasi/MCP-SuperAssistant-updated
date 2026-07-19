@@ -6,6 +6,7 @@ import test from 'node:test';
 };
 
 const parser = await import('../../pages/content/src/render_prescript/src/parser/jsonFunctionParser.ts');
+const config = await import('../../pages/content/src/render_prescript/src/core/config.ts');
 
 test('extracts JSON function info from Qwen-style polluted compact JSONL', () => {
   const content =
@@ -40,4 +41,14 @@ test('extracts partial JSON function info with polluted text before the opening 
     callId: '3',
     description: null,
   });
+});
+
+test('qwen config only targets extracted Monaco pre elements, not original virtualized Qwen pre', () => {
+  const selectors = config.CONFIG.targetSelectors;
+  const monacoIndex = selectors.indexOf('pre[data-monaco-source]');
+
+  assert.notEqual(monacoIndex, -1);
+  assert.equal(selectors.includes('pre:not([data-monaco-hidden-function-call])'), false);
+  assert.equal(selectors.includes('pre'), false);
+  assert.equal(selectors.includes('code'), false);
 });

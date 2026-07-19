@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.6.3-rc.7 - 2026-07-19
+
+### Fixed
+
+- Fixed Qwen Monaco/JSONL rendering after live Qwen runtime showed virtualized code blocks exposing only the first visible line in the original `pre.qwen-markdown-code`. The extension now waits for complete extracted JSONL before creating hidden Qwen pre elements, preventing stale `function_call_start`-only blocks from freezing as stalled UI.
+- Fixed Qwen renderer targeting so it no longer parses Qwen's original hydrated Monaco `pre`/`code` wrappers. Qwen rendering now uses only hidden extracted pre elements produced by the CodeMirror/Monaco accessor, reducing stale stalled blocks and React hydration conflicts.
+- Fixed a CodeMirror accessor cleanup crash by replacing iterable cleanup over a `WeakSet` with an iterable `Set` and explicit editor cleanup.
+- Restored ChatGPT sidebar resilience when ChatGPT removes the sidebar shadow host during hydration/remount while the persisted sidebar state says it should remain visible.
+
+### Changed
+
+- Added regression coverage for Qwen full Monaco model extraction, React-backed JSONL fallback extraction, incomplete-first-line deferral, and Qwen selector restrictions.
+- Kept the initial-load SSE 404 behavior unchanged; live testing showed it clears after selecting the desired transport and was not treated as this release candidate's blocker.
+
 ## 0.6.3-rc.6 - 2026-07-19
 
 ### Fixed

@@ -14,6 +14,8 @@ use PKP\core\DataObject;
 
 class PostLog extends DataObject
 {
+    public const STATUS_PENDING = 'pending';
     public const STATUS_SUCCESS = 'success';
     public const STATUS_ERROR = 'error';
+    public const STATUS_UNCERTAIN = 'uncertain';
 }

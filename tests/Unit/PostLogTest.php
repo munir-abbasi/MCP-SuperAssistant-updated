@@ -18,6 +18,11 @@ use PHPUnit\Framework\TestCase;
 
 class PostLogTest extends TestCase
 {
+    public function test_pending_constant(): void
+    {
+        $this->assertSame('pending', PostLog::STATUS_PENDING);
+    }
+
     public function test_success_constant(): void
     {
         $this->assertSame('success', PostLog::STATUS_SUCCESS);
@@ -26,6 +31,11 @@ class PostLogTest extends TestCase
     public function test_error_constant(): void
     {
         $this->assertSame('error', PostLog::STATUS_ERROR);
+    }
+
+    public function test_uncertain_constant(): void
+    {
+        $this->assertSame('uncertain', PostLog::STATUS_UNCERTAIN);
     }
 
     public function test_can_instantiate(): void

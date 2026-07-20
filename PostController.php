@@ -12,11 +12,9 @@ namespace APP\plugins\generic\publishToFacebook;
 
 use APP\plugins\generic\publishToFacebook\classes\Constants;
 use APP\plugins\generic\publishToFacebook\classes\FacebookService;
-use APP\plugins\generic\publishToFacebook\classes\PostLog;
 use APP\plugins\generic\publishToFacebook\classes\PostLogDAO;
 use APP\plugins\generic\publishToFacebook\classes\PublicationPostBuilder;
 use APP\facades\Repo;
-use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -83,8 +81,10 @@ class PostController extends PKPBaseController
         $context = $request->getContext();
         $contextId = $context->getId();
 
-        $submissionId = $request->input('submissionId');
-        if (!$submissionId) {
+        $submissionId = filter_var($request->input('submissionId'), FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => 1],
+        ]);
+        if ($submissionId === false) {
             return response()->json([
                 'success' => false,
                 'error' => __('plugins.generic.publishToFacebook.post.error.noSubmissionId'),
@@ -92,7 +92,7 @@ class PostController extends PKPBaseController
         }
 
         // Load the submission via current repo API
-        $submission = Repo::submission()->get((int) $submissionId);
+        $submission = Repo::submission()->get($submissionId);
         if (!$submission || $submission->getData('contextId') !== $contextId) {
             return response()->json([
                 'success' => false,
@@ -111,7 +111,7 @@ class PostController extends PKPBaseController
 
         // Check for duplicate posting
         $postLogDAO = app(PostLogDAO::class);
-        if ($postLogDAO->hasExistingPost((int) $submissionId, $contextId)) {
+        if ($postLogDAO->hasExistingPost($submissionId, $contextId)) {
             return response()->json([
                 'success' => false,
                 'error' => __('plugins.generic.publishToFacebook.post.alreadyPosted'),
@@ -135,39 +135,43 @@ class PostController extends PKPBaseController
         $message = $builder->buildMessage();
         $articleUrl = $builder->getArticleUrl();
 
-        // Post to Facebook
-        $service = new FacebookService();
-        $result = $service->postLink($pageId, $accessToken, $message, $articleUrl);
+        $postLogId = $postLogDAO->reserveArticlePost($submissionId, $contextId, $message, $articleUrl);
+        if ($postLogId === null) {
+            return response()->json([
+                'success' => false,
+                'error' => __('plugins.generic.publishToFacebook.post.alreadyPosted'),
+            ], 409);
+        }
 
-        // Log the post attempt
-        $postLog = new PostLog();
-        $postLog->setData('submissionId', (int) $submissionId);
-        $postLog->setData('contextId', $contextId);
-        $postLog->setData('message', $message);
-        $postLog->setData('link', $articleUrl);
-        $postLog->setData('datePosted', Carbon::now()->format('Y-m-d H:i:s'));
-
-        if ($result['success']) {
-            $postLog->setData('status', PostLog::STATUS_SUCCESS);
-            $postLog->setData('facebookPostId', $result['postId']);
-            $postLogDAO->insert($postLog);
+        try {
+            // Post to Facebook
+            $service = new FacebookService();
+            $result = $service->postLink($pageId, $accessToken, $message, $articleUrl);
+        } catch (\Throwable $exception) {
+            $postLogDAO->markReservationFailed($postLogId, $exception);
 
             return response()->json([
+                'success' => false,
+                'error' => PostLogDAO::sanitizeErrorMessage($exception->getMessage()),
+            ], 500);
+        }
+
+        $postLogDAO->markReservationComplete($postLogId, $result);
+
+        if (!empty($result['success'])) {
+            return response()->json([
                 'success' => true,
-                'postId' => $result['postId'],
+                'postId' => $result['postId'] ?? null,
                 'message' => __('plugins.generic.publishToFacebook.post.success'),
             ]);
         }
 
-        $postLog->setData('status', PostLog::STATUS_ERROR);
-        $postLog->setData('errorMessage', $result['error']);
-        $postLogDAO->insert($postLog);
-
         return response()->json([
             'success' => false,
-            'error' => $result['error'],
+            'error' => PostLogDAO::sanitizeErrorMessage($result['error'] ?? 'Unknown API error'),
             'code' => $result['code'] ?? null,
-        ], 500);
+            'uncertain' => !empty($result['uncertain']),
+        ], !empty($result['uncertain']) ? 202 : 500);
     }
 
     /**

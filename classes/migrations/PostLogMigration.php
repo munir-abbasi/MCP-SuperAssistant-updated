@@ -33,8 +33,8 @@ class PostLogMigration extends Migration
             $table->string('link', 2048)->nullable();
             $table->datetime('date_posted');
 
-            $table->index(['context_id', 'submission_id'], 'post_logs_context_submission_idx');
-            $table->index(['context_id', 'issue_id'], 'post_logs_context_issue_idx');
+            $table->unique(['context_id', 'submission_id'], 'ptf_article_unique');
+            $table->unique(['context_id', 'issue_id'], 'ptf_issue_unique');
             $table->index('status', 'post_logs_status_idx');
         });
     }

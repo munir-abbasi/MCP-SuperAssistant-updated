@@ -47,26 +47,11 @@ class SettingsForm extends FormComponent
             'rows' => 4,
         ]));
 
-        $this->addField(new FieldTextarea(Constants::MESSAGE_FORMAT_ISSUE, [
-            'label' => __('plugins.generic.publishToFacebook.settings.messageFormat.issue'),
-            'description' => __('plugins.generic.publishToFacebook.settings.messageFormat.issue.help'),
-            'size' => 'medium',
-            'rows' => 4,
-        ]));
-
         $this->addField(new FieldOptions(Constants::AUTO_PUBLISH_ARTICLES, [
             'label' => __('plugins.generic.publishToFacebook.settings.autoPublishArticles'),
             'type' => 'checkbox',
             'options' => [
                 ['value' => true, 'label' => __('plugins.generic.publishToFacebook.settings.autoPublishArticles')],
-            ],
-        ]));
-
-        $this->addField(new FieldOptions(Constants::AUTO_PUBLISH_ISSUES, [
-            'label' => __('plugins.generic.publishToFacebook.settings.autoPublishIssues'),
-            'type' => 'checkbox',
-            'options' => [
-                ['value' => true, 'label' => __('plugins.generic.publishToFacebook.settings.autoPublishIssues')],
             ],
         ]));
     }

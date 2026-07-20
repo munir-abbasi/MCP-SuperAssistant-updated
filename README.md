@@ -1,11 +1,11 @@
-# Publish to Facebook — OJS 3.5+ Plugin
+# Publish to Facebook — OJS 3.5 Plugin
 
 **Version:** 1.0.4.0  
 **Author:** Munir Abbasi  
 **Website:** [syntaxhouse.com](https://syntaxhouse.com)  
 **GitHub:** [munir-abbasi](https://github.com/munir-abbasi/)  
 **License:** GNU General Public License v3  
-**OJS Compatibility:** 3.5.0+
+**OJS Compatibility:** Source-checked against OJS 3.5.0.5; runtime validation still required
 
 ---
 
@@ -13,7 +13,7 @@
 
 Publish to Facebook is a [PKP](https://pkp.sfu.ca) [Open Journal Systems](https://pkp.sfu.ca/ojs/) (OJS) generic plugin that enables journal managers and site administrators to publish article links to a configured Facebook Page.
 
-The plugin supports **automatic** posting (on article or issue publication) with full duplicate prevention, error logging, and retry capability. Manual posting via API is also available for programmatic use.
+The plugin supports **automatic article posting** with database-backed reservation for duplicate mitigation and error logging. Manual article posting via API is also available for programmatic use. Issue auto-posting is inactive in this release because the verified OJS 3.5.0.5 issue hook fires before final issue persistence.
 
 ---
 
@@ -22,11 +22,11 @@ The plugin supports **automatic** posting (on article or issue publication) with
 | Feature | Description |
 |---|---|
 | **Auto-posting (articles)** | Automatically post when an article is published (toggle in settings) |
-| **Auto-posting (issues)** | Automatically post when an issue is published from the issue grid |
-| **Duplicate prevention** | Prevents the same article or issue from being posted twice |
-| **Error logging** | Logs all post attempts (success and failure) with timestamps |
+| **Auto-posting (issues)** | Inactive in this release pending a verified post-persistence OJS hook or outbox design |
+| **Duplicate mitigation** | Reserves a post-log row before external posting to reduce duplicate posts under concurrency |
+| **Outcome logging** | Logs post attempts with `pending`, `success`, `error`, or `uncertain` status and timestamps |
 | **API endpoint** | POST endpoint for programmatic manual posting |
-| **Status API** | GET endpoint for checking post status and retrying |
+| **History API** | GET endpoint for checking the latest post status; it does not retry or mutate state |
 | **Settings UI** | Vue-based settings panel integrated via OJS 3.5 modal |
 | **Custom message format** | Configurable message templates with placeholders |
 | **Safe URL building** | Uses OJS dispatcher for canonical article URLs |
@@ -35,7 +35,7 @@ The plugin supports **automatic** posting (on article or issue publication) with
 
 ## Requirements
 
-- OJS 3.5.0 or later
+- OJS 3.5.0.5 target source; broader OJS 3.5.x runtime compatibility is not yet proven
 - PHP 8.3 or later
 - A Facebook Page access token for the target Page, requested by someone who can perform the Page `CREATE_CONTENT` task
 - Meta Page feed publishing docs list `pages_manage_posts`, `pages_read_engagement`, and `pages_show_list` for Page access/token workflows; verify these permissions and app review status for your Page/app before production use
@@ -51,9 +51,9 @@ The plugin supports **automatic** posting (on article or issue publication) with
    - Go to **Website Settings → Plugins → Generic Plugin List**
    - Find **Publish to Facebook** and click **Enable**
 
-3. **Run the migration** (table creation happens automatically on plugin upgrade):
+3. **Run the migration** (verify on a disposable OJS instance before production):
    - Go to **Administration → System Info → Expire User Sessions & Upgrade**
-   - This triggers the `PostLogMigration` that creates the `publish_to_facebook_post_logs` table
+   - This should trigger the plugin migration that creates or upgrades the `publish_to_facebook_post_logs` table
 
 4. **Configure** the plugin (see below).
 
@@ -68,9 +68,7 @@ Go to **Website Settings → Plugins → Publish to Facebook → Settings** (gea
 | **Facebook Page ID** | The numeric ID of your Facebook Page |
 | **Facebook Page Access Token** | A long-lived Page Access Token for the configured Page; Meta Page feed publishing docs require a token requested by someone with the Page `CREATE_CONTENT` task and list `pages_manage_posts`, `pages_read_engagement`, and `pages_show_list` for Page access/token workflows |
 | **Default article message format** | Message template for article posts (see placeholders below) |
-| **Default issue message format** | Message template for issue posts |
 | **Auto-publish articles** | When enabled, newly published articles are posted automatically |
-| **Auto-publish issues** | When enabled, published issues are posted automatically |
 
 ### Article Message Format Placeholders
 
@@ -88,43 +86,19 @@ New article published: {$articleTitle}
 {$journalName}
 ```
 
-### Issue Message Format Placeholders
-
-| Placeholder | Description |
-|---|---|
-| `{$issueTitle}` | The issue title |
-| `{$volume}` | Issue volume number |
-| `{$number}` | Issue number |
-| `{$year}` | Issue year |
-| `{$datePublished}` | Issue publication date |
-| `{$issueUrl}` | The canonical issue URL (built via OJS dispatcher) |
-| `{$journalName}` | The journal/press name |
-
-**Default issue format:**
-```
-New issue published: {$issueTitle}
-{$issueUrl}
-```
-
----
-
 ## Usage
 
 ### Automatic Article Posting
 
 When enabled in settings, any article that becomes published (status set to `STATUS_PUBLISHED`) is automatically posted to Facebook. Auto-posting:
 
-- Runs after the publication workflow completes
-- Never blocks the publication process (failures are logged silently)
-- Respects duplicate prevention (already-posted articles are skipped)
+- Runs from the OJS `Publication::publish` hook after the publication record/status update path in OJS 3.5.0.5 source
+- Catches plugin failures so handled Facebook errors should not abort publication
+- Uses a database reservation before the Facebook call; successful and in-flight reservations are skipped
 
 ### Automatic Issue Posting
 
-When enabled in settings, any issue published via the issue grid handler is automatically posted to Facebook. Auto-posting:
-
-- Fires when the **Publish** action is taken on an issue in **Issues → Future Issues**
-- Never blocks the publishing workflow (failures are logged silently)
-- Respects duplicate prevention (already-posted issues are skipped)
+Issue auto-posting is inactive in this release. OJS 3.5.0.5 source shows `IssueGridHandler::publishIssue` fires before `Repo::issue()->updateCurrent($contextId, $issue)`, so posting to Facebook from that hook can publish an external link before final issue persistence succeeds. Re-enable only after implementing a verified post-persistence hook or an outbox/reconciliation design.
 
 ---
 
@@ -134,7 +108,7 @@ When enabled in settings, any issue published via the issue grid handler is auto
 plugins/generic/publishToFacebook/
 ├── index.php                          # Plugin loader
 ├── PublishToFacebookPlugin.php        # Main plugin class (hooks, registration)
-├── PostController.php                 # API controller (post, history, retry)
+├── PostController.php                 # API controller (post, history)
 ├── SettingsController.php             # Settings UI controller
 ├── SettingsForm.php                   # Vue FormComponent settings form
 ├── version.xml                        # Plugin version metadata
@@ -144,10 +118,11 @@ plugins/generic/publishToFacebook/
 │   ├── FacebookService.php            # Facebook Graph API client
 │   ├── PostLog.php                    # PostLog data object
 │   ├── PostLogDAO.php                 # PostLog CRUD + dedup queries
-│   ├── IssuePostBuilder.php           # Issue message + URL builder
+│   ├── IssuePostBuilder.php           # Inactive issue message + URL builder
 │   ├── PublicationPostBuilder.php     # Article message + URL builder
 │   └── migrations/
-│       └── PostLogMigration.php       # Database migration
+│       ├── PostLogMigration.php       # Fresh-install database migration
+│       └── AddPostLogReservationIndexesMigration.php # Upgrade reservation indexes
 ├── docs/
 │   └── architectural-decisions.md     # Historical design notes (archival)
 ├── formRequests/
@@ -178,8 +153,7 @@ PublishToFacebookPlugin
 ├── register()
 │   ├── Hook::add(APIHandler::endpoints::plugin)   [register API controllers]
 │   ├── Hook::add(Schema::get::postLog)            [register custom schema]
-│   ├── addAutoPublishHook()                        [article auto-pub]
-│   └── addAutoPublishIssueHook()                   [issue auto-pub]
+│   └── addAutoPublishHook()                        [article auto-pub]
 │
 ├── SettingsController  ──> EditSettingsRequest ──> Constants
 │
@@ -189,18 +163,13 @@ PublishToFacebookPlugin
 │   │
 │   ├── FacebookService                # Graph API call
 │   ├── PublicationPostBuilder         # Article message + URL
-│   └── PostLogDAO                     # Persistence + dedup
+│   └── PostLogDAO                     # Persistence + reservation/duplicate checks
 │
 └── Auto hook handlers
-    ├── addAutoPublishHook()
-    │   ├── PublicationPostBuilder     # Article message + URL
-    │   ├── FacebookService            # Graph API call
-    │   └── PostLogDAO                 # Persistence + dedup
-    │
-    └── addAutoPublishIssueHook()
-        ├── IssuePostBuilder           # Issue message + URL
+    └── addAutoPublishHook()
+        ├── PublicationPostBuilder     # Article message + URL
         ├── FacebookService            # Graph API call
-        └── PostLogDAO                 # Persistence + dedup
+        └── PostLogDAO                 # Persistence + reservation/duplicate checks
 ```
 
 ### Data Flow (API-Triggered Manual Post)
@@ -213,10 +182,11 @@ PostController::submit()
        │
        ├── Read submissionId from request body
        ├── PublicationPostBuilder::buildMessage()
-       ├── PostLogDAO::hasExistingPost()  ──► 409 if duplicate
+       ├── PostLogDAO::hasExistingPost()  ──► 409 if already successful
+       ├── PostLogDAO::reserveArticlePost() ──► 409 if reservation exists
        ├── FacebookService::postLink()
        │       └── Graph API POST /{pageId}/feed
-       ├── PostLogDAO::insert() (success or error)
+       ├── PostLogDAO::markReservationComplete() (success, error, or uncertain)
        └── Returns JSON response
 ```
 
@@ -229,34 +199,13 @@ PostController::submit()
 PublishToFacebookPlugin::addAutoPublishHook()
        │
        ├── Check autoPublishArticles setting
-       ├── PostLogDAO::hasExistingPost()  ──► skip if duplicate
+       ├── PostLogDAO::hasExistingPost()  ──► skip if already successful
        ├── PublicationPostBuilder::buildMessage()
+       ├── PostLogDAO::reserveArticlePost() ──► skip if reservation exists
        ├── FacebookService::postLink()
-       ├── PostLogDAO::insert() (success or error)
-       └── Never blocks publication
+       ├── PostLogDAO::markReservationComplete() (success, error, or uncertain)
+       └── Catches plugin exceptions so handled Facebook failures do not abort publication
 ```
-
-### Data Flow (Auto-Post Issue)
-
-```
-[IssueGridHandler::publishIssue hook fires]
-       │
-       ▼
-PublishToFacebookPlugin::addAutoPublishIssueHook()
-       │
-       ├── Check autoPublishIssues setting
-       ├── PostLogDAO::hasExistingIssuePost($issueId, $contextId)  ──► skip if duplicate
-       ├── IssuePostBuilder::buildMessage()
-       ├── IssuePostBuilder::getIssueUrl()
-       │       └── dispatcher->url() ──► issue/view/{bestIssueId}
-       ├── FacebookService::postLink()
-       ├── PostLogDAO::insert() (submissionId=null, contextId set)
-       └── Catches plugin exceptions so Facebook failures do not abort issue publication
-```
-
-> **Workflow note:** In OJS 3.5, `IssueGridHandler::publishIssue` fires before the final `Repo::issue()->updateCurrent($contextId, $issue)` call. The plugin catches its own failures, but the Facebook post/log side effect is not transactional with OJS issue persistence. If a later OJS issue update fails, the Facebook post log may be ahead of the final OJS issue state.
-
----
 
 ## Database
 
@@ -265,10 +214,10 @@ PublishToFacebookPlugin::addAutoPublishIssueHook()
 | Column | Type | Description |
 |---|---|---|
 | `post_log_id` | bigint (PK) | Auto-increment primary key |
-| `submission_id` | bigint | OJS submission ID (nullable; `null` for issue posts) |
-| `issue_id` | bigint | OJS issue ID (nullable; `null` for article posts) |
+| `submission_id` | bigint | OJS submission ID |
+| `issue_id` | bigint | Reserved for future issue posting; currently `null` for active article posts |
 | `context_id` | bigint | Journal/context ID |
-| `status` | varchar(20) | `success` or `error` |
+| `status` | varchar(20) | `pending`, `success`, `error`, or `uncertain` |
 | `facebook_post_id` | varchar(255) | Facebook Graph API post ID (nullable) |
 | `message` | text | The message that was posted (nullable) |
 | `error_message` | text | Error details on failure (nullable) |
@@ -276,8 +225,8 @@ PublishToFacebookPlugin::addAutoPublishIssueHook()
 | `date_posted` | datetime | When the post attempt occurred |
 
 **Indexes:**
-- `post_logs_context_submission_idx` on `(context_id, submission_id)`
-- `post_logs_context_issue_idx` on `(context_id, issue_id)`
+- `ptf_article_unique` unique reservation key on `(context_id, submission_id)`
+- `ptf_issue_unique` unique reservation key on `(context_id, issue_id)` reserved for future issue posting
 - `post_logs_status_idx` on `(status)`
 
 ---
@@ -291,7 +240,7 @@ PublishToFacebookPlugin::addAutoPublishIssueHook()
 
 The settings endpoint is registered under the `publishToFacebook` API group. Manual posting/history endpoints are registered under the `publishToFacebookPost` API group. The manual posting/history controller requires a logged-in user in the current context with the OJS manager role, or a site administrator.
 
-> **Note:** In OJS 3.5, the submission details page uses Vue.js, so the legacy manual posting button (via `Templates::Submission::SubmissionDetails::Main` hook) is not available. Manual posting is accessible via the API endpoint. Auto-posting via hooks remains fully functional.
+> **Note:** In OJS 3.5, the submission details page uses Vue.js, so the legacy manual posting button (via `Templates::Submission::SubmissionDetails::Main` hook) is not available. Manual posting is accessible via the API endpoint. Auto-posting hooks are source-checked against OJS 3.5.0.5 but still require runtime smoke tests before production release.
 
 ---
 
@@ -308,7 +257,7 @@ The settings endpoint is registered under the `publishToFacebook` API group. Man
 
 2. **Enable** the plugin in OJS: **Website Settings → Plugins → Generic Plugin List**.
 
-3. **Run migrations**: **Administration → System Info → Expire User Sessions & Upgrade** (triggers `PostLogMigration` to create the `publish_to_facebook_post_logs` table).
+3. **Run migrations**: **Administration → System Info → Expire User Sessions & Upgrade**. Verify the plugin migration/upgrade lifecycle on a disposable OJS instance before production use.
 
 ### Syntax Checking
 
@@ -360,7 +309,7 @@ Run these checks in a non-production OJS 3.5 instance before release:
 5. Verify state-changing `PUT`/`POST` requests reject missing/invalid CSRF tokens for browser-authenticated requests.
 6. Verify journal A cannot read or post journal B submissions/history.
 7. Publish a test article with auto-publish enabled and confirm a scoped log row is inserted.
-8. Publish a test issue with auto-publish enabled and confirm the workflow note above is acceptable for your release policy.
+8. Confirm issue publication does not create Facebook posts or post-log rows in this release.
 9. Confirm no new fatal/error log entries appear after settings save, manual API post, article publish, issue publish, disable, and re-enable.
 
 ### Migration Rollback and Uninstall Safety
@@ -375,7 +324,7 @@ Rolling back the plugin migration drops the `publish_to_facebook_post_logs` tabl
 - Use `$this->plugin->getSetting()` / `updateSetting()` for context-scoped settings
 - Use `__()` locale keys, never hardcoded strings
 - Use OJS `dispatcher->url()` for canonical URLs
-- Never let external API failures block OJS publication workflows
+- Catch and log external API failures without intentionally aborting OJS publication workflows
 
 ---
 
@@ -383,7 +332,7 @@ Rolling back the plugin migration drops the `publish_to_facebook_post_logs` tabl
 
 1. Fork the repository.
 2. Create a feature branch.
-3. Make changes following OJS 3.5+ plugin conventions and the code style guide above.
+3. Make changes following the source-checked OJS 3.5 plugin conventions and the code style guide above.
 4. Run syntax check and tests before committing.
 5. Submit a pull request.
 
@@ -394,6 +343,9 @@ Rolling back the plugin migration drops the `publish_to_facebook_post_logs` tabl
 - **Manual posting button**: The "Publish to Facebook" button on the submission detail page does not appear in OJS 3.5 because the submission details page is now rendered by Vue.js. The legacy `Templates::Submission::SubmissionDetails::Main` hook no longer fires. Manual posting is available via `POST /{contextPath}/api/{version}/publishToFacebookPost` with `submissionId` in the request body.
 - **Vue component approach**: A Vue component to restore the manual posting button is planned for a future release.
 - **Runtime verification**: Static compatibility checks have passed, but production readiness still requires install/enable/settings/API/hook smoke tests in a real OJS 3.5 runtime.
+- **Issue auto-posting inactive**: OJS 3.5.0.5 source does not expose a verified post-persistence issue publish hook in the inspected path. Issue posting should remain inactive until a safe hook or outbox design is implemented and tested.
+- **Synchronous posting**: Facebook calls still occur synchronously during publication/manual-post requests. Timeouts are bounded, but an outbox/worker design is required for stronger latency, retry, and reconciliation guarantees.
+- **Ambiguous outcomes**: Timeouts and successful HTTP responses without a Facebook post ID are recorded as `uncertain`. Operators should not blindly retry uncertain rows without reconciling against the configured Facebook Page.
 
 ---
 

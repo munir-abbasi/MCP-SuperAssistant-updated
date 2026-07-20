@@ -84,9 +84,16 @@ class PostLogDAOTest extends TestCase
             'context_id' => self::ARTICLE_CONTEXT_ID,
             'status' => PostLog::STATUS_ERROR,
         ]);
+        $this->insertRow([
+            'submission_id' => 1003,
+            'issue_id' => null,
+            'context_id' => self::ARTICLE_CONTEXT_ID,
+            'status' => PostLog::STATUS_UNCERTAIN,
+        ]);
 
         $this->assertTrue($this->dao->hasExistingPost(1001, self::ARTICLE_CONTEXT_ID));
         $this->assertFalse($this->dao->hasExistingPost(1002, self::ARTICLE_CONTEXT_ID));
+        $this->assertFalse($this->dao->hasExistingPost(1003, self::ARTICLE_CONTEXT_ID));
         $this->assertFalse($this->dao->hasExistingPost(1001, self::ISSUE_CONTEXT_ID));
     }
 
@@ -110,12 +117,12 @@ class PostLogDAOTest extends TestCase
 
         $this->insertRow([
             'submission_id' => null,
-            'issue_id' => 5002,
+            'issue_id' => 5003,
             'context_id' => self::ISSUE_CONTEXT_ID,
             'status' => PostLog::STATUS_SUCCESS,
         ]);
 
-        $this->assertTrue($this->dao->hasExistingIssuePost(5002, self::ISSUE_CONTEXT_ID));
+        $this->assertTrue($this->dao->hasExistingIssuePost(5003, self::ISSUE_CONTEXT_ID));
         $this->assertFalse($this->dao->hasExistingIssuePost(5999, self::ISSUE_CONTEXT_ID));
     }
 

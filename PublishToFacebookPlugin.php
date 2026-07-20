@@ -15,8 +15,6 @@ use APP\plugins\generic\publishToFacebook\classes\Constants;
 use APP\plugins\generic\publishToFacebook\classes\FacebookService;
 use APP\plugins\generic\publishToFacebook\classes\PostLog;
 use APP\plugins\generic\publishToFacebook\classes\PostLogDAO;
-use APP\issue\Issue;
-use APP\plugins\generic\publishToFacebook\classes\IssuePostBuilder;
 use APP\plugins\generic\publishToFacebook\classes\PublicationPostBuilder;
 use APP\plugins\generic\publishToFacebook\PostController;
 use Carbon\Carbon;
@@ -78,7 +76,9 @@ class PublishToFacebookPlugin extends GenericPlugin
         // details page, so the legacy Templates::Submission::SubmissionDetails::Main hook
         // no longer fires. Manual posting is available via the PostController API endpoint.
         $this->addAutoPublishHook();
-        $this->addAutoPublishIssueHook();
+        // Issue auto-posting is intentionally inactive in this release. In
+        // OJS 3.5.0.5 the available issue publish hook fires before final
+        // issue persistence, so posting there can expose uncommitted state.
 
         return true;
     }
@@ -94,9 +94,20 @@ class PublishToFacebookPlugin extends GenericPlugin
             /** @var \stdClass $schema */
             $schema =& $args[0];
             $schemaFile = $pluginPath . '/schema/log.json';
-            if (file_exists($schemaFile)) {
-                $schema = json_decode(file_get_contents($schemaFile));
+            $schemaJson = file_exists($schemaFile) ? file_get_contents($schemaFile) : false;
+
+            if ($schemaJson === false) {
+                error_log('[PublishToFacebookPlugin] Unable to read postLog schema file: ' . $schemaFile);
+                return Hook::CONTINUE;
             }
+
+            $decodedSchema = json_decode($schemaJson);
+            if (json_last_error() !== JSON_ERROR_NONE || !is_object($decodedSchema)) {
+                error_log('[PublishToFacebookPlugin] Invalid postLog schema JSON: ' . json_last_error_msg());
+                return Hook::CONTINUE;
+            }
+
+            $schema = $decodedSchema;
             return Hook::CONTINUE;
         });
     }
@@ -112,25 +123,34 @@ class PublishToFacebookPlugin extends GenericPlugin
     /**
      * Persist an auto-publish failure without breaking the publication flow.
      */
-    private function recordAutoPublishFailure(?int $submissionId, ?int $issueId, int $contextId, \Throwable $exception): void
+    private function recordAutoPublishFailure(?int $submissionId, ?int $issueId, ?int $contextId, \Throwable $exception, ?int $postLogId = null): void
     {
         try {
+            if ($postLogId !== null) {
+                app(PostLogDAO::class)->markReservationFailed($postLogId, $exception);
+                return;
+            }
+
+            if ($contextId === null) {
+                throw new \RuntimeException('Cannot persist auto-publish failure without a context ID.');
+            }
+
             $postLog = new PostLog();
             $postLog->setData('submissionId', $submissionId);
             $postLog->setData('issueId', $issueId);
             $postLog->setData('contextId', $contextId);
             $postLog->setData('status', PostLog::STATUS_ERROR);
-            $postLog->setData('errorMessage', $exception->getMessage());
+            $postLog->setData('errorMessage', PostLogDAO::sanitizeErrorMessage($exception->getMessage()));
             $postLog->setData('datePosted', Carbon::now()->format('Y-m-d H:i:s'));
             app(PostLogDAO::class)->insert($postLog);
         } catch (\Throwable $loggingException) {
             error_log(sprintf(
-                '[PublishToFacebookPlugin] Failed to persist auto-publish error log for context %d (submissionId=%s, issueId=%s). Original error: %s. Logging error: %s',
-                $contextId,
+                '[PublishToFacebookPlugin] Failed to persist auto-publish error log for context %s (submissionId=%s, issueId=%s). Original error: %s. Logging error: %s',
+                $contextId === null ? 'null' : (string) $contextId,
                 $submissionId === null ? 'null' : (string) $submissionId,
                 $issueId === null ? 'null' : (string) $issueId,
-                $exception->getMessage(),
-                $loggingException->getMessage()
+                PostLogDAO::sanitizeErrorMessage($exception->getMessage()),
+                PostLogDAO::sanitizeErrorMessage($loggingException->getMessage())
             ));
         }
     }
@@ -164,6 +184,10 @@ class PublishToFacebookPlugin extends GenericPlugin
     private function addAutoPublishHook(): void
     {
         Hook::add('Publication::publish', function (string $hookName, array $params): bool {
+            $submissionId = null;
+            $contextId = null;
+            $postLogId = null;
+
             try {
                 /** @var \PKP\publication\PKPPublication $newPublication */
                 $newPublication =& $params[0];
@@ -220,116 +244,19 @@ class PublishToFacebookPlugin extends GenericPlugin
                 $message = $builder->buildMessage();
                 $articleUrl = $builder->getArticleUrl();
 
+                $postLogId = $postLogDAO->reserveArticlePost($submissionId, $contextId, $message, $articleUrl);
+                if ($postLogId === null) {
+                    return Hook::CONTINUE;
+                }
+
                 // Post to Facebook
                 $service = new FacebookService();
                 $result = $service->postLink($pageId, $accessToken, $message, $articleUrl);
-
-                // Log the result
-                $postLog = new PostLog();
-                $postLog->setData('submissionId', $submissionId);
-                $postLog->setData('contextId', $contextId);
-                $postLog->setData('message', $message);
-                $postLog->setData('link', $articleUrl);
-                $postLog->setData('datePosted', Carbon::now()->format('Y-m-d H:i:s'));
-
-                if ($result['success']) {
-                    $postLog->setData('status', PostLog::STATUS_SUCCESS);
-                    $postLog->setData('facebookPostId', $result['postId']);
-                } else {
-                    $postLog->setData('status', PostLog::STATUS_ERROR);
-                    $postLog->setData('errorMessage', $result['error']);
-                }
-                $postLogDAO->insert($postLog);
+                $postLogDAO->markReservationComplete($postLogId, $result);
 
             } catch (\Throwable $e) {
                 // Never let an auto-post failure break the publication workflow
-                $this->recordAutoPublishFailure($params[2]->getId(), null, $params[2]->getData('contextId'), $e);
-            }
-
-            return Hook::CONTINUE;
-        });
-    }
-
-    /**
-     * Register the hook that auto-posts issues to Facebook when they are
-     * published via the issue grid handler.
-     *
-     * The IssueGridHandler::publishIssue hook fires after the issue's
-     * published flag and date are set, but before Repo::issue()->updateCurrentUrl().
-     * A failure here never prevents the issue from being published.
-     */
-    private function addAutoPublishIssueHook(): void
-    {
-        Hook::add('IssueGridHandler::publishIssue', function (string $hookName, array $params): bool {
-            try {
-                /** @var Issue $issue */
-                $issue =& $params[0];
-                $contextId = $issue->getJournalId();
-
-                // Runtime enabled check (hook registered unconditionally)
-                if (!$this->getEnabled($contextId)) {
-                    return Hook::CONTINUE;
-                }
-
-                // Check auto-publish setting
-                if (!$this->getSetting($contextId, Constants::AUTO_PUBLISH_ISSUES)) {
-                    return Hook::CONTINUE;
-                }
-
-                // Check for duplicate issue post
-                $postLogDAO = app(PostLogDAO::class);
-                $issueId = (int) $issue->getId();
-                if ($postLogDAO->hasExistingIssuePost($issueId, $contextId)) {
-                    return Hook::CONTINUE;
-                }
-
-                // Get configured settings
-                $pageId = $this->getSetting($contextId, Constants::PAGE_ID);
-                $accessToken = $this->getSetting($contextId, Constants::ACCESS_TOKEN);
-                $messageFormat = $this->getSetting($contextId, Constants::MESSAGE_FORMAT_ISSUE);
-
-                if (empty($pageId) || empty($accessToken)) {
-                    return Hook::CONTINUE;
-                }
-
-                // Resolve the Context object for the post builder
-                $contextDao = Application::getContextDAO();
-                $context = $contextDao->getById($contextId);
-                if (!$context) {
-                    return Hook::CONTINUE;
-                }
-
-                // Build the message and URL
-                $builder = new IssuePostBuilder($issue, $context, $messageFormat ?: '');
-                $message = $builder->buildMessage();
-                $issueUrl = $builder->getIssueUrl();
-
-                // Post to Facebook
-                $service = new FacebookService();
-                $result = $service->postLink($pageId, $accessToken, $message, $issueUrl);
-
-                // Log the result (submissionId is null for issue posts)
-                $postLog = new PostLog();
-                $postLog->setData('submissionId', null);
-                $postLog->setData('issueId', $issueId);
-                $postLog->setData('contextId', $contextId);
-                $postLog->setData('message', $message);
-                $postLog->setData('link', $issueUrl);
-                $postLog->setData('datePosted', Carbon::now()->format('Y-m-d H:i:s'));
-
-                if ($result['success']) {
-                    $postLog->setData('status', PostLog::STATUS_SUCCESS);
-                    $postLog->setData('facebookPostId', $result['postId']);
-                } else {
-                    $postLog->setData('status', PostLog::STATUS_ERROR);
-                    $postLog->setData('errorMessage', $result['error']);
-                }
-                $postLogDAO->insert($postLog);
-
-            } catch (\Throwable $e) {
-                // Never let an auto-post failure break the issue publishing workflow
-                $issue = $params[0];
-                $this->recordAutoPublishFailure(null, $issue->getId(), $issue->getJournalId(), $e);
+                $this->recordAutoPublishFailure($submissionId, null, $contextId, $e, $postLogId);
             }
 
             return Hook::CONTINUE;
@@ -342,11 +269,11 @@ class PublishToFacebookPlugin extends GenericPlugin
     public function getActions($request, $actionArgs): array
     {
         $actions = parent::getActions($request, $actionArgs);
-        if (!$this->getEnabled()) {
-            return $actions;
-        }
         $context = $request->getContext();
         if (!$context) {
+            return $actions;
+        }
+        if (!$this->getEnabled($context->getId())) {
             return $actions;
         }
         $apiUrl = $request->getDispatcher()->url(

@@ -10,7 +10,7 @@ msgid "plugins.generic.publishToFacebook.displayName"
 msgstr "Publish to Facebook"
 
 msgid "plugins.generic.publishToFacebook.description"
-msgstr "Publish article or issue links to a configured Facebook Page."
+msgstr "Publish article links to a configured Facebook Page."
 
 msgid "plugins.generic.publishToFacebook.settings.pageId"
 msgstr "Facebook Page ID"
@@ -21,14 +21,8 @@ msgstr "Facebook Page Access Token"
 msgid "plugins.generic.publishToFacebook.settings.messageFormat.article"
 msgstr "Default article message format"
 
-msgid "plugins.generic.publishToFacebook.settings.messageFormat.issue"
-msgstr "Default issue message format"
-
 msgid "plugins.generic.publishToFacebook.settings.autoPublishArticles"
 msgstr "Automatically publish newly published articles"
-
-msgid "plugins.generic.publishToFacebook.settings.autoPublishIssues"
-msgstr "Automatically publish newly published issues"
 
 msgid "plugins.generic.publishToFacebook.settings.pageId.help"
 msgstr "The numeric ID of the Facebook Page to post to."
@@ -38,9 +32,6 @@ msgstr "A long-lived Page Access Token for the configured Page. Meta Page feed p
 
 msgid "plugins.generic.publishToFacebook.settings.messageFormat.article.help"
 msgstr "Available placeholders: {$articleTitle}, {$articleUrl}, {$journalName}"
-
-msgid "plugins.generic.publishToFacebook.settings.messageFormat.issue.help"
-msgstr "Available placeholders: {$issueTitle}, {$volume}, {$number}, {$year}, {$datePublished}, {$issueUrl}, {$journalName}"
 
 msgid "plugins.generic.publishToFacebook.post.button"
 msgstr "Publish to Facebook"
@@ -65,9 +56,6 @@ msgstr "This article has already been published to Facebook."
 
 msgid "plugins.generic.publishToFacebook.post.error.noSubmissionId"
 msgstr "No submission ID provided."
-
-msgid "plugins.generic.publishToFacebook.post.retry"
-msgstr "Retry"
 
 msgid "plugins.generic.publishToFacebook.post.status.posted"
 msgstr "Published to Facebook"

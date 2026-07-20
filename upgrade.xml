@@ -4,4 +4,7 @@
 	<upgrade minversion="1.0.0.0" maxversion="1.0.2.9">
 		<migration class="APP\plugins\generic\publishToFacebook\classes\migrations\AddIssueIdToPostLogMigration" />
 	</upgrade>
+	<upgrade minversion="1.0.0.0" maxversion="1.0.3.9">
+		<migration class="APP\plugins\generic\publishToFacebook\classes\migrations\AddPostLogReservationIndexesMigration" />
+	</upgrade>
 </install>

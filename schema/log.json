@@ -42,7 +42,7 @@
 			"description": "The result status of the post attempt.",
 			"apiSummary": true,
 			"validation": [
-				"in:success,error"
+				"in:pending,success,error,uncertain"
 			]
 		},
 		"facebookPostId": {

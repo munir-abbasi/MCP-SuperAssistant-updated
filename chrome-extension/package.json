@@ -36,7 +36,7 @@
     "@extension/vite-config": "workspace:*",
     "@laynezh/vite-plugin-lib-assets": "^2.1.0",
     "@types/chrome": "0.0.304",
-    "@types/node": "^22.5.5",
+    "@types/node": "^26.1.2",
     "magic-string": "^0.30.10",
     "ts-loader": "^9.5.1",
     "tsx": "^4.19.3"

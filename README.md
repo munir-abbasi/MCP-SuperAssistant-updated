@@ -5,7 +5,7 @@
 </div>
 
 <p align="center">
-Brings MCP to ChatGPT, Perplexity, Grok, Gemini, Google AI Studio, OpenRouter, Kimi, Github Copilot, Mistral and more...
+Brings MCP to ChatGPT, Perplexity, Grok, Gemini, Google AI Studio, OpenRouter, Kimi, GitHub Copilot, Mistral, and more...
 </p>
 
 <p align="center">
@@ -39,7 +39,7 @@ Brings MCP to ChatGPT, Perplexity, Grok, Gemini, Google AI Studio, OpenRouter, K
 
 ## Overview
 
-MCP SuperAssistant is a Chrome extension that integrates the Model Context Protocol (MCP) tools with AI platforms like Perplexity, ChatGPT, Google Gemini, Google AI Studio, Grokand more. It allows users to execute MCP tools directly from these platforms enhancing the capabilities of web-based AI assistants.
+MCP SuperAssistant is a Chrome extension that integrates the Model Context Protocol (MCP) tools with AI platforms like Perplexity, ChatGPT, Google Gemini, Google AI Studio, Grok, and more. It allows users to execute MCP tools directly from these platforms, enhancing the capabilities of web-based AI assistants.
 
 ## Currently Supported Platforms
 
@@ -131,8 +131,8 @@ To connect the Chrome extension to a local server for proxying connections:
      }
    }
    ```
-   config.json also support other MCP server configurations like remote MCP server URLs.
-   Try composio mcp, zappier mcp, or smithery or any other remote MCP server.
+   config.json also supports other MCP server configurations like remote MCP server URLs.
+   Try Composio MCP, Zapier MCP, or Smithery, or any other remote MCP server.
 
    **Or use existing config file location from Cursor or other tools:**
    ```
@@ -175,13 +175,13 @@ To connect the Chrome extension to a local server for proxying connections:
    - For Streamable HTTP: `http://localhost:3006/mcp`
    - For WebSocket: `ws://localhost:3006/message`
    - Choose the appropriate transport method (SSE or Streamable HTTP or WebSocket) 
-   - You can add any remote MCP server URL here as well, if it supports CORS or is proxied via this local proxy server. Try [Composio mcp](https://mcp.composio.dev/), [Zappier mcp](https://zapier.com/mcp), or [smithery](https://smithery.ai/) or any other remote MCP server.
+   - You can add any remote MCP server URL here as well, if it supports CORS or is proxied via this local proxy server. Try [Composio MCP](https://mcp.composio.dev/), [Zapier MCP](https://zapier.com/mcp), or [Smithery](https://smithery.ai/), or any other remote MCP server.
 5. Click "Connect" to establish the connection
 6. The status indicator should change to "Connected" if successful
 
 ## Usage
 Example Workflow:
-1. Navigate to a supported AI platform example chatgpt.
+1. Navigate to a supported AI platform, e.g., ChatGPT.
 2. The MCP SuperAssistant sidebar will appear on the right side of the page
 3. Configure your MCP Tools to enable and disable the tools you want to use.
 4. In the message prompt area, hover the 'MCP' button to see the available tools and their descriptions.
@@ -222,18 +222,18 @@ This page covers the most common issues users encounter with MCP SuperAssistant 
 
 - Ensure that your MCP server is running and accessible.
 - Check the server URL in the extension settings.
-- First start the npx mcp-SuperAssistant-proxy server and then reload/restart the extension from chrome://extensions/ page.
+- First start the npx MCP SuperAssistant Proxy server and then reload/restart the extension from chrome://extensions/ page.
 - Check the proxy server logs for any errors or issues.
 - Ensure that your firewall or antivirus software is not blocking the connection.
 - Make sure the server shows the proper connected status and exposes the `/sse` endpoint.
 
 ### 4. Incorrect tool call format 
 
-- There are times model does not generate correct tool call format as requested, this makes the tool detection to fail.
-In such cases, use better models which are meant for tool calling or have better tool calling capabilities.
+- There are times the model does not generate the correct tool call format as requested, which causes tool detection to fail.
+In such cases, use models that are designed for tool calling or have stronger tool calling capabilities.
 - Use the custom instructions prompt, which can be found in the MCP SuperAssistant sidebar.
-- Ask explicitily to use the tools by mentioning them in the prompt.
-- This Below is an example of correct MCP function call format, which is rendered by MCP SuperAssistant extension:
+- Ask explicitly to use the tools by mentioning them in the prompt.
+- Below is an example of the correct MCP function call format, rendered by the MCP SuperAssistant extension:
 
 ```
 ```jsonl

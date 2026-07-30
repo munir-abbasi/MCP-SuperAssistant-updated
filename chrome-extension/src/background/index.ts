@@ -369,12 +369,15 @@ async function tryConnectToServer(uri: string, type: ConnectionType = connection
     // Schedule another attempt if we haven't reached the limit
     if (connectionAttemptCount < MAX_CONNECTION_ATTEMPTS) {
       const delayMs = Math.min(5000 * connectionAttemptCount, 15000); // Exponential backoff with cap
-      logger.debug(`Scheduling next connection attempt in ${delayMs / 1000} seconds...`);
+      const jitter = delayMs * 0.2 * (Math.random() * 2 - 1); // +/- 20% jitter
+      const finalDelayMs = Math.max(1000, delayMs + jitter);
+      
+      logger.debug(`Scheduling next connection attempt in ${(finalDelayMs / 1000).toFixed(1)} seconds...`);
 
       setTimeout(() => {
         isConnecting = false; // Reset connecting flag
         tryConnectToServer(uri).catch(() => {}); // Try again
-      }, delayMs);
+      }, finalDelayMs);
     } else {
       logger.debug('Maximum connection attempts reached. Will try again during periodic check.');
       // ENHANCED: Don't give up permanently - periodic checks will retry with reset state

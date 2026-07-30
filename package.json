@@ -1,13 +1,13 @@
 {
   "name": "mcp-superassistant",
-  "version": "0.6.2",
-  "description": "MCP-powered tool execution for 15+ AI chat platforms — Chrome & Firefox browser extension",
+  "version": "0.6.2-rc.1",
+  "description": "MCP SuperAssistant",
   "license": "MIT",
   "private": true,
   "sideEffects": false,
   "repository": {
     "type": "git",
-    "url": "https://github.com/munir-abbasi/MCP-SuperAssistant-updated.git"
+    "url": "https://github.com/srbhptl39/MCP-SuperAssistant.git"
   },
   "type": "module",
   "scripts": {
@@ -26,8 +26,8 @@
     "build:eslint": "tsc -b",
     "zip": "pnpm build && pnpm -F zipper zip",
     "zip:firefox": "pnpm build:firefox && pnpm -F zipper zip",
-    "e2e": "pnpm zip && cross-env CEB_E2E_BROWSER=chrome turbo e2e",
-    "e2e:firefox": "pnpm zip:firefox && cross-env CEB_E2E_BROWSER=firefox turbo e2e",
+    "e2e": "pnpm zip && turbo e2e",
+    "e2e:firefox": "pnpm zip:firefox && turbo e2e",
     "lint": "turbo lint --continue -- --fix --cache --cache-location node_modules/.cache/.eslintcache",
     "lint:fix": "turbo lint:fix --continue -- --fix --cache --cache-location node_modules/.cache/.eslintcache",
     "prettier": "turbo prettier --continue -- --cache --cache-location node_modules/.cache/.prettiercache",

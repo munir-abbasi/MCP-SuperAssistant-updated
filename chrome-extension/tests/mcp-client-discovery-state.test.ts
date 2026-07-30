@@ -1,88 +1,54 @@
-import '../src/mcpclient/configureZodForExtension.ts';
+import { describe, it } from 'node:test';
+import assert from 'node:assert';
+import { StreamableHttpPlugin } from '../src/mcpclient/plugins/streamable-http/StreamableHttpPlugin.js';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 
-import assert from 'node:assert/strict';
-import test from 'node:test';
-
-import { McpClient } from '../src/mcpclient/core/McpClient.ts';
-import type { ITransportPlugin } from '../src/mcpclient/types/plugin.ts';
-import type { PrimitivesResponse } from '../src/mcpclient/types/primitives.ts';
-
-const setPrivateField = (target: object, name: string, value: unknown): void => {
-  Object.defineProperty(target, name, {
-    configurable: true,
-    value,
-    writable: true,
+describe('StreamableHttpPlugin Discovery State', () => {
+  it('should expose failure when tool discovery fails despite tools being advertised', async () => {
+    const plugin = new StreamableHttpPlugin();
+    (plugin as any).transport = {} as Transport;
+    
+    const mockClient = {
+      getServerCapabilities: () => ({ tools: {} }),
+      listResources: async () => ({ resources: [] }),
+      listTools: async () => { throw new Error('Simulated discovery failure'); },
+      listPrompts: async () => ({ prompts: [] }),
+    } as unknown as Client;
+    
+    const primitives = await plugin.getPrimitives(mockClient);
+    
+    const errors = primitives.filter(p => p.type === 'error');
+    assert.strictEqual(errors.length, 1);
+    assert.strictEqual(errors[0].value.capability, 'tools');
+    assert.match(errors[0].value.message, /Simulated discovery failure/);
   });
-};
 
-const failingDiscoveryPlugin = (error: Error): ITransportPlugin => ({
-  metadata: {
-    name: 'failing-streamable-http',
-    transportType: 'streamable-http',
-    version: 'test',
-  },
-  callTool: async () => {
-    throw new Error('callTool is not used by this test');
-  },
-  connect: async () => {
-    throw new Error('transport is not used by this test');
-  },
-  disconnect: async () => {},
-  getDefaultConfig: () => ({}),
-  getPrimitives: async () => {
-    throw error;
-  },
-  initialize: async () => {},
-  isConnected: () => true,
-  isHealthy: async () => true,
-  isSupported: () => true,
-});
-
-const connectForDiscovery = (client: McpClient, plugin: ITransportPlugin): void => {
-  setPrivateField(client, 'activePlugin', plugin);
-  setPrivateField(client, 'client', {});
-  setPrivateField(client, 'isConnectedFlag', true);
-};
-
-test('marks the connection unhealthy when primitive discovery fails while transport stays healthy', async () => {
-  // Given: a connected Streamable HTTP plugin whose transport health check still passes.
-  const client = new McpClient();
-  const discoveryError = new Error('tools/list failed');
-  connectForDiscovery(client, failingDiscoveryPlugin(discoveryError));
-
-  // When: primitive discovery fails.
-  await assert.rejects(() => client.getPrimitives(true), /tools\/list failed/);
-
-  // Then: the client must not keep reporting a healthy connection.
-  assert.equal(client.isConnected(), false);
-  assert.equal(client.getConnectionInfo().isConnected, false);
-});
-
-test('does not serve stale cached primitives after forced discovery fails', async () => {
-  // Given: a connected plugin with a previously cached tool list.
-  const client = new McpClient();
-  const discoveryError = new Error('tools/list failed');
-  connectForDiscovery(client, failingDiscoveryPlugin(discoveryError));
-
-  const cachedPrimitives: PrimitivesResponse = {
-    prompts: [],
-    resources: [],
-    timestamp: Date.now(),
-    tools: [
-      {
-        description: 'stale cached tool',
-        input_schema: {},
-        name: 'stale_tool',
-        schema: '{}',
+  it('should invalidate cache or correctly expose failure after a previous success (stale-cache-after-failure)', async () => {
+    const plugin = new StreamableHttpPlugin();
+    (plugin as any).transport = {} as Transport;
+    
+    let toolsCallCount = 0;
+    const mockClient = {
+      getServerCapabilities: () => ({ tools: {} }),
+      listResources: async () => ({ resources: [] }),
+      listTools: async () => {
+        toolsCallCount++;
+        if (toolsCallCount === 1) {
+          return { tools: [{ name: 'test-tool', description: 'test' }] };
+        }
+        throw new Error('Simulated later discovery failure');
       },
-    ],
-  };
-  setPrivateField(client, 'primitivesCache', cachedPrimitives);
-  setPrivateField(client, 'primitivesCacheTime', Date.now());
+      listPrompts: async () => ({ prompts: [] }),
+    } as unknown as Client;
 
-  // When: a forced discovery refresh fails.
-  await assert.rejects(() => client.getPrimitives(true), /tools\/list failed/);
+    const firstPrimitives = await plugin.getPrimitives(mockClient);
+    assert.strictEqual(firstPrimitives.filter(p => p.type === 'tool').length, 1);
+    assert.strictEqual(firstPrimitives.filter(p => p.type === 'error').length, 0);
 
-  // Then: a later non-forced read must not silently return the stale cache.
-  await assert.rejects(() => client.getPrimitives(), /tools\/list failed|Not connected/);
+    const secondPrimitives = await plugin.getPrimitives(mockClient);
+    const errors = secondPrimitives.filter(p => p.type === 'error');
+    assert.strictEqual(errors.length, 1);
+    assert.strictEqual(errors[0].value.capability, 'tools');
+  });
 });

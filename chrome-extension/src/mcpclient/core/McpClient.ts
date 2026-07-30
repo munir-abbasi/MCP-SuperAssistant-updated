@@ -18,6 +18,12 @@ import { createLogger } from '@extension/shared/lib/logger';
 import { analyticsService } from '../../../utils/analytics-service.js';
 import { createBrowserMcpClient } from './createBrowserMcpClient.js';
 
+export enum ConnectionState {
+  DISCONNECTED = 'DISCONNECTED',
+  CONNECTING = 'CONNECTING',
+  CONNECTED = 'CONNECTED',
+  DISCONNECTING = 'DISCONNECTING'
+}
 
 const logger = createLogger('McpClient');
 
@@ -27,12 +33,13 @@ export class McpClient extends EventEmitter<AllEvents> {
   private client: Client | null = null;
   private activePlugin: ITransportPlugin | null = null;
   private activeTransport: Transport | null = null;
-  private isConnectedFlag: boolean = false;
+  private connectionState: ConnectionState = ConnectionState.DISCONNECTED;
   private connectionPromise: Promise<void> | null = null;
   private healthCheckTimer: NodeJS.Timeout | null = null;
   private primitivesCache: PrimitivesResponse | null = null;
   private primitivesCacheTime: number = 0;
   private readonly CACHE_TTL = 300000; // 5 minutes
+  private activeCalls: Map<string, { reject: (reason?: any) => void; abortController: AbortController }> = new Map();
 
   constructor(config: Partial<ClientConfig> = {}) {
     super();
@@ -96,39 +103,41 @@ export class McpClient extends EventEmitter<AllEvents> {
 
   async connect(request: ConnectionRequest): Promise<void> {
     // If same connection type and already connected, skip
-    if (this.isConnectedFlag && this.activePlugin?.metadata.transportType === request.type) {
+    if (this.connectionState === ConnectionState.CONNECTED && this.activePlugin?.metadata.transportType === request.type) {
       logger.debug(`Already connected via ${request.type}, skipping`);
       return;
     }
 
-    // If there's a connection in progress, wait for it but check if it's for the same URI
-    if (this.connectionPromise) {
+    // If there's a connection in progress, wait for it
+    if (this.connectionState === ConnectionState.CONNECTING && this.connectionPromise) {
       logger.debug('[McpClient] Connection already in progress, waiting...');
       try {
         await this.connectionPromise;
-        // Check if the completed connection is what we wanted
-        if (this.isConnectedFlag && this.activePlugin?.metadata.transportType === request.type) {
+        if (this.connectionState === ConnectionState.CONNECTED && this.activePlugin?.metadata.transportType === request.type) {
           logger.debug('[McpClient] Existing connection matches request');
           return;
         }
       } catch (error) {
         logger.debug('[McpClient] Previous connection failed, starting new one');
-        // Clear the failed promise to allow new connection
-        this.connectionPromise = null;
       }
     }
 
-    // Disconnect from current connection if switching types
-    if (this.isConnectedFlag && this.activePlugin?.metadata.transportType !== request.type) {
-      logger.debug(`Switching from ${this.activePlugin?.metadata.transportType} to ${request.type}`);
+    // Disconnect from current connection if any
+    if (this.connectionState !== ConnectionState.DISCONNECTED) {
+      logger.debug(`Disconnecting before new connection to ${request.type}`);
       await this.disconnect();
     }
 
+    this.connectionState = ConnectionState.CONNECTING;
     this.connectionPromise = this.performConnection(request);
 
     try {
       await this.connectionPromise;
     } finally {
+      if (this.connectionState === ConnectionState.CONNECTING) {
+        // If it failed and didn't transition to CONNECTED
+        this.connectionState = ConnectionState.DISCONNECTED;
+      }
       this.connectionPromise = null;
     }
   }
@@ -141,7 +150,7 @@ export class McpClient extends EventEmitter<AllEvents> {
       this.emit('client:connecting', { uri, type });
 
       // Disconnect from current connection if exists
-      if (this.isConnectedFlag) {
+      if (this.connectionState !== ConnectionState.DISCONNECTED) {
         await this.disconnect();
       }
 
@@ -167,7 +176,7 @@ export class McpClient extends EventEmitter<AllEvents> {
           logger.debug(`WebSocket disconnection detected: ${reason} (code: ${code})`);
           
           // Mark as disconnected immediately
-          this.isConnectedFlag = false;
+          this.connectionState = ConnectionState.DISCONNECTED;
           
           // Emit disconnection event with details
           this.emit('connection:status-changed', {
@@ -215,10 +224,16 @@ export class McpClient extends EventEmitter<AllEvents> {
       // Store connection state
       this.activePlugin = plugin;
       this.activeTransport = transport;
-      this.isConnectedFlag = true;
+      this.connectionState = ConnectionState.CONNECTED;
 
       // Clear cache on new connection
       this.clearPrimitivesCache();
+    
+    // Reject all active calls
+    for (const [callId, call] of this.activeCalls.entries()) {
+      call.reject(new Error('Connection dropped or disconnected'));
+    }
+    this.activeCalls.clear();
 
       // Start health monitoring
       this.startHealthMonitoring();
@@ -270,10 +285,12 @@ export class McpClient extends EventEmitter<AllEvents> {
   }
 
   async disconnect(): Promise<void> {
-    if (!this.isConnectedFlag) {
-      logger.debug('[McpClient] Already disconnected');
+    if (this.connectionState === ConnectionState.DISCONNECTED || this.connectionState === ConnectionState.DISCONNECTING) {
+      logger.debug('[McpClient] Already disconnected or disconnecting');
       return;
     }
+
+    this.connectionState = ConnectionState.DISCONNECTING;
 
     const currentType = this.activePlugin?.metadata.transportType;
     logger.debug(`Disconnecting from ${currentType || 'unknown'}`);
@@ -327,12 +344,44 @@ export class McpClient extends EventEmitter<AllEvents> {
     }
 
     this.activeTransport = null;
-    this.isConnectedFlag = false;
+    this.connectionState = ConnectionState.DISCONNECTED;
     this.clearPrimitivesCache();
+    
+    // Reject all active calls
+    for (const [callId, call] of this.activeCalls.entries()) {
+      call.reject(new Error('Connection dropped or disconnected'));
+    }
+    this.activeCalls.clear();
   }
 
-  async callTool(toolName: string, args: Record<string, any>, adapterName?: string): Promise<any> {
-    if (!this.isConnectedFlag || !this.activePlugin || !this.client) {
+  async callTool(toolName: string, args: Record<string, any>, adapterName?: string, signal?: AbortSignal): Promise<any> {
+    if (this.connectionState !== ConnectionState.CONNECTED || !this.activePlugin || !this.client) {
+      throw new Error('Not connected to any MCP server');
+    }
+
+    const callId = crypto.randomUUID();
+    const abortController = new AbortController();
+
+    if (signal) {
+      signal.addEventListener('abort', () => abortController.abort(signal.reason));
+    }
+
+    return new Promise((resolve, reject) => {
+      this.activeCalls.set(callId, { reject, abortController });
+
+      abortController.signal.addEventListener('abort', () => {
+        if (this.activeCalls.has(callId)) {
+          this.activeCalls.delete(callId);
+          reject(abortController.signal.reason || new Error('Tool call aborted'));
+        }
+      });
+
+      this.executeToolCall(callId, toolName, args, adapterName).then(resolve).catch(reject);
+    });
+  }
+
+  private async executeToolCall(callId: string, toolName: string, args: Record<string, any>, adapterName?: string): Promise<any> {
+    if (this.connectionState !== ConnectionState.CONNECTED || !this.activePlugin || !this.client) {
       throw new Error('Not connected to any MCP server');
     }
 
@@ -358,6 +407,7 @@ export class McpClient extends EventEmitter<AllEvents> {
         logger.warn('[McpClient] Analytics tracking failed:', error);
       });
 
+      this.activeCalls.delete(callId);
       return result;
     } catch (error) {
       const duration = Date.now() - startTime;
@@ -380,7 +430,7 @@ export class McpClient extends EventEmitter<AllEvents> {
 
       // Check if connection is still healthy after error
       if (!(await this.isHealthy())) {
-        this.isConnectedFlag = false;
+        this.connectionState = ConnectionState.DISCONNECTED;
         this.emit('connection:status-changed', {
           isConnected: false,
           type: this.activePlugin?.metadata.transportType || null,
@@ -393,7 +443,7 @@ export class McpClient extends EventEmitter<AllEvents> {
   }
 
   async getPrimitives(forceRefresh: boolean = false): Promise<PrimitivesResponse> {
-    if (!this.isConnectedFlag || !this.activePlugin || !this.client) {
+    if (this.connectionState !== ConnectionState.CONNECTED || !this.activePlugin || !this.client) {
       throw new Error('Not connected to any MCP server');
     }
 
@@ -408,16 +458,33 @@ export class McpClient extends EventEmitter<AllEvents> {
       const primitives = await this.activePlugin.getPrimitives(this.client);
 
       // Normalize tools
-      const tools = this.normalizeTools(primitives.filter(p => p.type === 'tool'));
-      const resources = primitives.filter(p => p.type === 'resource').map(p => p.value);
-      const prompts = primitives.filter(p => p.type === 'prompt').map(p => p.value);
+      const tools = this.normalizeTools(primitives.filter(p => p.type === 'tool') as any[]);
+      const resources = primitives.filter(p => p.type === 'resource').map(p => (p.value as any));
+      const prompts = primitives.filter(p => p.type === 'prompt').map(p => (p.value as any));
+      const errors = primitives.filter(p => p.type === 'error').map(p => p.value as any);
 
       const response: PrimitivesResponse = {
         tools,
         resources,
         prompts,
+        errors: errors.length > 0 ? errors : undefined,
         timestamp: Date.now(),
       };
+
+      if (errors.length > 0) {
+        const toolsError = errors.find(e => e.capability === 'tools');
+        if (toolsError) {
+          logger.error(`[McpClient] Tool discovery failed: ${toolsError.message}`);
+          this.connectionState = ConnectionState.DISCONNECTED;
+          this.emit('connection:status-changed', {
+            isConnected: false,
+            type: this.activePlugin.metadata.transportType,
+            error: `Tool discovery failed: ${toolsError.message}`,
+          });
+          // Use 'connection failed' to ensure background script categorizes this as a connection error
+          throw new Error(`Connection failed: Tool discovery failed - ${toolsError.message}`);
+        }
+      }
 
       // Cache the response
       this.primitivesCache = response;
@@ -447,19 +514,21 @@ export class McpClient extends EventEmitter<AllEvents> {
     } catch (error) {
       logger.error('[McpClient] Failed to get primitives:', error);
 
-      this.clearPrimitivesCache();
-      this.isConnectedFlag = false;
-      this.emit('connection:status-changed', {
-        isConnected: false,
-        type: this.activePlugin?.metadata.transportType || null,
-        error: 'Primitive discovery failed',
-      });
+      // Check if connection is still healthy after error
+      if (!(await this.isHealthy())) {
+        this.connectionState = ConnectionState.DISCONNECTED;
+        this.emit('connection:status-changed', {
+          isConnected: false,
+          type: this.activePlugin?.metadata.transportType || null,
+          error: 'Connection lost while getting primitives',
+        });
+      }
 
       throw error;
     }
   }
 
-  private normalizeTools(toolPrimitives: Primitive[]): NormalizedTool[] {
+  private normalizeTools(toolPrimitives: any[]): NormalizedTool[] {
     return toolPrimitives.map(p => {
       const tool = p.value;
       return {
@@ -487,7 +556,7 @@ export class McpClient extends EventEmitter<AllEvents> {
   }
 
   async isHealthy(): Promise<boolean> {
-    if (!this.isConnectedFlag || !this.activePlugin) {
+    if (this.connectionState !== ConnectionState.CONNECTED || !this.activePlugin) {
       return false;
     }
 
@@ -500,7 +569,7 @@ export class McpClient extends EventEmitter<AllEvents> {
   }
 
   isConnected(): boolean {
-    return this.isConnectedFlag && this.activePlugin?.isConnected() === true;
+    return this.connectionState === ConnectionState.CONNECTED && this.activePlugin?.isConnected() === true;
   }
 
   getConnectionInfo(): {
@@ -510,7 +579,7 @@ export class McpClient extends EventEmitter<AllEvents> {
     pluginInfo: any;
   } {
     return {
-      isConnected: this.isConnectedFlag,
+      isConnected: this.connectionState === ConnectionState.CONNECTED,
       type: this.activePlugin?.metadata.transportType || null,
       uri: null, // Could store this if needed
       pluginInfo: this.activePlugin?.metadata || null,
@@ -539,7 +608,7 @@ export class McpClient extends EventEmitter<AllEvents> {
     if (interval <= 0) return;
 
     this.healthCheckTimer = setInterval(async () => {
-      if (!this.isConnectedFlag) {
+      if (this.connectionState !== ConnectionState.CONNECTED) {
         this.stopHealthMonitoring();
         return;
       }
@@ -558,7 +627,7 @@ export class McpClient extends EventEmitter<AllEvents> {
 
         if (!healthy) {
           logger.warn(`Health check failed for ${type}`);
-          this.isConnectedFlag = false;
+          this.connectionState = ConnectionState.DISCONNECTED;
           this.emit('connection:status-changed', {
             isConnected: false,
             type,

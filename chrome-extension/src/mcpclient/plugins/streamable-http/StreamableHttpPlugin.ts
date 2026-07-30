@@ -160,6 +160,7 @@ export class StreamableHttpPlugin implements ITransportPlugin {
             resources.forEach(item => primitives.push({ type: 'resource', value: item }));
           }).catch(error => {
             logger.warn('[StreamableHttpPlugin] Failed to list resources:', error);
+            primitives.push({ type: 'error', value: { capability: 'resources', message: error instanceof Error ? error.message : String(error) } });
           }),
         );
       }
@@ -170,6 +171,7 @@ export class StreamableHttpPlugin implements ITransportPlugin {
             tools.forEach(item => primitives.push({ type: 'tool', value: item }));
           }).catch(error => {
             logger.warn('[StreamableHttpPlugin] Failed to list tools:', error);
+            primitives.push({ type: 'error', value: { capability: 'tools', message: error instanceof Error ? error.message : String(error) } });
           }),
         );
       }
@@ -180,6 +182,7 @@ export class StreamableHttpPlugin implements ITransportPlugin {
             prompts.forEach(item => primitives.push({ type: 'prompt', value: item }));
           }).catch(error => {
             logger.warn('[StreamableHttpPlugin] Failed to list prompts:', error);
+            primitives.push({ type: 'error', value: { capability: 'prompts', message: error instanceof Error ? error.message : String(error) } });
           }),
         );
       }

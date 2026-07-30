@@ -1,4 +1,4 @@
-export type PrimitiveType = 'resource' | 'tool' | 'prompt';
+export type PrimitiveType = 'resource' | 'tool' | 'prompt' | 'error';
 
 export interface PrimitiveValue {
   name: string;
@@ -10,10 +10,15 @@ export interface PrimitiveValue {
   schema?: string;     // JSON string representation for legacy compatibility
 }
 
-export interface Primitive {
-  type: PrimitiveType;
-  value: PrimitiveValue;
+export interface CapabilityError {
+  capability: string;
+  message: string;
+  code?: string;
 }
+
+export type Primitive = 
+  | { type: 'resource' | 'tool' | 'prompt'; value: PrimitiveValue }
+  | { type: 'error'; value: CapabilityError };
 
 export interface NormalizedTool {
   name: string;
@@ -34,9 +39,16 @@ export interface ToolCallResult {
   isError?: boolean;
 }
 
+export interface CapabilityError {
+  capability: string;
+  message: string;
+  code?: string;
+}
+
 export interface PrimitivesResponse {
   tools: NormalizedTool[];
   resources: any[];
   prompts: any[];
+  errors?: CapabilityError[];
   timestamp: number;
 }

@@ -102,7 +102,7 @@ flowchart TD
 
 ### Connecting to Local Proxy Server
 
-To connect the Chrome extension to a local server for proxying connections:
+To connect the Chrome extension to a local server for proxying connections. The proxy is a standalone npm package published by the original author — it is not bundled with the extension and works with any fork. You do not need to publish your own proxy.
 
 #### Run MCP SuperAssistant Proxy via npx:
 

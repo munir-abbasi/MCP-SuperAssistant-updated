@@ -1,6 +1,4 @@
-
 <div align="center">
-   <!-- <img src="chrome-extension/public/icon-34.png" alt="MCP SuperAssistant Logo" width="100" height="100"> -->
    <h1>MCP SuperAssistant Chrome Extension</h1>
 </div>
 
@@ -45,6 +43,7 @@ MCP SuperAssistant is a Chrome extension that integrates the Model Context Proto
 - [DeepSeek](https://chat.deepseek.com/)
 - [T3 Chat](https://t3.chat/)
 - [GitHub Copilot](https://github.com/copilot)
+- [Kagi](https://kagi.com/)
 - [Mistral AI](https://chat.mistral.ai/)
 - [Kimi](https://kimi.com/)
 - [Qwen Chat](https://chat.qwen.ai/)
@@ -79,11 +78,11 @@ The Model Context Protocol (MCP) is an open standard developed by Anthropic that
 
 ## Key Features
 
-- **Multiple AI Platform Support**: Works with ChatGPT, Perplexity, Google Gemini, Grok, Google AI Studio, OpenRouter Chat, DeepSeek, Kagi, T3 Chat, GitHub Copilot, Mistral AI, Kimi, Qwen Chat, Z Chat and more
+- **Multiple AI Platform Support**: Works with ChatGPT, Perplexity, Google Gemini, Grok, Google AI Studio, OpenRouter Chat, DeepSeek, Kagi, T3 Chat, GitHub Copilot, Mistral AI, Kimi, Qwen Chat, Z Chat, and more
 - **Tool Detection**: Automatically detects MCP tool calls in AI responses
 - **Tool Execution**: Execute MCP tools with a single click
 - **Tool Result Integration**: Seamlessly insert tool execution results back into the AI conversation
-- **Render Mode**: Renders Function call and Function results. 
+- **Render Mode**: Renders function calls and function results
 - **Auto-Execute Mode**: Automatically execute detected tools
 - **Auto-Submit Mode**: Automatically submit chat input after result insertion
 - **Push Content Mode**: Option to push page content instead of overlaying
@@ -125,7 +124,7 @@ To connect the Chrome extension to a local server for proxying connections:
    }
    ```
    config.json also supports other MCP server configurations like remote MCP server URLs.
-   Try Composio MCP, Zapier MCP, or Smithery, or any other remote MCP server.
+   Try Composio MCP, Zapier MCP, Smithery, or any other remote MCP server.
 
    **Or use existing config file location from Cursor or other tools:**
    ```
@@ -160,7 +159,7 @@ To connect the Chrome extension to a local server for proxying connections:
 #### Connection Steps:
 
 1. Start the proxy server using one of the commands above
-2. Open the MCP SuperAssistant sidebar in one of the supported AI platforms, this should show the sidebar UI
+2. Open the MCP SuperAssistant sidebar in one of the supported AI platforms — the sidebar UI should appear
 3. Click on the server status indicator (usually showing as "Disconnected")
 4. Enter the local server URL (default: `http://localhost:3006/sse`)
    URL format depends on the --outputTransport method used:
@@ -178,8 +177,8 @@ Example Workflow:
 2. The MCP SuperAssistant sidebar will appear on the right side of the page
 3. Configure your MCP Tools to enable and disable the tools you want to use.
 4. In the message prompt area, hover the 'MCP' button to see the available tools and their descriptions.
-5. MCP SuperAssistant requires to add an MCP working instructions prompt to the chat, to give details of its new capabilities and how to use the tools. Use the 'Insert' or attach button to add the instructions prompt.
-6. Once the instructions prompt is added, Now you can ask it to read files or any related MCP tool operations.
+5. Add an MCP working instructions prompt to the chat to inform the AI about its new capabilities and how to use the tools. Use the 'Insert' or attach button to add the instructions.
+6. Once the instructions are added, you can ask the AI to read files or perform any related MCP tool operations.
 7. When AI wants to use any tool it will show a custom tool call card with the tool name and parameters.
 8. User can manually execute the tool call by clicking on the "RUN" button on the tool call card, or if Auto-Execute mode is enabled, it will execute automatically.
 9. Automation can be achieved by enabling Auto-Execute and Auto-Submit modes, by clicking on the 'MCP' button and configuring the Auto modes.
@@ -187,8 +186,8 @@ Example Workflow:
 
 ## Tips & Tricks
 
-1. **Turn off search mode** (chatgpt, perplexity) in AI chat interfaces for better tool call prompt experience and to prevent MCP SuperAssistant from getting derail.
-2. **Turn on Reasoning mode** (chatgpt, perplexity, grok) in AI chat interfaces, which will help the AI to understand the context better and generate the correct tool calls.
+1. **Turn off search mode** (ChatGPT, Perplexity) in AI chat interfaces for a better tool call experience and to prevent MCP SuperAssistant from being derailed.
+2. **Turn on Reasoning mode** (ChatGPT, Perplexity, Grok) in AI chat interfaces — this helps the AI understand context better and generate correct tool calls.
 3. Use newer high-end models as they are better at understanding the context and generating the correct tool calls.
 4. Copy the MCP instructions prompt and paste it in the AI chat system prompt (Google AI Studio).
 5. Mention the specific tools you want to use in your conversation.
@@ -208,14 +207,14 @@ This page covers the most common issues users encounter with MCP SuperAssistant 
 ### 2. Tool Execution Fails
 
 - Ensure your proxy server is running and the URL is correct in the sidebar server settings.
-- check your config.json file for any errors or formatting issues.
+- Check your config.json file for any errors or formatting issues.
 - Check your network connectivity and firewall settings.
 
 ### 3. Connection Issues
 
 - Ensure that your MCP server is running and accessible.
 - Check the server URL in the extension settings.
-- First start the npx MCP SuperAssistant Proxy server and then reload/restart the extension from chrome://extensions/ page.
+- First start the npx proxy server, then reload/restart the extension from the `chrome://extensions/` page.
 - Check the proxy server logs for any errors or issues.
 - Ensure that your firewall or antivirus software is not blocking the connection.
 - Make sure the server shows the proper connected status and exposes the `/sse` endpoint.
@@ -228,14 +227,12 @@ In such cases, use models that are designed for tool calling or have stronger to
 - Ask explicitly to use the tools by mentioning them in the prompt.
 - Below is an example of the correct MCP function call format, rendered by the MCP SuperAssistant extension:
 
-```
 ```jsonl
 {"type": "function_call_start", "name": "function_name", "call_id": 1}
 {"type": "description", "text": "Short 1 line of what this function does"}
 {"type": "parameter", "key": "parameter_1", "value": "value_1"}
 {"type": "parameter", "key": "parameter_2", "value": "value_2"}
 {"type": "function_call_end", "call_id": 1}
-```
 ```
 
 ### Manual Installation (Development)
@@ -303,7 +300,7 @@ This repository is a maintained fork of the original [MCP SuperAssistant](https:
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
 
-The original work is Copyright (c) 2025 Saurabh Patel. Modifications and updates are distributed under the same license terms.
+The original work is Copyright (c) 2025 Saurabh Patel. Modifications and updates in this fork are Copyright (c) 2026 Munir Abbasi, distributed under the same MIT terms.
 
 ## Acknowledgments
 

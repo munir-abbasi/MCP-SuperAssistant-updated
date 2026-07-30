@@ -296,6 +296,22 @@ This repository is a maintained fork of the original [MCP SuperAssistant](https:
 - ⭐ [Star the original repo](https://github.com/srbhptl39/MCP-SuperAssistant)
 - 💖 [Sponsor Saurabh Patel on GitHub](https://github.com/sponsors/srbhptl39)
 
+## Improvements Over the Original
+
+This fork introduces significant engineering improvements over the upstream [MCP SuperAssistant](https://github.com/srbhptl39/MCP-SuperAssistant):
+
+- **Truthful connection states** — 8 distinct states (disconnected → connecting → initialized → discovering → ready / degraded / error / reconnecting). Never shows "connected, zero tools" when discovery fails.
+- **CSP-safe validation** — Replaced AJV runtime code generation with `@cfworker/json-schema`. No `unsafe-eval`, no `new Function`, no CSP violations.
+- **Bounded failure** — One malformed tool schema no longer hides all valid tools. Partial discovery exposes which capabilities failed. Tool output errors produce visible, bounded failures.
+- **Exactly-once execution** — Timeouts, reconnects, stream re-renders, and duplicate observations never dispatch the same tool call twice.
+- **Streamable HTTP fixes** — Correct JSON and SSE-framed tool discovery, proper `Accept` and session headers, fragmented chunk handling.
+- **MCP protocol preservation** — `outputSchema`, `annotations`, `structuredContent`, and other valid MCP fields are preserved, not stripped.
+- **Hardened site adapter contract** — 13 requirements per supported site: idempotent mounting, SPA navigation survival, semantic selectors, verified insertion and submission, clean teardown.
+- **Chrome/Firefox parity** — Tested from the same commit with identical payloads. Firefox manifest, CSP, and module conversion verified independently.
+- **Payload safety** — Explicit size budgets, no megabyte-base64 DOM injection, bounded previews for oversized results.
+- **Deterministic testing** — Regression tests before every fix, real-browser core flow, integrity-checked release artifacts with SHA-256 hashes.
+- **Issue-ledger discipline** — 70+ upstream issues classified by first failing boundary, reproduced before any fix claim.
+
 ## License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.

@@ -18,22 +18,15 @@ Brings MCP to ChatGPT, Perplexity, Grok, Gemini, Google AI Studio, OpenRouter, K
 </div>
 
 <div align="center">
-   
-   ![Latest Release](https://img.shields.io/github/v/release/srbhptl39/MCP-SuperAssistant?style=flat-square&label=Latest%20Release&color=brightgreen)
-   ![GitHub Stars](https://img.shields.io/github/stars/srbhptl39/MCP-SuperAssistant?style=flat-square&label=Stars)
+    
    ![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)
-   ![Chrome Users](https://img.shields.io/chrome-web-store/users/kngiafgkdnlkgmefdafaibkibegkcaef?style=flat-square&label=Chrome%20Users)
-   ![Firefox Users](https://img.shields.io/amo/users/mcp-superassistant?style=flat-square&label=Firefox%20Users)
    ![Build Status](https://img.shields.io/badge/Status-Active-success?style=flat-square)
 
 </div>
 
 ## Installation
 
-<div align="center" style="display: flex; justify-content: center; gap: 20px; align-items: center;">
-   <a href="https://chromewebstore.google.com/detail/mcp-superassistant/kngiafgkdnlkgmefdafaibkibegkcaef?hl=en"><img src="https://developer.chrome.com/static/docs/webstore/branding/image/HRs9MPufa1J1h5glNhut.png" alt="Chrome Web Store" width="200" height="auto" style="vertical-align: middle;" /></a>
-   <a href="https://addons.mozilla.org/en-US/firefox/addon/mcp-superassistant/"><img src="https://blog.mozilla.org/addons/files/2015/11/get-the-addon.png" alt="Firefox Add-ons" width="200" height="auto" style="vertical-align: middle;" /></a>
-</div>
+> **Note:** This extension has not been published to the Chrome Web Store or Firefox Add-ons yet. Use the manual installation instructions below.
 
 <br>
 
@@ -248,7 +241,7 @@ In such cases, use models that are designed for tool calling or have stronger to
 ### Manual Installation (Development)
 
 #### Release Version
-1. Download the latest release from [Releases](https://github.com/srbhptl39/MCP-SuperAssistant/releases)
+1. Download the latest release from [Releases](https://github.com/munir-abbasi/MCP-SuperAssistant-updated/releases)
 2. Unzip the downloaded file
 3. Navigate to `chrome://extensions/` in Chrome
 4. Enable "Developer mode"
@@ -288,40 +281,33 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## Author
+## Authors
 
-### [Saurabh Patel](https://github.com/srbhptl39)
+### Original Author
+
+- **[Saurabh Patel](https://github.com/srbhptl39)** — Original creator and maintainer of MCP SuperAssistant
+
+### This Repository
+
+- **[Munir Abbasi](https://github.com/munir-abbasi)** — Fork maintainer, updates, and improvements
 
 ## Sponsor & Support
 
-This project is developed entirely in my spare time, driven by a passion for AI and the Model Context Protocol (MCP). As a full-time professional, balancing work commitments with open-source development makes it challenging to contribute regularly and maintain the pace of updates.
+This repository is a maintained fork of the original [MCP SuperAssistant](https://github.com/srbhptl39/MCP-SuperAssistant) by Saurabh Patel.
 
-Your support helps me dedicate more time to:
-- 🐛 Fixing bugs and addressing issues
-- ✨ Adding new features and platform support
-- 📚 Improving documentation and tutorials
-- 🔄 Keeping dependencies up-to-date
-- 💬 Responding to community requests
-
-**Support this project:**
-- ⭐ Star the repository to show your appreciation
-- 💖 [Sponsor on GitHub](https://github.com/sponsors/srbhptl39) to help sustain development
-- 🐦 Follow me on [Twitter](https://twitter.com/srbhptl39) (@srbhptl39) for updates
-- 📧 For private support or custom implementations, reach out via [Twitter](https://twitter.com/srbhptl39)
-
-Every contribution, big or small, helps keep this project alive and thriving! 🙏
+**Support the original project:**
+- ⭐ [Star the original repo](https://github.com/srbhptl39/MCP-SuperAssistant)
+- 💖 [Sponsor Saurabh Patel on GitHub](https://github.com/sponsors/srbhptl39)
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+The original work is Copyright (c) 2025 Saurabh Patel. Modifications and updates are distributed under the same license terms.
 
 ## Acknowledgments
 
+- [Saurabh Patel](https://github.com/srbhptl39) for creating the original MCP SuperAssistant
 - Inspired by the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) by Anthropic
 - Thanks to [Cline](https://github.com/cline/cline) for idea inspiration
 - Built with [Chrome Extension Boilerplate with React + Vite](https://github.com/Jonghakseo/chrome-extension-boilerplate-react-vite)
-
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=srbhptl39/MCP-SuperAssistant&type=Date)](https://www.star-history.com/#srbhptl39/MCP-SuperAssistant&Date)

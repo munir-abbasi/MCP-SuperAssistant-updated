@@ -1,9 +1,9 @@
-import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
+import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type { ITransportPlugin, PluginMetadata, PluginConfig } from '../../types/plugin.js';
 import { createLogger } from '@extension/shared/lib/logger';
-
 
 const logger = createLogger('StreamableHttpPlugin');
 
@@ -13,7 +13,7 @@ export class StreamableHttpPlugin implements ITransportPlugin {
     version: '1.0.0',
     transportType: 'streamable-http',
     description: 'Streamable HTTP transport for MCP protocol',
-    author: 'MCP SuperAssistant'
+    author: 'MCP SuperAssistant',
   };
 
   private transport: Transport | null = null;
@@ -156,34 +156,52 @@ export class StreamableHttpPlugin implements ITransportPlugin {
 
       if (capabilities?.resources) {
         promises.push(
-          client.listResources().then(({ resources }) => {
-            resources.forEach(item => primitives.push({ type: 'resource', value: item }));
-          }).catch(error => {
-            logger.warn('[StreamableHttpPlugin] Failed to list resources:', error);
-            primitives.push({ type: 'error', value: { capability: 'resources', message: error instanceof Error ? error.message : String(error) } });
-          }),
+          client
+            .listResources()
+            .then(({ resources }) => {
+              resources.forEach(item => primitives.push({ type: 'resource', value: item }));
+            })
+            .catch(error => {
+              logger.warn('[StreamableHttpPlugin] Failed to list resources:', error);
+              primitives.push({
+                type: 'error',
+                value: { capability: 'resources', message: error instanceof Error ? error.message : String(error) },
+              });
+            }),
         );
       }
 
       if (capabilities?.tools) {
         promises.push(
-          client.listTools().then(({ tools }) => {
-            tools.forEach(item => primitives.push({ type: 'tool', value: item }));
-          }).catch(error => {
-            logger.warn('[StreamableHttpPlugin] Failed to list tools:', error);
-            primitives.push({ type: 'error', value: { capability: 'tools', message: error instanceof Error ? error.message : String(error) } });
-          }),
+          client
+            .listTools()
+            .then(({ tools }) => {
+              tools.forEach(item => primitives.push({ type: 'tool', value: item }));
+            })
+            .catch(error => {
+              logger.warn('[StreamableHttpPlugin] Failed to list tools:', error);
+              primitives.push({
+                type: 'error',
+                value: { capability: 'tools', message: error instanceof Error ? error.message : String(error) },
+              });
+            }),
         );
       }
 
       if (capabilities?.prompts) {
         promises.push(
-          client.listPrompts().then(({ prompts }) => {
-            prompts.forEach(item => primitives.push({ type: 'prompt', value: item }));
-          }).catch(error => {
-            logger.warn('[StreamableHttpPlugin] Failed to list prompts:', error);
-            primitives.push({ type: 'error', value: { capability: 'prompts', message: error instanceof Error ? error.message : String(error) } });
-          }),
+          client
+            .listPrompts()
+            .then(({ prompts }) => {
+              prompts.forEach(item => primitives.push({ type: 'prompt', value: item }));
+            })
+            .catch(error => {
+              logger.warn('[StreamableHttpPlugin] Failed to list prompts:', error);
+              primitives.push({
+                type: 'error',
+                value: { capability: 'prompts', message: error instanceof Error ? error.message : String(error) },
+              });
+            }),
         );
       }
 

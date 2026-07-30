@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { sendAnalyticsEvent, collectDemographicData } from './analytics.js';
 import { createLogger } from '@extension/shared/lib/logger';
 
@@ -59,7 +60,7 @@ export class AnalyticsService {
         'installDate',
         'version',
         'userProperties',
-        'ga4UserPropertiesSet'
+        'ga4UserPropertiesSet',
       ]);
 
       // Collect demographic data
@@ -70,7 +71,7 @@ export class AnalyticsService {
         extension_version: chrome.runtime.getManifest().version,
         install_date: stored.installDate || new Date().toISOString(),
         ...this.demographicData,
-        ...(stored.userProperties || {})
+        ...(stored.userProperties || {}),
       };
 
       logger.debug('[AnalyticsService] Initialized with user properties:', this.userProperties);
@@ -125,9 +126,9 @@ export class AnalyticsService {
     return {
       // Dynamic/session-specific fields only
       extension_version: this.userProperties.extension_version, // Can change on update
-      session_duration_ms: Date.now() - this.sessionStartTime,  // Increases over time
-      user_segment: this.getUserSegment(),                       // Changes with usage
-      days_since_install: this.getDaysSinceInstall(),           // Increases daily
+      session_duration_ms: Date.now() - this.sessionStartTime, // Increases over time
+      user_segment: this.getUserSegment(), // Changes with usage
+      days_since_install: this.getDaysSinceInstall(), // Increases daily
     };
   }
 
@@ -180,9 +181,10 @@ export class AnalyticsService {
 
     // Debounce: Don't track if we just tracked a connection event
     // Exception: Track if tools are being discovered for the first time
-    const isFirstToolDiscovery = params.tools_discovered && params.tools_discovered > 0 && this.toolsAvailableCount === 0;
+    const isFirstToolDiscovery =
+      params.tools_discovered && params.tools_discovered > 0 && this.toolsAvailableCount === 0;
 
-    if (!isFirstToolDiscovery && (now - this.lastConnectionTrackTime < this.CONNECTION_TRACK_DEBOUNCE)) {
+    if (!isFirstToolDiscovery && now - this.lastConnectionTrackTime < this.CONNECTION_TRACK_DEBOUNCE) {
       logger.debug('[AnalyticsService] Connection event debounced (too soon after last event)');
 
       // Still update internal state even if we don't track
@@ -197,9 +199,7 @@ export class AnalyticsService {
     this.lastConnectionTrackTime = now;
 
     const previousStatus = this.currentConnectionStatus;
-    const connectionDuration = this.connectionStartTime
-      ? Date.now() - this.connectionStartTime
-      : 0;
+    const connectionDuration = this.connectionStartTime ? Date.now() - this.connectionStartTime : 0;
 
     this.currentConnectionStatus = params.connection_status;
     this.currentTransportType = params.transport_type;

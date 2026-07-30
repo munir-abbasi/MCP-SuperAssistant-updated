@@ -1,4 +1,5 @@
-// import { logMessage } from './helpers'; // Assuming helpers exists in utils - Replaced with logger.debug
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// import { logMessage } from './helpers';
 
 // IMPORTANT: Load credentials via environment variables during build
 // It's strongly recommended to load these from a secure configuration or environment variables during build,
@@ -17,10 +18,12 @@ import { createLogger } from '@extension/shared/lib/logger';
 const logger = createLogger('AnalyticsService');
 
 const GA_ENDPOINT = 'https://www.google-analytics.com/mp/collect';
-const GA_DEBUG_ENDPOINT = 'https://www.google-analytics.com/debug/mp/collect';
 
 // Use debug endpoint for development
-const IS_DEV_MODE = typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getManifest ? !('update_url' in chrome.runtime.getManifest()) : true;
+const IS_DEV_MODE =
+  typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getManifest
+    ? !('update_url' in chrome.runtime.getManifest())
+    : true;
 // const API_ENDPOINT = IS_DEV_MODE ? GA_DEBUG_ENDPOINT : GA_ENDPOINT;
 const API_ENDPOINT = GA_ENDPOINT;
 
@@ -102,7 +105,7 @@ async function getOrCreateSessionId(): Promise<string> {
 export async function sendAnalyticsEvent(
   name: string,
   params: { [key: string]: any },
-  userProperties?: { [key: string]: { value: any } }
+  userProperties?: { [key: string]: { value: any } },
 ): Promise<void> {
   // Basic check for essential credentials
   if (
@@ -163,7 +166,7 @@ export async function sendAnalyticsEvent(
         try {
           const successBody = await response.json();
           logger.debug('[GA4] Debug endpoint success response:', JSON.stringify(successBody, null, 2));
-        } catch (parseError) {
+        } catch {
           logger.debug('[GA4] Debug endpoint success response likely had no body (e.g., 200 OK with empty body).');
         }
       }
@@ -175,7 +178,7 @@ export async function sendAnalyticsEvent(
         try {
           const errorBody = await response.json();
           logger.error('[GA4] Debug endpoint error response:', JSON.stringify(errorBody, null, 2));
-        } catch (parseError) {
+        } catch {
           logger.error('[GA4] Debug endpoint error response could not be parsed as JSON:', await response.text()); // Log as text if JSON fails
         }
       }
@@ -249,11 +252,11 @@ export function collectDemographicData(): { [key: string]: any } {
       osVersion = match && match[1] ? match[1].replace(/_/g, '.') : 'Unknown';
     } else if (userAgent.indexOf('Linux') > -1) {
       os = 'Linux';
-      const match = userAgent.match(/Linux ([\w\d\.]+)/);
+      const match = userAgent.match(/Linux ([\w\d.]+)/);
       osVersion = match && match[1] ? match[1] : 'Unknown';
     } else if (userAgent.indexOf('Android') > -1) {
       os = 'Android';
-      const match = userAgent.match(/Android ([\d\.]+)/);
+      const match = userAgent.match(/Android ([\d.]+)/);
       osVersion = match && match[1] ? match[1] : 'Unknown';
     } else if (userAgent.indexOf('iOS') > -1 || userAgent.indexOf('iPhone') > -1 || userAgent.indexOf('iPad') > -1) {
       os = 'iOS';

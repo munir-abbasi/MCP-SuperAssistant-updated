@@ -9,10 +9,11 @@ import { PluginRegistry } from './PluginRegistry.js';
 import { SSEPlugin } from '../plugins/sse/SSEPlugin.js';
 import { WebSocketPlugin } from '../plugins/websocket/WebSocketPlugin.js';
 import { StreamableHttpPlugin } from '../plugins/streamable-http/StreamableHttpPlugin.js';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { ClientConfig, ConnectionRequest } from '../types/config.js';
 import { DEFAULT_CLIENT_CONFIG } from '../types/config.js';
-import type { TransportType, ITransportPlugin, PluginConfig } from '../types/plugin.js';
-import type { Primitive, NormalizedTool, PrimitivesResponse } from '../types/primitives.js';
+import type { TransportType, ITransportPlugin } from '../types/plugin.js';
+import type { NormalizedTool, PrimitivesResponse } from '../types/primitives.js';
 import type { AllEvents } from '../types/events.js';
 import { createLogger } from '@extension/shared/lib/logger';
 import { analyticsService } from '../../../utils/analytics-service.js';
@@ -22,7 +23,7 @@ export enum ConnectionState {
   DISCONNECTED = 'DISCONNECTED',
   CONNECTING = 'CONNECTING',
   CONNECTED = 'CONNECTED',
-  DISCONNECTING = 'DISCONNECTING'
+  DISCONNECTING = 'DISCONNECTING',
 }
 
 const logger = createLogger('McpClient');
@@ -103,7 +104,10 @@ export class McpClient extends EventEmitter<AllEvents> {
 
   async connect(request: ConnectionRequest): Promise<void> {
     // If same connection type and already connected, skip
-    if (this.connectionState === ConnectionState.CONNECTED && this.activePlugin?.metadata.transportType === request.type) {
+    if (
+      this.connectionState === ConnectionState.CONNECTED &&
+      this.activePlugin?.metadata.transportType === request.type
+    ) {
       logger.debug(`Already connected via ${request.type}, skipping`);
       return;
     }
@@ -113,11 +117,14 @@ export class McpClient extends EventEmitter<AllEvents> {
       logger.debug('[McpClient] Connection already in progress, waiting...');
       try {
         await this.connectionPromise;
-        if (this.connectionState === ConnectionState.CONNECTED && this.activePlugin?.metadata.transportType === request.type) {
+        if (
+          this.connectionState === ConnectionState.CONNECTED &&
+          this.activePlugin?.metadata.transportType === request.type
+        ) {
           logger.debug('[McpClient] Existing connection matches request');
           return;
         }
-      } catch (error) {
+      } catch {
         logger.debug('[McpClient] Previous connection failed, starting new one');
       }
     }
@@ -174,15 +181,15 @@ export class McpClient extends EventEmitter<AllEvents> {
       if (type === 'websocket' && 'setDisconnectionCallback' in plugin) {
         (plugin as any).setDisconnectionCallback((reason: string, code?: number, details?: string) => {
           logger.debug(`WebSocket disconnection detected: ${reason} (code: ${code})`);
-          
+
           // Mark as disconnected immediately
           this.connectionState = ConnectionState.DISCONNECTED;
-          
+
           // Emit disconnection event with details
           this.emit('connection:status-changed', {
             isConnected: false,
             type: 'websocket',
-            error: `WebSocket disconnected: ${reason}${code ? ` (code: ${code})` : ''}${details ? ` - ${details}` : ''}`
+            error: `WebSocket disconnected: ${reason}${code ? ` (code: ${code})` : ''}${details ? ` - ${details}` : ''}`,
           });
 
           // Clean up connection state
@@ -228,12 +235,12 @@ export class McpClient extends EventEmitter<AllEvents> {
 
       // Clear cache on new connection
       this.clearPrimitivesCache();
-    
-    // Reject all active calls
-    for (const [callId, call] of this.activeCalls.entries()) {
-      call.reject(new Error('Connection dropped or disconnected'));
-    }
-    this.activeCalls.clear();
+
+      // Reject all active calls
+      for (const [, call] of this.activeCalls.entries()) {
+        call.reject(new Error('Connection dropped or disconnected'));
+      }
+      this.activeCalls.clear();
 
       // Start health monitoring
       this.startHealthMonitoring();
@@ -247,13 +254,15 @@ export class McpClient extends EventEmitter<AllEvents> {
       });
 
       // Track successful connection
-      analyticsService.trackConnectionChange({
-        connection_status: 'connected',
-        transport_type: type,
-        tools_discovered: 0, // Will be updated after getPrimitives
-      }).catch((error: unknown) => {
-        logger.warn('[McpClient] Analytics tracking failed:', error);
-      });
+      analyticsService
+        .trackConnectionChange({
+          connection_status: 'connected',
+          transport_type: type,
+          tools_discovered: 0, // Will be updated after getPrimitives
+        })
+        .catch((error: unknown) => {
+          logger.warn('[McpClient] Analytics tracking failed:', error);
+        });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error(`Connection failed:`, error);
@@ -272,20 +281,25 @@ export class McpClient extends EventEmitter<AllEvents> {
       });
 
       // Track connection failure
-      analyticsService.trackConnectionChange({
-        connection_status: 'error',
-        transport_type: type,
-        error_type: error instanceof Error ? error.name : 'UnknownError',
-      }).catch((analyticsError: unknown) => {
-        logger.warn('[McpClient] Analytics tracking failed:', analyticsError);
-      });
+      analyticsService
+        .trackConnectionChange({
+          connection_status: 'error',
+          transport_type: type,
+          error_type: error instanceof Error ? error.name : 'UnknownError',
+        })
+        .catch((analyticsError: unknown) => {
+          logger.warn('[McpClient] Analytics tracking failed:', analyticsError);
+        });
 
       throw error;
     }
   }
 
   async disconnect(): Promise<void> {
-    if (this.connectionState === ConnectionState.DISCONNECTED || this.connectionState === ConnectionState.DISCONNECTING) {
+    if (
+      this.connectionState === ConnectionState.DISCONNECTED ||
+      this.connectionState === ConnectionState.DISCONNECTING
+    ) {
       logger.debug('[McpClient] Already disconnected or disconnecting');
       return;
     }
@@ -346,15 +360,20 @@ export class McpClient extends EventEmitter<AllEvents> {
     this.activeTransport = null;
     this.connectionState = ConnectionState.DISCONNECTED;
     this.clearPrimitivesCache();
-    
+
     // Reject all active calls
-    for (const [callId, call] of this.activeCalls.entries()) {
+    for (const [, call] of this.activeCalls.entries()) {
       call.reject(new Error('Connection dropped or disconnected'));
     }
     this.activeCalls.clear();
   }
 
-  async callTool(toolName: string, args: Record<string, any>, adapterName?: string, signal?: AbortSignal): Promise<any> {
+  async callTool(
+    toolName: string,
+    args: Record<string, any>,
+    adapterName?: string,
+    signal?: AbortSignal,
+  ): Promise<any> {
     if (this.connectionState !== ConnectionState.CONNECTED || !this.activePlugin || !this.client) {
       throw new Error('Not connected to any MCP server');
     }
@@ -380,7 +399,12 @@ export class McpClient extends EventEmitter<AllEvents> {
     });
   }
 
-  private async executeToolCall(callId: string, toolName: string, args: Record<string, any>, adapterName?: string): Promise<any> {
+  private async executeToolCall(
+    callId: string,
+    toolName: string,
+    args: Record<string, any>,
+    adapterName?: string,
+  ): Promise<any> {
     if (this.connectionState !== ConnectionState.CONNECTED || !this.activePlugin || !this.client) {
       throw new Error('Not connected to any MCP server');
     }
@@ -396,16 +420,18 @@ export class McpClient extends EventEmitter<AllEvents> {
       this.emit('tool:call-completed', { toolName, result, duration });
 
       // Track tool execution analytics with enhanced context
-      analyticsService.trackToolExecution({
-        tool_name: toolName,
-        execution_status: 'success',
-        execution_duration_ms: duration,
-        transport_type: this.activePlugin?.metadata.transportType || 'unknown',
-        adapter_name: adapterName, // Pass adapter name from content script
-      }).catch((error: unknown) => {
-        // Don't fail tool execution if analytics fails
-        logger.warn('[McpClient] Analytics tracking failed:', error);
-      });
+      analyticsService
+        .trackToolExecution({
+          tool_name: toolName,
+          execution_status: 'success',
+          execution_duration_ms: duration,
+          transport_type: this.activePlugin?.metadata.transportType || 'unknown',
+          adapter_name: adapterName, // Pass adapter name from content script
+        })
+        .catch((error: unknown) => {
+          // Don't fail tool execution if analytics fails
+          logger.warn('[McpClient] Analytics tracking failed:', error);
+        });
 
       this.activeCalls.delete(callId);
       return result;
@@ -416,17 +442,19 @@ export class McpClient extends EventEmitter<AllEvents> {
       this.emit('tool:call-failed', { toolName, error: toolError, duration });
 
       // Track failed tool execution analytics with enhanced context
-      analyticsService.trackToolExecution({
-        tool_name: toolName,
-        execution_status: 'error',
-        execution_duration_ms: duration,
-        transport_type: this.activePlugin?.metadata.transportType || 'unknown',
-        error_type: toolError.name || 'UnknownError',
-        adapter_name: adapterName, // Pass adapter name from content script
-      }).catch((analyticsError: unknown) => {
-        // Don't fail tool execution if analytics fails
-        logger.warn('[McpClient] Analytics tracking failed:', analyticsError);
-      });
+      analyticsService
+        .trackToolExecution({
+          tool_name: toolName,
+          execution_status: 'error',
+          execution_duration_ms: duration,
+          transport_type: this.activePlugin?.metadata.transportType || 'unknown',
+          error_type: toolError.name || 'UnknownError',
+          adapter_name: adapterName, // Pass adapter name from content script
+        })
+        .catch((analyticsError: unknown) => {
+          // Don't fail tool execution if analytics fails
+          logger.warn('[McpClient] Analytics tracking failed:', analyticsError);
+        });
 
       // Check if connection is still healthy after error
       if (!(await this.isHealthy())) {
@@ -459,8 +487,8 @@ export class McpClient extends EventEmitter<AllEvents> {
 
       // Normalize tools
       const tools = this.normalizeTools(primitives.filter(p => p.type === 'tool') as any[]);
-      const resources = primitives.filter(p => p.type === 'resource').map(p => (p.value as any));
-      const prompts = primitives.filter(p => p.type === 'prompt').map(p => (p.value as any));
+      const resources = primitives.filter(p => p.type === 'resource').map(p => p.value as any);
+      const prompts = primitives.filter(p => p.type === 'prompt').map(p => p.value as any);
       const errors = primitives.filter(p => p.type === 'error').map(p => p.value as any);
 
       const response: PrimitivesResponse = {
@@ -499,17 +527,18 @@ export class McpClient extends EventEmitter<AllEvents> {
       // Update connection tracking with tools count (only if this is the first time discovering tools)
       // This prevents duplicate connection events when tools are refreshed
       if (this.primitivesCache === null || this.primitivesCache.tools.length === 0) {
-        analyticsService.trackConnectionChange({
-          connection_status: 'connected',
-          transport_type: this.activePlugin.metadata.transportType,
-          tools_discovered: tools.length,
-        }).catch((error: unknown) => {
-          logger.warn('[McpClient] Analytics tracking failed:', error);
-        });
+        analyticsService
+          .trackConnectionChange({
+            connection_status: 'connected',
+            transport_type: this.activePlugin.metadata.transportType,
+            tools_discovered: tools.length,
+          })
+          .catch((error: unknown) => {
+            logger.warn('[McpClient] Analytics tracking failed:', error);
+          });
       }
 
-      logger.debug(`Retrieved ${tools.length} tools, ${resources.length} resources, ${prompts.length} prompts`,
-      );
+      logger.debug(`Retrieved ${tools.length} tools, ${resources.length} resources, ${prompts.length} prompts`);
       return response;
     } catch (error) {
       logger.error('[McpClient] Failed to get primitives:', error);

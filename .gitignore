@@ -92,6 +92,10 @@ pages/content/src/utils/siteAdapter.ts
 pages/content/src/utils/themeDetector.ts
 clients.md
 
+# Playwright test artifacts
+**/playwright-report/
+**/test-results/
+
 # documentation, plans, skills, archives, cache, and scripts (not extension code)
 plugin-upgrade-plan/
 troubleshoot-mcp-superassistant/

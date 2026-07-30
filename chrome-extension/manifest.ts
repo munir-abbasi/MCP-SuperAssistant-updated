@@ -47,7 +47,6 @@ const manifest = {
     '*://*.kimi.com/*',
     '*://*.chat.z.ai/*',
     '*://*.chat.qwen.ai/*',
-
   ],
 
   permissions: ['storage', 'clipboardWrite'],
@@ -163,7 +162,6 @@ const manifest = {
       js: ['content/index.iife.js'],
       run_at: 'document_idle',
     },
-
   ],
   // devtools_page: 'devtools/index.html',
   web_accessible_resources: [

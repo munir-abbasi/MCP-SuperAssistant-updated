@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
 
@@ -17,17 +18,17 @@ export interface PluginMetadata {
 
 export interface ITransportPlugin {
   readonly metadata: PluginMetadata;
-  
+
   initialize(config: PluginConfig): Promise<void>;
   connect(uri: string): Promise<Transport>;
   disconnect(): Promise<void>;
   isConnected(): boolean;
   isSupported(uri: string): boolean;
   getDefaultConfig(): PluginConfig;
-  
+
   // Health monitoring
   isHealthy(): Promise<boolean>;
-  
+
   // Tool operations
   callTool(client: Client, toolName: string, args: any): Promise<any>;
   getPrimitives(client: Client): Promise<any[]>;

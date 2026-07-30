@@ -1,6 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { createLogger } from '@extension/shared/lib/logger';
-
 
 const logger = createLogger('WebSocketTransport');
 
@@ -29,7 +29,7 @@ export class WebSocketTransport implements Transport {
   private messageQueue: any[] = [];
   private isConnected: boolean = false;
   // Removed ping/pong timers - using MCP protocol connection management
-  private eventListeners = new Map<string, Set<Function>>();
+  private eventListeners = new Map<string, Set<(...args: any[]) => void>>();
 
   constructor(url: string, options: WebSocketTransportOptions = {}) {
     this.url = url;
@@ -198,14 +198,14 @@ export class WebSocketTransport implements Transport {
   // Removed custom ping/pong methods - using MCP protocol instead
 
   // Event emitter functionality
-  on(event: string, listener: Function): void {
+  on(event: string, listener: (...args: any[]) => void): void {
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, new Set());
     }
     this.eventListeners.get(event)!.add(listener);
   }
 
-  off(event: string, listener: Function): void {
+  off(event: string, listener: (...args: any[]) => void): void {
     const listeners = this.eventListeners.get(event);
     if (listeners) {
       listeners.delete(listener);

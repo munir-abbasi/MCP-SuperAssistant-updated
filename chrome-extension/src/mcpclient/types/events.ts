@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { ITransportPlugin, TransportType } from './plugin.js';
 
 export interface ClientEvents {
@@ -17,19 +18,19 @@ export interface RegistryEvents {
 }
 
 export interface ConnectionEvents {
-  'connection:status-changed': { 
-    isConnected: boolean; 
+  'connection:status-changed': {
+    isConnected: boolean;
     type: TransportType | null;
     error?: string;
   };
-  'connection:health-check': { 
-    healthy: boolean; 
+  'connection:health-check': {
+    healthy: boolean;
     type: TransportType;
     timestamp: number;
   };
-  'connection:reconnecting': { 
-    attempt: number; 
-    maxAttempts: number; 
+  'connection:reconnecting': {
+    attempt: number;
+    maxAttempts: number;
     type: TransportType;
   };
 }

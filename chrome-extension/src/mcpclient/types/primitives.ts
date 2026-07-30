@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export type PrimitiveType = 'resource' | 'tool' | 'prompt' | 'error';
 
 export interface PrimitiveValue {
@@ -5,18 +6,12 @@ export interface PrimitiveValue {
   description?: string;
   uri?: string;
   inputSchema?: any;
-  input_schema?: any;  // snake_case variant for compatibility
+  input_schema?: any; // snake_case variant for compatibility
   arguments?: any[];
-  schema?: string;     // JSON string representation for legacy compatibility
+  schema?: string; // JSON string representation for legacy compatibility
 }
 
-export interface CapabilityError {
-  capability: string;
-  message: string;
-  code?: string;
-}
-
-export type Primitive = 
+export type Primitive =
   | { type: 'resource' | 'tool' | 'prompt'; value: PrimitiveValue }
   | { type: 'error'; value: CapabilityError };
 

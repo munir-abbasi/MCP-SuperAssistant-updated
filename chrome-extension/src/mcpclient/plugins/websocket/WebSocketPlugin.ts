@@ -1,12 +1,11 @@
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import { LoggingMessageNotificationSchema } from '@modelcontextprotocol/sdk/types.js';
 
 import type { ITransportPlugin, PluginMetadata, PluginConfig } from '../../types/plugin.js';
 import type { WebSocketPluginConfig } from '../../types/config.js';
 import { WebSocketTransport } from './WebSocketTransport.js';
 import { createLogger } from '@extension/shared/lib/logger';
-
 
 const logger = createLogger('WebSocketPlugin');
 
@@ -78,7 +77,7 @@ export class WebSocketPlugin implements ITransportPlugin {
       transport.on('close', (event: any) => {
         logger.debug(`Transport closed: ${event.code} ${event.reason}`);
         this.isConnectedFlag = false;
-        
+
         // Notify the main client about disconnection
         this.handleDisconnection('WebSocket closed', event.code, event.reason);
       });
@@ -276,7 +275,7 @@ export class WebSocketPlugin implements ITransportPlugin {
    */
   private handleDisconnection(reason: string, code?: number, details?: string): void {
     logger.debug(`Handling disconnection: ${reason} (code: ${code}, details: ${details})`);
-    
+
     if (this.disconnectionCallback) {
       try {
         this.disconnectionCallback(reason, code, details);

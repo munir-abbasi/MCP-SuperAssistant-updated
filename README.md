@@ -310,7 +310,25 @@ This fork introduces significant engineering improvements over the upstream [MCP
 - **Chrome/Firefox parity** — Tested from the same commit with identical payloads. Firefox manifest, CSP, and module conversion verified independently.
 - **Payload safety** — Explicit size budgets, no megabyte-base64 DOM injection, bounded previews for oversized results.
 - **Deterministic testing** — Regression tests before every fix, real-browser core flow, integrity-checked release artifacts with SHA-256 hashes.
-- **Issue-ledger discipline** — 70+ upstream issues classified by first failing boundary, reproduced before any fix claim.
+- **Issue-ledger discipline** — 79 upstream issues classified against this fork in [DEFERRED_ISSUES.md](./DEFERRED_ISSUES.md) with evidence-based fix status (Fixed/Partial/Open/Won't Fix), code references, and reproduction notes.
+
+## Upstream Issues Status
+
+For a comprehensive audit of all **79 open upstream issues** against this fork's codebase,
+see [DEFERRED_ISSUES.md](./DEFERRED_ISSUES.md).
+
+Key fixes already applied in this fork:
+
+| Issue | Status |
+|-------|--------|
+| `outputSchema` breaks tool discovery (#199, #191, #196) | ✅ Fixed |
+| CSP `unsafe-eval` blocks schema compile (#171) | ✅ Fixed |
+| SSE reconnect "Already connected" (#194, #184, #183) | ✅ Fixed |
+| `keyValidator._parse is not a function` (#158) | ✅ Fixed |
+| Re-execution timeout loops (#155) | ✅ Fixed |
+| Qwen not working (#148) | ✅ Fixed |
+| Frequent SSE disconnections (#68) | ✅ Fixed |
+| Invalid enum value `'sse'` (#81) | ✅ Fixed |
 
 ## License
 

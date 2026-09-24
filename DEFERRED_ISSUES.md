@@ -1,7 +1,9 @@
 # Deferred Issues
 
-Status of upstream issues from [srbhptl39/MCP-SuperAssistant](https://github.com/srbhptl39/MCP-SuperAssistant/issues)
-against the `munir-abbasi/MCP-SuperAssistant-updated` fork (commit `8176383`).
+Historical audit of upstream issues from
+[srbhptl39/MCP-SuperAssistant](https://github.com/srbhptl39/MCP-SuperAssistant/issues),
+prepared against fork commit `8176383`. Current dispositions and verification scope live
+in [`docs/qualification/issue-coverage-ledger.md`](docs/qualification/issue-coverage-ledger.md).
 
 Key:
 - **✅ Fixed** — resolved by WP4 stabilization or fork cleanup
@@ -136,6 +138,6 @@ Key:
 | Rename remote `upstream` → `origin` | Low | Cosmetic; `origin` is conventional for your own fork |
 | Enable TypeScript strict mode | Low | Requires fixing 200+ `any` types across 18+ files |
 | Remove `GITHUB_TOKEN` env var from shell config | Medium | Pushes currently require `unset GITHUB_TOKEN` due to credential override |
-| Set up CI (GitHub Actions for lint + build + test) | Low | Nice-to-have for PR quality gating |
+| Set up CI (GitHub Actions for lint + build + test) | ~~Low~~ **Done (2026-09-24)** | Fast `main` gate now runs type-check, node regression tests, and lint; build and E2E remain separate workflows. |
 | Verify icon-16.png is correct size | Low | Was resized from icon-128; should verify 16×16 is crisp |
 | Audit all `any` types in MCP client code | Low | 18+ files have file-level `no-explicit-any` eslint-disable |

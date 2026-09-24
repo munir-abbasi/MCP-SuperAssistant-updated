@@ -1,96 +1,69 @@
-# Release Notes — v0.6.2-rc.1 (Fork Cleanup Release)
+# Release Notes — v0.7.0
 
-**MCP SuperAssistant** is a Chrome Extension + MCP proxy that brings
-Model Context Protocol (MCP) tool support to Gemini, z.ai, Qwen, Kagi,
-and other AI chat platforms.
+**Release date:** 2026-09-24
 
-This is the first release published from the
-[`munir-abbasi/MCP-SuperAssistant-updated`](https://github.com/munir-abbasi/MCP-SuperAssistant-updated)
-fork, based on upstream v0.6.2 baseline with WP4 stabilization.
+MCP SuperAssistant v0.7.0 adds an end-to-end runtime operation contract, bounded
+delivery recovery, agent-facing control documentation, and repository gates for the
+`munir-abbasi/MCP-SuperAssistant-updated` fork.
 
----
+## Highlights
 
-## What's New in This Release
+### Safer Tool Execution and Delivery
 
-### Fork Housekeeping
-- **Fully rewritten README** with corrected grammar, fork attribution
-  (Munir Abbasi as maintainer, Saurabh Patel as original author),
-  "Improvements Over the Original" section, Kagi platform support.
-- **Dual-copyright LICENSE** (2025 Saurabh Patel + 2026 Munir Abbasi).
-- **GitHub config aligned** to `@munir-abbasi` (CODEOWNERS, FUNDING,
-  auto-assign, package URL).
-- **Git history cleaned**: 37+ non-extension files purged from history
-  via `git filter-repo`. All branches except `master` deleted.
+- Threads logical operation and dispatch-attempt identity across renderer, content,
+  background, and MCP client boundaries.
+- Records monotonic C1–C6 checkpoints and persistent delivery receipts for observation
+  and bounded recovery.
+- Serializes delivery to the active page destination and preserves confirmed insertion
+  when submission must be retried.
+- Prevents blind redispatch after an ambiguous tool-call timeout or any other uncertain
+  post-dispatch failure.
 
-### Code Cleanup
-- **Firebase Remote Config removed**: Deleted 962 lines of dead REST-based
-  code that was never enabled. Removed unused `firebase` npm dep.
-  Background entry point reduced from 1185 to 1033 lines.
-- **Lint errors: 736 → 0**: 602 auto-fixed, 134 manually. Cleaned unused
-  imports, variables, functions, duplicate exports, type annotations.
-  File-level eslint-disable for legitimate `any` usage in MCP client code
-  (dynamic JSON-RPC payloads) and public JS files.
-- **icon-16.png created**: Required 16px extension icon was missing from
-  repo (referenced in manifest but never committed).
+### Regression Coverage
 
-### What Stayed the Same
-- All MCP protocol behavior, transport plugins (SSE, WebSocket, Streamable
-  HTTP), and platform integrations are unchanged from upstream.
-- Proxy (`@srbhptl39/mcp-superassistant-proxy`) remains an external npm
-  dependency — not fork-specific.
-- Bash build/utility scripts preserved and re-tracked.
+- Adds tests for hard single dispatch, delivery checkpoint recovery, effect-safe
+  observation, MCP client state transitions, tool discovery, and manifest version
+  encoding.
+- The local release gate covers the workspace type-check and 23 Chrome-extension node
+  tests. Browser E2E and hosted CI results are recorded separately after publication.
 
----
+### Agent and Repository Tooling
+
+- Adds the AGENTS/SYSTEM/ARCHITECTURE/AGENT_GUIDE documentation tower, the static agent
+  control map, and scoped qualification evidence.
+- Adds the Stage 10 benchmark harness and the read-only `pnpm agent:inspect --json`
+  Situation Packet shim.
+- Adds a fast GitHub Actions gate for type-checking, node tests, and linting on `main`;
+  retains separate build-artifact and browser E2E workflows.
+- Restores the Husky pre-commit hook and excludes local browser profiles, agent state,
+  probes, and generated test artifacts from version control.
+
+### Versioning
+
+The package release is `0.7.0`. Browser manifests use the Chrome-compatible version
+`0.7.0.65535` and retain `0.7.0` in `version_name`.
 
 ## Installation
 
-1. Build the extension:
-   ```bash
-   pnpm install
-   pnpm build
-   ```
+```bash
+pnpm install --frozen-lockfile
+pnpm build
+```
 
-2. Load unpacked extension from `dist/` in Chrome via
-   `chrome://extensions` → Developer mode → Load unpacked.
+Load the unpacked extension from `dist/` in a Chromium browser. Use
+`pnpm build:firefox` for the Firefox-compatible MV3 artifact.
 
-3. Connect the proxy:
-   ```bash
-   npx @srbhptl39/mcp-superassistant-proxy
-   ```
+## Qualification Scope
 
-4. Open Gemini, z.ai, Qwen, or Kagi and start using MCP tools.
-
----
-
-## Upstream Issues Status
-
-A comprehensive audit of all **79 open issues** from the upstream repo against this
-fork's codebase is maintained in [DEFERRED_ISSUES.md](./DEFERRED_ISSUES.md). Key fixes
-applied:
-
-| Issue | Status |
-|-------|--------|
-| `outputSchema` breaks tool discovery (#199, #191, #196) | ✅ Fixed |
-| CSP `unsafe-eval` blocks schema compile (#171) | ✅ Fixed |
-| SSE reconnect "Already connected" (#194, #184, #183) | ✅ Fixed |
-| `keyValidator._parse is not a function` (#158) | ✅ Fixed |
-| Re-execution timeout loops (#155) | ✅ Fixed |
-| Qwen not working (#148) | ✅ Fixed |
-
-## Known Issues
-
-- **E2E tests require Playwright browsers** — `npx playwright install chromium`
-  must be run before `pnpm e2e`. See `packages/e2e/` for details.
-- **MV3 service workers are event-driven** — Playwright cannot reliably
-  discover extension pages. Protocol behavior is covered by fixture-server tests.
-- **Qwen function-call rendering** has stabilization tweaks in the WP4
-  baseline — see commit history for details.
-
----
+This release does not claim universal live-site qualification. Current browser, site,
+transport, and runtime evidence is scoped in [`docs/qualification/`](docs/qualification/).
+Open and historical issue dispositions remain documented in
+[`DEFERRED_ISSUES.md`](DEFERRED_ISSUES.md).
 
 ## Previous Releases
 
-| Version | Date       | Notes                             |
-|---------|------------|-----------------------------------|
-| 0.6.2   | 2026-07-17 | Stable WP4 release (upstream)     |
-| 0.6.1   | 2026-07-15 | Initial stable release (upstream) |
+| Version | Date | Notes |
+|---|---|---|
+| 0.6.2-rc.1 | 2026-07-30 | Fork cleanup release |
+| 0.6.2 | 2026-07-17 | Stable WP4 release (upstream) |
+| 0.6.1 | 2026-07-15 | Initial stable release (upstream) |

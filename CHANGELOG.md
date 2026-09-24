@@ -7,19 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Removed
-- **Stale root-level docs**: `stabilization_status.md`, `STABILIZATION_STATUS.md`,
-  `TROUBLESHOOTING_PLAN.md`, `WORKING_DIRECTORIES.md` — WP4-era debris, superseded by
-  DEFERRED_ISSUES.md and current documentation.
+---
+
+## [0.7.0] — 2026-09-24
 
 ### Added
-- CHANGELOG.md and RELEASE_NOTES.md for the fork.
-- DEFERRED_ISSUES.md — comprehensive audit of 79 upstream open issues against the fork's codebase, classified by fix status (Fixed/Partial/Open/Won't Fix) with evidence and code references.
+- Operation identity and attempt tracking across renderer, content, background, and MCP
+  client boundaries.
+- Persistent C1–C6 delivery receipts, destination-bound recovery, and operation
+  observation tooling.
+- Regression coverage for single dispatch, delivery recovery, effect-safe observation,
+  MCP client state transitions, discovery, and browser-safe manifest versions.
+- Agent control documentation, a machine-readable control map, scoped qualification
+  evidence, the Stage 10 benchmark harness, and the `agent:inspect` command.
+- A fast GitHub Actions gate for type-checking, node regression tests, and linting on
+  `main`.
 
-### Fixed
-- **E2E tests**: Fixed extension path (`dist/chrome` → `dist`) and updated test to verify
-  service worker + manifest instead of navigating to non-existent options page.
-  (Playwright browser download deferred — see `packages/e2e/README.md`.)
+### Changed
+- Consolidated workflow triggers on `main` and restored the Husky pre-commit hook.
+- Encoded package SemVer as a browser-safe four-component manifest version while
+  retaining the release label in `version_name`.
+- Removed the unused Firebase dependency graph from the lockfile and normalized source
+  formatting through the repaired hook.
+
+### Security
+- Enforced hard single dispatch for tool calls when execution effects are unknown.
+- Ignored local browser profiles, agent state, probes, and test artifacts to prevent
+  accidental publication.
 
 ---
 
@@ -96,7 +110,8 @@ Current release of the `munir-abbasi/MCP-SuperAssistant-updated` fork.
 
 ---
 
-[Unreleased]: https://github.com/munir-abbasi/MCP-SuperAssistant-updated
+[Unreleased]: https://github.com/munir-abbasi/MCP-SuperAssistant-updated/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/munir-abbasi/MCP-SuperAssistant-updated/releases/tag/v0.7.0
 [0.6.2-rc.1-fork]: https://github.com/munir-abbasi/MCP-SuperAssistant-updated
 [0.6.2]: https://github.com/srbhptl39/MCP-SuperAssistant/releases/tag/v0.6.2
 [0.6.2-rc.1-upstream]: https://github.com/srbhptl39/MCP-SuperAssistant/releases/tag/v0.6.2-rc.1

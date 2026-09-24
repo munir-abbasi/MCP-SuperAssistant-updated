@@ -19,6 +19,8 @@ Brings MCP to ChatGPT, Perplexity, Grok, Gemini, Google AI Studio, OpenRouter, K
     
    ![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)
    ![Build Status](https://img.shields.io/badge/Status-Active-success?style=flat-square)
+   ![CI](https://github.com/munir-abbasi/MCP-SuperAssistant-updated/actions/workflows/ci.yml/badge.svg)
+   ![Release](https://img.shields.io/github/v/tag/munir-abbasi/MCP-SuperAssistant-updated?label=release)
 
 </div>
 
@@ -26,7 +28,17 @@ Brings MCP to ChatGPT, Perplexity, Grok, Gemini, Google AI Studio, OpenRouter, K
 
 > **Note:** This extension has not been published to the Chrome Web Store or Firefox Add-ons yet. Use the manual installation instructions below.
 
-<br>
+### Manual Installation (Development)
+
+#### Release Version
+1. Download the latest release from [Releases](https://github.com/munir-abbasi/MCP-SuperAssistant-updated/releases)
+2. Unzip the downloaded file
+3. Navigate to `chrome://extensions/` in Chrome
+4. Enable "Developer mode"
+5. Click "Load unpacked" and select the unzipped directory
+6. Follow [Connecting to Local Proxy Server](#connecting-to-local-proxy-server) to connect to your MCP server
+
+To work on the source instead, see [Development](#development) below.
 
 ## Overview
 
@@ -247,22 +259,12 @@ In such cases, use models that are designed for tool calling or have stronger to
 {"type": "function_call_end", "call_id": 1}
 ```
 
-### Manual Installation (Development)
-
-#### Release Version
-1. Download the latest release from [Releases](https://github.com/munir-abbasi/MCP-SuperAssistant-updated/releases)
-2. Unzip the downloaded file
-3. Navigate to `chrome://extensions/` in Chrome
-4. Enable "Developer mode"
-5. Click "Load unpacked" and select the unzipped directory
-6. Follow [Connecting to Local Proxy Server](#connecting-to-local-proxy-server) to connect to your MCP server
-
 ## Development
 
 ### Prerequisites
 
-- Node.js >=22.12.0
-- pnpm 9.15.1
+- Node.js >=22.12.0 (pinned in `.nvmrc`; hosted CI runs this exact version)
+- pnpm 9.15.1 (pinned via `packageManager` in `package.json`)
 
 ### Setup
 
@@ -279,6 +281,18 @@ pnpm build
 # Create zip package for distribution
 pnpm zip
 ```
+
+### Verification
+
+The same gates run in CI (`.github/workflows/ci.yml`) on every push to `main` and on pull requests:
+
+```bash
+pnpm type-check                          # TypeScript across all packages
+pnpm --filter chrome-extension test      # node test suite
+pnpm lint                                # eslint across all packages
+```
+
+A separate workflow checks Prettier formatting on JS/TS/JSON files, and `build-zip.yml` builds the packaged extension artifact on every push.
 
 ## Contributing
 

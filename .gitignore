@@ -130,3 +130,21 @@ packages/e2e/setup-ack.mjs
 packages/e2e/restore-prefs.mjs
 packages/e2e/tests/adapters/
 packages/e2e/fixtures/
+
+# repository hygiene (2026-09-25): non-runtime docs, CI tooling, and local skill data —
+# kept on disk and in git history, out of the tracked tree
+/.gitignore.bak.*
+/AGENTS.md
+/AGENT_GUIDE.md
+/AGENT_SYSTEM_DESIGN.md
+/ARCHITECTURE.md
+/CLAUDE.md
+/DEFERRED_ISSUES.md
+/DIAGNOSIS.md
+/GEMINI.md
+/PUSH_TO_MAIN_PLAN.md
+/SYSTEM.md
+/docs/
+/bash-scripts/
+/.github/
+/elements-of-style-pro/

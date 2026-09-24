@@ -1,37 +1,14 @@
-# Gemini Adapter Components
+# Gemini Site Components
 
-This directory contains components specific to supporting the Google Gemini website (https://gemini.google.com/).
+This directory contains the Gemini-specific content components and input helpers. It is not the owner of the full adapter lifecycle or response-observation pipeline.
 
 ## Files
 
-- `index.ts` - Exports all Gemini-related functionality
-- `PatternUnifiedObserver.ts` - Implements a pattern-based observer for detecting tool commands in Gemini's DOM
-- `chatInputHandler.ts` - Functions for interacting with Gemini's chat input (inserting text, submitting, uploading files)
-- `markdownHandler.ts` - Functions for processing markdown content in Gemini's responses
+- `index.ts` — public exports for the Gemini component helpers.
+- `chatInputHandler.ts` — current Gemini editor insertion, tool-result insertion, submission, and file-attachment helpers.
 
-## How it works
+The site adapter and its configuration live in `pages/content/src/plugins/adapters/gemini.adapter.ts` and `pages/content/src/plugins/adapters/defaultConfigs/gemini.config.ts`. Those files own hostname-specific lifecycle behavior and selector/configuration details. Keep this README aligned with those source contracts; do not add observer or markdown-processing modules here unless they exist and are exported.
 
-The Gemini adapter integrates with the extension's architecture to provide support for the Google Gemini website. It:
+## Maintenance
 
-1. Observes the DOM for changes to detect tool commands in chat responses
-2. Processes markdown content to extract MCP tool commands
-3. Provides methods to interact with the chat interface (inserting text, submitting)
-4. Handles file uploads if supported
-
-## CSS Selectors
-
-The adapter uses the following CSS selectors to interact with Gemini's UI:
-
-- Chat input: `textarea[aria-label="Input text"]`
-- Submit button: `button[role="button"][aria-label="Send message"]`
-- File upload: `button[aria-label="Add files"]`
-- Response content: `.model-response-text`
-
-## Implementation Details
-
-- Uses the BaseUnifiedObserver for pattern-based observation of the DOM
-- The GeminiPatternUnifiedObserver extends BaseUnifiedObserver to provide Gemini-specific functionality
-- Dispatches custom events for tool detection and sidebar integration
-- Handles navigation by monitoring URL changes and popstate events
-- Converts detected tools to the correct format for processing in the sidebar
-- Integrates with the sidebar to display tool outputs 
+When Gemini changes its editor or submit controls, inspect the handler, adapter, and configuration together. Verify the adapter contract on the target site and update the scoped qualification evidence only after an actual browser/artifact check.

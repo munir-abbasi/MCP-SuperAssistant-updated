@@ -1,11 +1,14 @@
 # Shared Package (`@extension/shared`)
 
-This package contains shared TypeScript types, utilities, and constants used across the MCP SuperAssistant extension, particularly between the content script and background script components.
+This package contains shared React helpers and TypeScript utilities used across extension packages.
 
 ## Contents
 
-### Types
-- **`toolCall.ts`**: TypeScript definitions for MCP tool calls, execution results, and related data structures
+- `useStorage` from `lib/hooks/`
+- `withSuspense` and `withErrorBoundary` from `lib/hoc/`
+- shared utility types such as `ValueOf` from `lib/utils/`
+
+`src/types/toolCall.ts` contains `ToolCall` and `ToolCallMessage`, but the package root does not currently export that file. Treat the root export barrel (`index.mts`) as the public contract.
 
 ## Usage
 
@@ -19,24 +22,15 @@ To use the shared code in other packages, add the following to your `package.jso
 }
 ```
 
-Then import the shared types and utilities:
+Then import only names exposed by the root barrel:
 
 ```typescript
-// Import shared types
-import type { ToolCall, ToolResult } from '@extension/shared';
+import { withErrorBoundary } from '@extension/shared';
+import type { ValueOf } from '@extension/shared';
 
-// Use in your code
-const toolCall: ToolCall = {
-  // ... tool call data
-};
+type Status = ValueOf<{ ready: 'ready'; waiting: 'waiting' }>;
 ```
 
 ## Purpose
 
-This package ensures type consistency and code reuse across:
-- Content script components
-- Background script/service worker
-- Popup and options pages
-- Development utilities
-
-Centralizing shared code here prevents duplication and ensures type safety across the entire extension.
+Keep cross-package helpers here only when they are genuinely shared. Protocol/message contracts remain with their owning package unless they are intentionally exported through this package's root barrel.

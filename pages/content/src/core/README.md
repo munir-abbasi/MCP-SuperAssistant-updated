@@ -1,339 +1,123 @@
-# Session 10 Implementation - Main Application Initialization Sequence
+# Core Module
 
-## Overview
+Initialization orchestrator and architectural services for the content script.
 
-This implementation provides a comprehensive main application initialization sequence as described in Session 10. It ensures all components—event bus, Zustand stores, core architectural services, plugin system, and UI—are initialized in the correct order with proper dependency management.
+## Components
 
-## Key Components
+### `main-initializer.ts` — Application Initializer
 
-### 1. Main Initializer (`core/main-initializer.ts`)
-
-The central orchestrator that manages the complete initialization sequence:
+Central orchestrator for content-side application initialization:
 
 ```typescript
 import { applicationInit, applicationCleanup } from './core/main-initializer';
 
-// Initialize the complete application
-await applicationInit();
-
-// Cleanup when needed
-await applicationCleanup();
+await applicationInit();    // Initialize everything
+await applicationCleanup(); // Clean up on unload
 ```
 
-### 2. Initialization Sequence
+`applicationInit()` currently orchestrates these top-level steps in order:
 
-The initialization follows this logical order:
+1. Core services
+2. Plugin system
+3. Sidebar plugin activation
+4. Application state and initial site-adapter activation
+5. Analytics listeners/session tracking
 
-1. **Environment Setup**: Configure logging, development utilities
-2. **Event Bus Initialization**: Central event system setup
-3. **Core Services**: Error handler, performance monitor, circuit breaker, context bridge
-4. **Global Event Handlers**: Cross-system event listeners
-5. **Store Initialization**: Zustand stores with persistence
-6. **Plugin System**: Registry and adapter initialization
-7. **Application State**: Initial data loading and configuration
-8. **UI Rendering** (for UI contexts): React application rendering
+Within the core-services step, `initializeCoreServices()` performs environment/debug setup, event-bus initialization, architectural service initialization, global event handlers, and store initialization. The numbered comments inside that function describe its local setup order; they are not a formal eight-phase system architecture.
 
-### 3. Core Architectural Components
+`pages/content/src/index.ts` owns additional entry-point work around this function, including early renderer initialization and later service initialization. Use `SYSTEM.md` for the system-wide initialization model.
 
-#### Circuit Breaker (`core/circuit-breaker.ts`)
-- Prevents cascading failures
-- Monitors failure rates and temporarily disables failing operations
-- Configurable thresholds and timeout periods
+### `circuit-breaker.ts` — Circuit Breaker
 
-#### Context Bridge (`core/context-bridge.ts`)
-- Handles Chrome extension cross-context communication
-- Manages messages between content script, background, popup, and options
-- Provides state synchronization across contexts
-
-#### Global Error Handler (`core/error-handler.ts`)
-- Centralized error handling and reporting
-- Integrates with circuit breaker for recovery strategies
-- Provides error pattern detection and statistics
-
-#### Performance Monitor (`core/performance.ts`)
-- Tracks application performance metrics
-- Memory usage monitoring and leak detection
-- Operation timing and slow operation detection
-
-### 4. UI Initialization (`core/ui-initializer.ts`)
-
-Provides utilities for initializing React-based UI components:
-
-```typescript
-import { setupPopupApp } from './core/ui-initializer';
-
-// For popup applications
-await setupPopupApp(PopupAppComponent);
-
-// For options pages
-await setupOptionsApp(OptionsAppComponent);
-```
-
-## Usage Examples
-
-### Content Script Initialization
-
-```typescript
-// pages/content/src/index.ts
-import { applicationInit } from './core/main-initializer';
-
-// Initialize the complete application
-applicationInit()
-  .then(() => {
-    console.log('Application ready');
-  })
-  .catch(error => {
-    console.error('Initialization failed:', error);
-  });
-```
-
-### Popup Initialization
-
-```typescript
-// chrome-extension/src/popup/index.tsx
-import React from 'react';
-import { setupPopupApp } from '../content/src/core/ui-initializer';
-import PopupApp from './PopupApp';
-
-setupPopupApp(PopupApp).catch(error => {
-  console.error('Popup initialization failed:', error);
-});
-```
-
-### Background Script Integration
-
-```typescript
-// chrome-extension/src/background/index.ts
-import { applicationInit } from '../content/src/core/main-initializer';
-
-// Initialize core services in background context
-applicationInit().then(() => {
-  console.log('Background services initialized');
-});
-```
-
-## Development and Debugging
-
-### Debug Utilities
-
-In development mode, debug utilities are exposed on `window._appDebug`:
-
-```typescript
-// Access stores
-window._appDebug.stores.app.getState()
-
-// Access services
-window._appDebug.services.performanceMonitor.getStats()
-
-// Get performance and error statistics
-window._appDebug.getStats()
-
-// Clear debugging data
-window._appDebug.clearData()
-```
-
-### Initialization Utilities
-
-Access initialization status and utilities:
-
-```typescript
-import { initializationUtils } from './core/main-initializer';
-
-// Check initialization status
-const status = initializationUtils.getStatus();
-
-// Force re-initialization (development only)
-await initializationUtils.forceReinit();
-```
-
-## Error Handling and Recovery
-
-### Circuit Breaker Integration
-
-Operations are protected by circuit breaker patterns:
+Prevents cascading failures by monitoring failure rates and temporarily disabling operations.
 
 ```typescript
 await circuitBreaker.execute(async () => {
-  // Protected operation
   await riskyOperation();
 }, 'operation-name');
 ```
 
-### Error Recovery Strategies
+**Configuration:**
+- `failureThreshold` — Failures before opening (default: 5)
+- `resetTimeout` — Time before retry (default: 60s)
+- `monitoringWindow` — Failure counting window (default: 5min)
 
-The system implements automatic recovery strategies:
+### `error-handler.ts` — Global Error Handler
 
-- **Page Reload**: For extension context invalidation
-- **Component Reset**: For UI component failures
-- **Fallback Mode**: For plugin system failures
-
-### Error Pattern Detection
-
-The system monitors error patterns and provides warnings:
+Centralized error handling with pattern detection and statistics.
 
 ```typescript
 const errorStats = globalErrorHandler.getErrorStats();
 console.log('Total errors:', errorStats.totalErrors);
-console.log('Errors by component:', errorStats.errorsByComponent);
+console.log('By component:', errorStats.errorsByComponent);
 ```
 
-## Performance Monitoring
+### `performance.ts` — Performance Monitor
 
-### Automatic Timing
-
-All initialization phases are automatically timed:
+Tracks timing, memory usage, and slow operations.
 
 ```typescript
-const stats = performanceMonitor.getStats();
-console.log('Initialization time:', stats.measurements);
-```
-
-### Memory Monitoring
-
-Automatic memory leak detection:
-
-```typescript
-// Memory snapshots are taken every 30 seconds
-// Warnings are issued for increasing memory trends
-```
-
-### Custom Performance Tracking
-
-```typescript
-// Time a custom operation
-await performanceMonitor.time('custom-operation', async () => {
-  await customAsyncOperation();
+// Time an operation
+await performanceMonitor.time('my-operation', async () => {
+  await doWork();
 });
 
-// Mark performance points
-performanceMonitor.mark('operation-start');
-// ... do work ...
-performanceMonitor.measure('operation-duration', 'operation-start');
+// Mark and measure
+performanceMonitor.mark('start');
+// ... work ...
+performanceMonitor.measure('duration', 'start');
 ```
 
-## Event System Integration
+### `context-bridge.ts` — Context Bridge
 
-### Cross-Component Communication
+Handles Chrome extension cross-context communication between content script, background, popup, and options.
 
-Events are automatically emitted for major lifecycle events:
+### `ui-initializer.ts` — UI Initializer
+
+Utilities for mounting React applications:
 
 ```typescript
-// Listen for initialization complete
-eventBus.on('app:initialized', ({ version, timestamp, initializationTime }) => {
-  console.log(`App v${version} initialized in ${initializationTime}ms`);
-});
-
-// Listen for errors
-eventBus.on('error:unhandled', ({ error, context }) => {
-  console.error('Unhandled error:', error, 'Context:', context);
-});
+import { setupPopupApp } from './core/ui-initializer';
+await setupPopupApp(PopupAppComponent);
 ```
 
-### Plugin Integration
+## Debug Utilities
 
-Plugins automatically receive lifecycle events and can emit their own:
+In development mode, exposed on `window._appDebug`:
 
 ```typescript
-// In a plugin
-eventBus.emit('plugin:custom-event', { data: 'example' });
-
-// Listen for plugin events
-eventBus.on('plugin:registered', ({ name, version }) => {
-  console.log(`Plugin ${name} v${version} registered`);
-});
+window._appDebug.stores.app.getState()
+window._appDebug.services.performanceMonitor.getStats()
+window._appDebug.getStats()
+window._appDebug.clearData()
 ```
 
-## Migration from Legacy System
-
-### Backward Compatibility
-
-The system maintains backward compatibility through bridge functions:
+## Initialization Status
 
 ```typescript
-// Legacy initializer still works but delegates to new system
-import { initializeApp } from './initializer'; // Still works
+import { initializationUtils } from './core/main-initializer';
 
-// Recommended new approach
+const status = initializationUtils.getStatus();
+// { isInitialized, initializationTime, errorCount, performanceStats }
+
+await initializationUtils.forceReinit(); // Dev only
+```
+
+## Error Recovery
+
+The system implements automatic recovery strategies:
+- **Page Reload** — For extension context invalidation
+- **Component Reset** — For UI component failures
+- **Fallback Mode** — For plugin system failures
+
+## Migration
+
+The legacy `initializer.ts` delegates to `main-initializer.ts`:
+
+```typescript
+// Legacy (still works)
+import { initializeApp } from './initializer';
+
+// Recommended
 import { applicationInit } from './core/main-initializer';
 ```
-
-### Gradual Migration
-
-Components can be migrated individually while maintaining system functionality.
-
-## Configuration
-
-### Environment-Specific Settings
-
-Development vs. production configurations:
-
-```typescript
-if (process.env.NODE_ENV === 'development') {
-  // Debug utilities and verbose logging
-  // Extended error reporting
-  // Performance monitoring enabled
-}
-```
-
-### Customizable Thresholds
-
-Circuit breaker and performance thresholds can be configured:
-
-```typescript
-const circuitBreaker = new CircuitBreaker({
-  failureThreshold: 5,
-  resetTimeout: 60000,
-  monitoringWindow: 300000,
-});
-```
-
-## Testing
-
-### Initialization Testing
-
-```typescript
-// Test initialization status
-const status = getInitializationStatus();
-expect(status.isInitialized).toBe(true);
-expect(status.errorCount).toBe(0);
-```
-
-### Error Simulation
-
-```typescript
-// Force circuit breaker open for testing
-circuitBreaker.forceOpen();
-
-// Simulate errors for testing recovery
-globalErrorHandler.handleError(new Error('Test error'), {
-  component: 'test',
-  operation: 'simulation',
-});
-```
-
-## Benefits
-
-1. **Reliability**: Circuit breaker patterns prevent cascading failures
-2. **Performance**: Comprehensive monitoring and optimization
-3. **Debugging**: Extensive logging and debug utilities
-4. **Maintainability**: Clear separation of concerns and lifecycle management
-5. **Scalability**: Plugin-based architecture with proper dependency injection
-6. **Error Recovery**: Automatic recovery strategies and graceful degradation
-
-## Next Steps
-
-With Session 10 implemented, the application now has:
-
-- ✅ Complete initialization sequence
-- ✅ Core architectural components
-- ✅ Error resilience and recovery
-- ✅ Performance monitoring
-- ✅ Cross-context communication
-- ✅ UI initialization utilities
-- ✅ Development and debugging tools
-
-The foundation is now ready for:
-- Additional plugin development
-- Advanced error recovery strategies
-- Performance optimization
-- Production deployment

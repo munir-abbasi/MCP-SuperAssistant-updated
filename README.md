@@ -32,7 +32,20 @@ Brings MCP to ChatGPT, Perplexity, Grok, Gemini, Google AI Studio, OpenRouter, K
 
 MCP SuperAssistant is a Chrome extension that integrates the Model Context Protocol (MCP) tools with AI platforms like Perplexity, ChatGPT, Google Gemini, Google AI Studio, Grok, and more. It allows users to execute MCP tools directly from these platforms, enhancing the capabilities of web-based AI assistants.
 
-## Currently Supported Platforms
+### The system model
+
+The extension is designed as a **closed loop around one operation**: a tool call is detected, forwarded to an MCP server, the result is returned, and the result is inserted back into the conversation. Every component — the renderer, the content script, the background service worker, the MCP client, the transport plugins, the site adapters — participates in servicing that one operation. Components own narrow source facts that feed the operation's agent-facing lenses; the operation is the unit of reasoning.
+
+An agent driving this system reasons about the operation first, then follows provenance to the smallest authoritative source set that can answer its question. This is what makes the system inspectable and repairable: ownership, impact, evidence, and write-back paths are explicit, and each runtime boundary has one authoritative documentation locus plus a deterministic route to the smallest relevant evidence/observation surface.
+
+> **Current development-tree safety qualification (2026-09-23):** the repository does not yet establish exactly-once semantics for external-effecting MCP tool calls. The previously identified hidden `mcp:call-tool` redispatch path in the generic content/background message bridge is repaired (hard single-dispatch at the bridge boundary; see `docs/qualification/issue-coverage-ledger.md`), but a timeout/retry outcome still leaves the server-side effect unknown, and formal effect-class/action admission remains open. Until that contract is qualified, avoid treating Auto-Execute or a timeout/retry outcome as safe for non-idempotent writes where a duplicate external effect would matter.
+
+## Registered Adapter Platforms
+
+The current registry contains dedicated adapters for the platforms below. The
+qualification matrix contains a dated, scoped ChatGPT qualification snapshot;
+it does **not** automatically qualify a later source revision or packaged artifact.
+Other registered site adapters remain experimental or unsupported until verified.
 
 - [ChatGPT](https://chatgpt.com/)
 - [Google Gemini](https://gemini.google.com/)
@@ -43,7 +56,6 @@ MCP SuperAssistant is a Chrome extension that integrates the Model Context Proto
 - [DeepSeek](https://chat.deepseek.com/)
 - [T3 Chat](https://t3.chat/)
 - [GitHub Copilot](https://github.com/copilot)
-- [Kagi](https://kagi.com/)
 - [Mistral AI](https://chat.mistral.ai/)
 - [Kimi](https://kimi.com/)
 - [Qwen Chat](https://chat.qwen.ai/)
@@ -78,7 +90,7 @@ The Model Context Protocol (MCP) is an open standard developed by Anthropic that
 
 ## Key Features
 
-- **Multiple AI Platform Support**: Works with ChatGPT, Perplexity, Google Gemini, Grok, Google AI Studio, OpenRouter Chat, DeepSeek, Kagi, T3 Chat, GitHub Copilot, Mistral AI, Kimi, Qwen Chat, Z Chat, and more
+- **Multiple AI Platform Adapters**: Registered adapters include ChatGPT, Perplexity, Google Gemini, Grok, Google AI Studio, OpenRouter Chat, DeepSeek, T3 Chat, GitHub Copilot, Mistral AI, Kimi, Qwen Chat, and Z Chat; qualification status varies by site
 - **Tool Detection**: Automatically detects MCP tool calls in AI responses
 - **Tool Execution**: Execute MCP tools with a single click
 - **Tool Result Integration**: Seamlessly insert tool execution results back into the AI conversation
@@ -249,8 +261,8 @@ In such cases, use models that are designed for tool calling or have stronger to
 
 ### Prerequisites
 
-- Node.js (v16+)
-- pnpm
+- Node.js >=22.12.0
+- pnpm 9.15.1
 
 ### Setup
 
@@ -300,14 +312,14 @@ This repository is a maintained fork of the original [MCP SuperAssistant](https:
 
 This fork introduces significant engineering improvements over the upstream [MCP SuperAssistant](https://github.com/srbhptl39/MCP-SuperAssistant):
 
-- **Truthful connection states** — 8 distinct states (disconnected → connecting → initialized → discovering → ready / degraded / error / reconnecting). Never shows "connected, zero tools" when discovery fails.
+- **Truthful connection and discovery state** — Content state uses `disconnected`, `connecting`, `connected`, `error`, and `reconnecting`. Tool-discovery failure is surfaced and moves the MCP client out of the connected state.
 - **CSP-safe validation** — Replaced AJV runtime code generation with `@cfworker/json-schema`. No `unsafe-eval`, no `new Function`, no CSP violations.
 - **Bounded failure** — One malformed tool schema no longer hides all valid tools. Partial discovery exposes which capabilities failed. Tool output errors produce visible, bounded failures.
-- **Exactly-once execution** — Timeouts, reconnects, stream re-renders, and duplicate observations never dispatch the same tool call twice.
+- **Active-call cancellation** — Disconnect rejects active tool calls, and explicit `AbortSignal` cancellation is supported.
 - **Streamable HTTP fixes** — Correct JSON and SSE-framed tool discovery, proper `Accept` and session headers, fragmented chunk handling.
 - **MCP protocol preservation** — `outputSchema`, `annotations`, `structuredContent`, and other valid MCP fields are preserved, not stripped.
 - **Hardened site adapter contract** — 13 requirements per supported site: idempotent mounting, SPA navigation survival, semantic selectors, verified insertion and submission, clean teardown.
-- **Chrome/Firefox parity** — Tested from the same commit with identical payloads. Firefox manifest, CSP, and module conversion verified independently.
+- **Chrome/Firefox qualification evidence** — `docs/qualification/support-matrix.md` records a 2026-07-30 packaged Chrome/Firefox-on-Linux qualification snapshot. Revalidate after relevant source/build/browser changes before describing a newer artifact as qualified. Firefox conversion retains Manifest V3 in the current implementation.
 - **Payload safety** — Explicit size budgets, no megabyte-base64 DOM injection, bounded previews for oversized results.
 - **Deterministic testing** — Regression tests before every fix, real-browser core flow, integrity-checked release artifacts with SHA-256 hashes.
 - **Issue-ledger discipline** — 79 upstream issues classified against this fork in [DEFERRED_ISSUES.md](./DEFERRED_ISSUES.md) with evidence-based fix status (Fixed/Partial/Open/Won't Fix), code references, and reproduction notes.
@@ -325,7 +337,7 @@ Key fixes already applied in this fork:
 | CSP `unsafe-eval` blocks schema compile (#171) | ✅ Fixed |
 | SSE reconnect "Already connected" (#194, #184, #183) | ✅ Fixed |
 | `keyValidator._parse is not a function` (#158) | ✅ Fixed |
-| Re-execution timeout loops (#155) | ✅ Fixed |
+| Historical runaway re-execution loop (#155) | ✅ Fixed in the scoped upstream-issue audit; separate generic `mcp:call-tool` timeout redispatch repaired 2026-09-12 (hard single-dispatch at the bridge boundary); exactly-once server effects remain out of scope |
 | Qwen not working (#148) | ✅ Fixed |
 | Frequent SSE disconnections (#68) | ✅ Fixed |
 | Invalid enum value `'sse'` (#81) | ✅ Fixed |

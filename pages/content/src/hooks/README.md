@@ -1,102 +1,75 @@
 # React Hooks
 
-This directory contains React hooks that provide integration between the Zustand store system and React components. These hooks enable clean, performant, and type-safe access to the plugin system and application state.
-
-## Overview
-
-The hooks system bridges the gap between the Zustand-based architecture and React components, providing optimized subscriptions and convenient APIs for common operations. **Session 6 & 7 Implementation Complete ✅**
+Integration layer between Zustand stores, the event bus, and React components.
 
 ## Hook Categories
 
-### Store Hooks (`useStores.ts`) ✅
+### Store Hooks (`useStores.ts`)
 
-Store hooks provide optimized access to Zustand stores with automatic re-rendering when relevant state changes.
+Optimized access to Zustand stores with automatic re-rendering.
 
-#### App Store Hooks
-- `useAppInitialization()`: App initialization state and methods
-- `useGlobalSettings()`: Global settings management
-- `useCurrentSite()`: Current site and hostname tracking
+#### App Store
+- `useAppInitialization()` — App init state and methods
+- `useGlobalSettings()` — Settings management
+- `useCurrentSite()` — Site and hostname tracking
 
-#### Connection Store Hooks
-- `useConnectionStatus()`: MCP connection status and health
-- `useServerConfig()`: Server configuration management
-- `useConnectionHealth()`: Connection health metrics
+#### Connection Store
+- `useConnectionStatus()` — MCP connection status
+- `useServerConfig()` — Server configuration
+- `useConnectionHealth()` — Health metrics
 
-#### Tool Store Hooks
-- `useAvailableTools()`: Available MCP tools
-- `useDetectedTools()`: Tools detected on current page
-- `useToolExecution()`: Tool execution tracking
-- `useToolActions()`: Tool execution methods
+#### Tool Store
+- `useAvailableTools()` — Available MCP tools
+- `useDetectedTools()` — Tools detected on page
+- `useToolExecution()` — Execution tracking
+- `useToolActions()` — Execution methods
 
-#### UI Store Hooks
-- `useSidebar()`: Sidebar state and controls
-- `useSidebarState()`: Detailed sidebar state
-- `useTheme()`: Theme management
-- `useNotifications()`: Notification system
-- `useModal()`: Modal dialog management
-- `useUserPreferences()`: User preference management
+#### UI Store
+- `useSidebar()` — Sidebar state and controls
+- `useSidebarState()` — Detailed sidebar state
+- `useTheme()` — Theme management
+- `useNotifications()` — Notification system
+- `useModal()` — Modal dialog management
+- `useUserPreferences()` — User preferences
 
-#### Adapter Store Hooks
-- `useActiveAdapter()`: Currently active adapter information
-- `useRegisteredAdapters()`: All registered adapters
-- `useAdapterStatus()`: Adapter status monitoring
+#### Adapter Store
+- `useActiveAdapter()` — Current adapter info
+- `useRegisteredAdapters()` — All registered adapters
+- `useAdapterStatus()` — Adapter status monitoring
 
-### Event Hooks (`useEventBus.ts`) ✅
+### Event Hooks (`useEventBus.ts`)
 
-Event hooks provide type-safe integration with the event bus system.
+Type-safe integration with the event bus.
 
-#### Core Event Hooks
-- `useEventListener<K>()`: Listen to specific events with automatic cleanup
-- `useEventEmitter()`: Emit events with type safety
-- `useEventOnce<K>()`: One-time event listening
-- `useEventSync<T, K>()`: Sync state with events
-- `useConditionalEventListener<K>()`: Conditional event listening
-- `useMultipleEventListeners()`: Multiple event subscriptions
+- `useEventListener<K>()` — Listen to events with auto-cleanup
+- `useEventEmitter()` — Emit events with type safety
+- `useEventOnce<K>()` — One-time event listening
+- `useEventSync<T, K>()` — Sync state with events
+- `useConditionalEventListener<K>()` — Conditional listening
+- `useMultipleEventListeners()` — Multiple subscriptions
 
-#### Usage Examples
+### Adapter Hooks (`useAdapter.ts`)
 
-```typescript
-// Listen to adapter activation events
-useEventListener('adapter:activated', (data) => {
-  console.log('Adapter activated:', data.pluginName);
-});
+High-level APIs for the plugin system.
 
-// Emit tool execution events
-const emit = useEventEmitter();
-emit('tool:execution-started', { toolName: 'insertText', callId: 'abc123' });
-
-// One-time initialization listener
-useEventOnce('app:initialized', (data) => {
-  console.log('App initialized at:', data.timestamp);
-});
-```
-
-### Adapter Hooks (`useAdapter.ts`) ✅
-
-Adapter hooks provide high-level APIs for working with the plugin system.
-
-#### Core Adapter Hooks
-
-##### `useCurrentAdapter()`
-Provides access to the currently active adapter and its methods:
+#### `useCurrentAdapter()`
 
 ```typescript
 const {
   activeAdapterName,    // Name of active adapter
-  plugin,              // Adapter plugin instance
+  plugin,              // Adapter instance
   status,              // Current status
-  error,               // Any error state
+  error,               // Error state
   capabilities,        // Available capabilities
   insertText,          // Text insertion method
   submitForm,          // Form submission method
   attachFile,          // File attachment method
   hasCapability,       // Capability checker
-  isReady             // Ready state
+  isReady              // Ready state
 } = useCurrentAdapter();
 ```
 
-##### `useAdapterManagement()`
-Provides adapter lifecycle management:
+#### `useAdapterManagement()`
 
 ```typescript
 const {
@@ -104,13 +77,12 @@ const {
   registerPlugin,              // Register new adapter
   unregisterPlugin,            // Unregister adapter
   activateAdapter,             // Activate specific adapter
-  deactivateCurrentAdapter,    // Deactivate current adapter
+  deactivateCurrentAdapter,    // Deactivate current
   getAdapterForHostname       // Find adapter for hostname
 } = useAdapterManagement();
 ```
 
-##### `useAdapterCapabilities()`
-Provides capability checking utilities:
+#### `useAdapterCapabilities()`
 
 ```typescript
 const {
@@ -119,69 +91,22 @@ const {
   supportsFormSubmission,
   supportsFileUpload,
   supportsUrlNavigation,
-  supportsElementSelection,
-  supportsScreenshotCapture,
   supportsDomManipulation,
   hasAnyCapability
 } = useAdapterCapabilities();
 ```
 
-##### `useAdapterStatus()`
-Provides adapter event monitoring:
+#### `useAutoAdapterSwitching()`
 
 ```typescript
-const {
-  adapterEvents,         // Event history
-  eventCount,           // Total events
-  clearEvents,          // Clear event history
-  getEventsForAdapter   // Filter events by adapter
-} = useAdapterStatus();
-```
-
-##### `useAutoAdapterSwitching()`
-Provides automatic adapter switching based on site changes:
-
-```typescript
-const {
-  enabled,              // Whether auto-switching is enabled
-  activeAdapterName     // Currently active adapter
-} = useAutoAdapterSwitching(true);
+const { enabled, activeAdapterName } = useAutoAdapterSwitching(true);
 ```
 
 ### Utility Hooks
 
-#### `useShadowDomStyles.ts` ✅
-Provides shadow DOM styling utilities for isolated component rendering.
+- `useShadowDomStyles.ts` — Shadow DOM styling utilities
 
-## Hook Index (`index.ts`) ✅
-
-The index file provides a centralized export point for all hooks:
-
-```typescript
-// Store hooks
-export {
-  useStores,
-  useAppInitialization,
-  useGlobalSettings,
-  // ... all store hooks
-} from './useStores';
-
-// Event hooks
-export {
-  useEventListener,
-  useEventEmitter,
-  // ... all event hooks
-} from './useEventBus';
-
-// Adapter hooks
-export {
-  useCurrentAdapter,
-  useAdapterManagement,
-  // ... all adapter hooks
-} from './useAdapter';
-```
-
-## Usage Patterns
+## Usage Examples
 
 ### Basic Component Integration
 
@@ -191,57 +116,18 @@ import { useCurrentAdapter, useEventListener } from '@src/hooks';
 function ToolButtons() {
   const { insertText, submitForm, isReady } = useCurrentAdapter();
   
-  // Listen for tool completion
   useEventListener('tool:execution-completed', (data) => {
     console.log('Tool completed:', data.execution.toolName);
   });
   
-  const handleInsert = async () => {
-    if (isReady) {
-      await insertText('Hello World!');
-    }
-  };
-  
   return (
     <div>
-      <button onClick={handleInsert} disabled={!isReady}>
+      <button onClick={() => insertText('Hello')} disabled={!isReady}>
         Insert Text
       </button>
       <button onClick={submitForm} disabled={!isReady}>
         Submit Form
       </button>
-    </div>
-  );
-}
-```
-
-### Advanced Adapter Management
-
-```typescript
-import { useAdapterManagement, useAdapterCapabilities } from '@src/hooks';
-
-function AdapterControls() {
-  const { adapters, activateAdapter } = useAdapterManagement();
-  const { availableCapabilities } = useAdapterCapabilities();
-  
-  return (
-    <div>
-      <h3>Available Adapters</h3>
-      {adapters.map(adapter => (
-        <div key={adapter.name}>
-          <button onClick={() => activateAdapter(adapter.name)}>
-            Activate {adapter.name}
-          </button>
-          <span>Capabilities: {adapter.plugin.capabilities.join(', ')}</span>
-        </div>
-      ))}
-      
-      <h3>Current Capabilities</h3>
-      <ul>
-        {availableCapabilities.map(cap => (
-          <li key={cap}>{cap}</li>
-        ))}
-      </ul>
     </div>
   );
 }
@@ -256,7 +142,6 @@ function EventMonitor() {
   const [events, setEvents] = useState([]);
   const emit = useEventEmitter();
   
-  // Monitor all tool executions
   useEventListener('tool:execution-started', (data) => {
     setEvents(prev => [...prev, { type: 'started', ...data }]);
   });
@@ -265,45 +150,34 @@ function EventMonitor() {
     setEvents(prev => [...prev, { type: 'completed', ...data }]);
   });
   
-  const triggerTest = () => {
-    emit('tool:execution-started', {
-      toolName: 'test',
-      callId: Date.now().toString()
-    });
-  };
-  
   return (
     <div>
-      <button onClick={triggerTest}>Trigger Test Event</button>
+      <button onClick={() => emit('tool:execution-started', { toolName: 'test', callId: '1' })}>
+        Trigger Test
+      </button>
       <ul>
-        {events.map((event, index) => (
-          <li key={index}>{event.type}: {event.toolName}</li>
-        ))}
+        {events.map((e, i) => <li key={i}>{e.type}: {e.toolName}</li>)}
       </ul>
     </div>
   );
 }
 ```
 
-## Performance Optimization
+## Performance
 
 ### Shallow Comparison
 
-All store hooks use `useShallow` for performance optimization:
+All store hooks use `useShallow` for performance:
 
 ```typescript
 export const useGlobalSettings = () =>
-  useAppStore(useShallow(
-    (state) => ({
-      settings: state.globalSettings,
-      updateSettings: state.updateSettings
-    })
-  ));
+  useAppStore(useShallow((state) => ({
+    settings: state.globalSettings,
+    updateSettings: state.updateSettings
+  })));
 ```
 
 ### Selective Subscriptions
-
-Components only re-render when specific state slices change:
 
 ```typescript
 // Only re-renders when sidebar visibility changes
@@ -313,95 +187,17 @@ const { isVisible } = useSidebarState();
 const { status } = useConnectionStatus();
 ```
 
-### Event Cleanup
+### Auto-Cleanup
 
-Event hooks automatically clean up subscriptions:
-
-```typescript
-useEventListener('some:event', callback); // Automatically cleaned up on unmount
-```
-
-## Testing
-
-### Hook Testing
+Event hooks automatically clean up on unmount:
 
 ```typescript
-import { renderHook } from '@testing-library/react';
-import { useCurrentAdapter } from '@src/hooks';
-
-test('useCurrentAdapter returns correct data', () => {
-  const { result } = renderHook(() => useCurrentAdapter());
-  
-  expect(result.current.isReady).toBeDefined();
-  expect(typeof result.current.insertText).toBe('function');
-});
-```
-
-### Mock Integration
-
-```typescript
-// Mock adapter for testing
-const mockAdapter = {
-  name: 'TestAdapter',
-  insertText: jest.fn().mockResolvedValue(true),
-  submitForm: jest.fn().mockResolvedValue(true)
-};
+useEventListener('some:event', callback); // Cleaned up automatically
 ```
 
 ## Best Practices
 
-### 1. **Use Specific Hooks**
-Prefer specific hooks over general ones for better performance:
-
-```typescript
-// Good
-const { isVisible } = useSidebarState();
-
-// Less optimal
-const { ui } = useStores();
-const isVisible = ui.sidebar.isVisible;
-```
-
-### 2. **Handle Loading States**
-Always check for ready states:
-
-```typescript
-const { isReady, insertText } = useCurrentAdapter();
-
-if (!isReady) {
-  return <Loading />;
-}
-```
-
-### 3. **Event Cleanup**
-Event hooks handle cleanup automatically, but be mindful of dependencies:
-
-```typescript
-useEventListener('event', callback, [dependency1, dependency2]);
-```
-
-### 4. **Type Safety**
-Use TypeScript for full type safety:
-
-```typescript
-useEventListener('tool:execution-completed', (data) => {
-  // data is fully typed
-  console.log(data.execution.toolName);
-});
-```
-
-## Future Enhancements
-
-### Planned Features
-- **Performance hooks**: `usePerformanceMonitor`
-- **Error handling hooks**: `useErrorHandler`
-- **Cache hooks**: `useCachedData`
-- **Animation hooks**: `useTransition`
-
-### Development Tools
-- Hook debugging utilities
-- Performance profiling
-- State visualization
-- Event flow monitoring
-
-The hooks system provides a powerful and flexible foundation for building reactive UI components that integrate seamlessly with the plugin architecture.
+1. **Use specific hooks** — Prefer `useSidebarState()` over `useStores()`
+2. **Handle loading states** — Always check `isReady` before operations
+3. **Type safety** — Event payloads are fully typed
+4. **Dependencies** — Pass dependency arrays to event hooks when callbacks change

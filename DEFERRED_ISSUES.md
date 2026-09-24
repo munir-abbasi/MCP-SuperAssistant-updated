@@ -132,7 +132,7 @@ Key:
 | Item | Priority | Notes |
 |------|----------|-------|
 | Install Playwright browsers (`npx playwright install chromium`) | Medium | Blocked by slow internet; needed for E2E test execution |
-| Verify build succeeds post-cleanup | High | `pnpm build` should be run to confirm Firebase/lint changes don't break build |
+| Verify build succeeds post-cleanup | ~~High~~ **Done (2026-09-07)** | `pnpm type-check` 11/11, `pnpm build` + `pnpm build:firefox` 12/12, node regression suite 10/10. Three latent type errors surfaced and fixed; see `docs/qualification/round-trip-baseline.md` |
 | Rename remote `upstream` → `origin` | Low | Cosmetic; `origin` is conventional for your own fork |
 | Enable TypeScript strict mode | Low | Requires fixing 200+ `any` types across 18+ files |
 | Remove `GITHUB_TOKEN` env var from shell config | Medium | Pushes currently require `unset GITHUB_TOKEN` due to credential override |

@@ -11,6 +11,8 @@ import { WebSocketTransport } from './plugins/websocket/WebSocketTransport.js';
 
 // Configuration
 import { DEFAULT_CLIENT_CONFIG } from './types/config.js';
+import type { ClientConfig } from './types/config.js';
+import type { TransportType } from './types/plugin.js';
 import { createLogger } from '@extension/shared/lib/logger';
 
 // Export core classes
@@ -167,6 +169,8 @@ export async function callToolWithBackwardsCompatibility(
   adapterName?: string,
   transportType?: TransportType,
   signal?: AbortSignal,
+  callId?: string,
+  attemptId?: string,
 ): Promise<any> {
   const client = await getGlobalClient();
   const type = transportType || detectTransportType(uri);
@@ -175,7 +179,7 @@ export async function callToolWithBackwardsCompatibility(
     await client.connect({ uri, type });
   }
 
-  return await client.callTool(toolName, args, adapterName, signal);
+  return await client.callTool(toolName, args, adapterName, signal, callId, attemptId);
 }
 
 export async function getPrimitivesWithBackwardsCompatibility(

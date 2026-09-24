@@ -102,6 +102,13 @@ export class McpClient extends EventEmitter<AllEvents> {
     logger.debug('[McpClient] Manual plugin registration completed');
   }
 
+  // Method, not property read: TypeScript never narrows a call return, so this
+  // yields the live state even when control-flow analysis has narrowed a prior
+  // property read (e.g. after awaiting an in-flight connection).
+  private getConnectionState(): ConnectionState {
+    return this.connectionState;
+  }
+
   async connect(request: ConnectionRequest): Promise<void> {
     // If same connection type and already connected, skip
     if (
@@ -117,8 +124,10 @@ export class McpClient extends EventEmitter<AllEvents> {
       logger.debug('[McpClient] Connection already in progress, waiting...');
       try {
         await this.connectionPromise;
+        // Re-read state: the awaited connection may have completed and mutated it.
+        const stateAfterAwait = this.getConnectionState();
         if (
-          this.connectionState === ConnectionState.CONNECTED &&
+          stateAfterAwait === ConnectionState.CONNECTED &&
           this.activePlugin?.metadata.transportType === request.type
         ) {
           logger.debug('[McpClient] Existing connection matches request');
@@ -373,12 +382,17 @@ export class McpClient extends EventEmitter<AllEvents> {
     args: Record<string, any>,
     adapterName?: string,
     signal?: AbortSignal,
+    operationId?: string,
+    attemptId?: string,
   ): Promise<any> {
     if (this.connectionState !== ConnectionState.CONNECTED || !this.activePlugin || !this.client) {
       throw new Error('Not connected to any MCP server');
     }
 
-    const callId = crypto.randomUUID();
+    // Use the caller-supplied operation identity when present so that background-side
+    // events correlate with the content-side operation; otherwise generate one.
+    const callId = operationId ?? crypto.randomUUID();
+    const dispatchAttemptId = attemptId ?? crypto.randomUUID();
     const abortController = new AbortController();
 
     if (signal) {
@@ -386,21 +400,22 @@ export class McpClient extends EventEmitter<AllEvents> {
     }
 
     return new Promise((resolve, reject) => {
-      this.activeCalls.set(callId, { reject, abortController });
+      this.activeCalls.set(dispatchAttemptId, { reject, abortController });
 
       abortController.signal.addEventListener('abort', () => {
-        if (this.activeCalls.has(callId)) {
-          this.activeCalls.delete(callId);
+        if (this.activeCalls.has(dispatchAttemptId)) {
+          this.activeCalls.delete(dispatchAttemptId);
           reject(abortController.signal.reason || new Error('Tool call aborted'));
         }
       });
 
-      this.executeToolCall(callId, toolName, args, adapterName).then(resolve).catch(reject);
+      this.executeToolCall(callId, dispatchAttemptId, toolName, args, adapterName).then(resolve).catch(reject);
     });
   }
 
   private async executeToolCall(
     callId: string,
+    attemptId: string,
     toolName: string,
     args: Record<string, any>,
     adapterName?: string,
@@ -410,14 +425,14 @@ export class McpClient extends EventEmitter<AllEvents> {
     }
 
     const startTime = Date.now();
-    this.emit('tool:call-started', { toolName, args });
+    this.emit('tool:call-started', { toolName, args, callId, attemptId });
 
     try {
       logger.debug(`Calling tool: ${toolName}`);
       const result = await this.activePlugin.callTool(this.client, toolName, args);
 
       const duration = Date.now() - startTime;
-      this.emit('tool:call-completed', { toolName, result, duration });
+      this.emit('tool:call-completed', { toolName, result, duration, callId, attemptId });
 
       // Track tool execution analytics with enhanced context
       analyticsService
@@ -433,13 +448,13 @@ export class McpClient extends EventEmitter<AllEvents> {
           logger.warn('[McpClient] Analytics tracking failed:', error);
         });
 
-      this.activeCalls.delete(callId);
+      this.activeCalls.delete(attemptId);
       return result;
     } catch (error) {
       const duration = Date.now() - startTime;
       const toolError = error instanceof Error ? error : new Error(String(error));
 
-      this.emit('tool:call-failed', { toolName, error: toolError, duration });
+      this.emit('tool:call-failed', { toolName, error: toolError, duration, callId, attemptId });
 
       // Track failed tool execution analytics with enhanced context
       analyticsService

@@ -1,31 +1,51 @@
 /**
  * Automation Service for MCP SuperAssistant
- * 
+ *
  * This service handles the automation features (auto insert, auto submit, auto execute)
  * that were previously part of the legacy adapter system. It integrates with the new
  * Zustand architecture and plugin-based adapter system.
- * 
+ *
  * Features:
  * - Auto Insert: Automatically insert function execution results into the current page
  * - Auto Submit: Automatically submit forms after auto-insertion
  * - Auto Execute: Log when tool execution is completed (extensible for future features)
- * 
+ *
  * The service listens for 'mcp:tool-execution-complete' events and performs actions
  * based on the current automation state from the user preferences store.
  */
 
-import { useUserPreferences } from '../hooks/useStores';
-import { useCurrentAdapter } from '../hooks/useAdapter';
 import { eventBus } from '../events/event-bus';
+import type { AdapterPlugin, TextInsertionVerification } from '../types/plugins';
+import type { UserPreferences } from '../types/stores';
 import { createLogger } from '@extension/shared/lib/logger';
+import { IS_DEV } from '@extension/env';
+import {
+  MAX_RETRY_ATTEMPTS,
+  boundRetainedResult,
+  getDeliveryReceipt,
+  listDeliveryReceipts,
+  recordDeliveryReceipt,
+  recordRetryAttempt,
+  updateDeliveryReceipt,
+} from './delivery-recovery';
+import type { DeliveryStage, SubmissionStage } from './delivery-recovery';
+import { formatOperationObservations, observeOperations } from './operation-observation';
 
 // Store references for accessing state outside React components
 
 const logger = createLogger('AutomationService');
 
-let storeRefs: {
-  getUserPreferences: (() => Promise<any>) | null;
-  getCurrentAdapterState: (() => Promise<any>) | null;
+interface CurrentAdapterState {
+  plugin: AdapterPlugin | undefined;
+  insertText: NonNullable<AdapterPlugin['insertText']> | null;
+  attachFile: NonNullable<AdapterPlugin['attachFile']> | null;
+  submitForm: NonNullable<AdapterPlugin['submitForm']> | null;
+  isReady: boolean;
+}
+
+const storeRefs: {
+  getUserPreferences: (() => Promise<UserPreferences>) | null;
+  getCurrentAdapterState: (() => Promise<CurrentAdapterState>) | null;
 } = {
   getUserPreferences: null,
   getCurrentAdapterState: null,
@@ -46,18 +66,16 @@ async function initializeStoreAccess() {
       const { useAdapterStore } = await import('../stores/adapter.store');
       const adapterState = useAdapterStore.getState();
       const activeAdapterRegistration = adapterState.getActiveAdapter();
-      
+
       const plugin = activeAdapterRegistration?.plugin;
-      
+
       return {
         plugin,
         // Bind methods to maintain proper 'this' context
         insertText: plugin?.insertText ? plugin.insertText.bind(plugin) : null,
         attachFile: plugin?.attachFile ? plugin.attachFile.bind(plugin) : null,
         submitForm: plugin?.submitForm ? plugin.submitForm.bind(plugin) : null,
-        isReady: !!plugin && 
-                activeAdapterRegistration.status === 'active' && 
-                !adapterState.lastAdapterError
+        isReady: !!plugin && activeAdapterRegistration.status === 'active' && !adapterState.lastAdapterError,
       };
     };
 
@@ -77,6 +95,8 @@ export interface ToolExecutionCompleteDetail {
   skipAutoInsertCheck?: boolean;
   callId?: string;
   functionName?: string;
+  /** Destination URL captured when the operation completed. Delivery is invalidated if the page has navigated away. */
+  destinationUrl?: string;
 }
 
 export interface AutomationState {
@@ -96,6 +116,7 @@ export class AutomationService {
   private static instance: AutomationService | null = null;
   private isInitialized = false;
   private eventListener: ((event: Event) => void) | null = null;
+  private pageMutationQueue: Promise<unknown> = Promise.resolve();
 
   // Private constructor for singleton pattern
   private constructor() {}
@@ -178,6 +199,16 @@ export class AutomationService {
     logger.debug('[AutomationService] Tool execution event listener registered');
   }
 
+  /** Serialize page-input mutations so concurrent operations cannot interleave insert/submit steps. */
+  private enqueuePageMutation<T>(operation: () => Promise<T>): Promise<T> {
+    const run = this.pageMutationQueue.then(operation, operation);
+    this.pageMutationQueue = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return run;
+  }
+
   /**
    * Set up listener for MCP state changes
    */
@@ -192,7 +223,15 @@ export class AutomationService {
   /**
    * Main handler for tool execution completion events
    */
-  private async handleToolExecutionComplete(event: CustomEvent<ToolExecutionCompleteDetail>): Promise<void> {
+  private handleToolExecutionComplete(event: CustomEvent<ToolExecutionCompleteDetail>): Promise<void> {
+    const destinationUrl = window.location.href;
+    return this.enqueuePageMutation(() => this.processToolExecutionComplete(event, destinationUrl));
+  }
+
+  private async processToolExecutionComplete(
+    event: CustomEvent<ToolExecutionCompleteDetail>,
+    destinationUrl: string,
+  ): Promise<void> {
     if (!event.detail) {
       logger.warn('[AutomationService] Tool execution complete event received without detail');
       return;
@@ -204,7 +243,7 @@ export class AutomationService {
     try {
       // Get current automation state from user preferences
       const automationState = await this.getAutomationState();
-      
+
       if (!automationState) {
         logger.debug('[AutomationService] Could not get automation state, skipping automation');
         return;
@@ -223,19 +262,18 @@ export class AutomationService {
       // Handle Auto Insert and Auto Submit logic
       // Skip auto-insert if skipAutoInsertCheck is true (for manual actions)
       const shouldAutoInsert = automationState.autoInsert && !detail.skipAutoInsertCheck;
-      
+
       if (shouldAutoInsert) {
-        const insertSuccess = await this.handleAutoInsert(detail);
-        
+        const insertSuccess = await this.handleAutoInsert(detail, destinationUrl);
+
         // Only proceed with auto submit if auto insert was successful
         // and auto submit is enabled
         if (insertSuccess && automationState.autoSubmit) {
-          await this.handleAutoSubmit(detail);
+          await this.handleAutoSubmit(detail, destinationUrl);
         }
       } else {
         logger.debug('[AutomationService] Auto Insert disabled, skipping insert and submit actions');
       }
-
     } catch (error) {
       logger.error('[AutomationService] Error handling tool execution complete:', error);
     }
@@ -253,7 +291,7 @@ export class AutomationService {
       }
 
       const preferences = await storeRefs.getUserPreferences();
-      
+
       // Extract automation settings from preferences
       return {
         autoInsert: preferences.autoInsert || false,
@@ -288,7 +326,7 @@ export class AutomationService {
       hasResult: !!detail.result,
       isFileAttachment: detail.isFileAttachment,
       fileName: detail.fileName,
-      appliedDelay: delay
+      appliedDelay: delay,
     });
 
     // Emit event for potential future integrations
@@ -299,10 +337,159 @@ export class AutomationService {
   }
 
   /**
+   * Check whether the page is still at the destination captured for this operation.
+   * Returns true when the destination matches (or was never recorded).
+   */
+  private isDestinationCurrent(destinationUrl?: string): boolean {
+    if (!destinationUrl) return true; // No binding recorded; behave as before
+    if (window.location.href !== destinationUrl) {
+      logger.warn(
+        `[AutomationService] Destination changed during delay; invalidating stale delivery ` +
+          `(bound: ${destinationUrl}, current: ${window.location.href})`,
+      );
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Record a delivery outcome: persisted receipt (bounded, Stage 2) plus the
+   * delivery field on the correlated tool-store execution. Failures and skips
+   * retain the text result so retryDelivery can replay it without re-execution.
+   */
+  private recordDeliveryOutcome(
+    detail: ToolExecutionCompleteDetail,
+    destinationUrl: string | undefined,
+    stage: DeliveryStage,
+    error?: string,
+    options?: { retainResult?: boolean },
+  ): void {
+    if (!detail.callId) {
+      logger.debug('[AutomationService] No callId in completion detail; delivery outcome not persisted');
+      return;
+    }
+    try {
+      let retainedResult: string | undefined;
+      let resultTruncated: boolean | undefined;
+      if (options?.retainResult && !detail.isFileAttachment && typeof detail.result === 'string') {
+        const bound = boundRetainedResult(detail.result);
+        retainedResult = bound.retainedResult;
+        resultTruncated = bound.resultTruncated;
+      }
+
+      recordDeliveryReceipt({
+        callId: detail.callId,
+        functionName: detail.functionName,
+        stage,
+        destinationUrl: destinationUrl ?? '',
+        error,
+        retainedResult,
+        resultTruncated,
+      });
+
+      void this.markExecutionDelivery(detail.callId, stage, destinationUrl, error);
+    } catch (recordError) {
+      logger.warn('[AutomationService] Failed to record delivery outcome:', recordError);
+    }
+  }
+
+  /** Update the delivery field on the tool-store execution correlated by callId. */
+  private async markExecutionDelivery(
+    callId: string,
+    stage: DeliveryStage,
+    destinationUrl: string | undefined,
+    error?: string,
+  ): Promise<void> {
+    try {
+      // Import dynamically to avoid circular dependencies (same pattern as above)
+      const { useToolStore } = await import('../stores/tool.store');
+      const state = useToolStore.getState();
+      const entries = Object.values(state.toolExecutions);
+      const match = [...entries].reverse().find(execution => execution.callId === callId);
+      if (!match) {
+        logger.debug(`[AutomationService] No execution record correlated to callId=${callId}`);
+        return;
+      }
+      state.updateToolExecution({
+        id: match.id,
+        delivery: { stage, at: Date.now(), destinationUrl: destinationUrl ?? '', error },
+      });
+    } catch (storeError) {
+      logger.warn('[AutomationService] Failed to mark execution delivery:', storeError);
+    }
+  }
+
+  /** Record C6 independently from C5 so submission failure never rewrites confirmed delivery. */
+  private recordSubmissionOutcome(detail: ToolExecutionCompleteDetail, stage: SubmissionStage, error?: string): void {
+    if (!detail.callId) return;
+    try {
+      updateDeliveryReceipt(detail.callId, {
+        ...(stage === 'submitted' ? { submitted: true } : {}),
+        submission: { stage, attemptedAt: Date.now(), error },
+      });
+    } catch (recordError) {
+      logger.warn('[AutomationService] Failed to record submission outcome:', recordError);
+    }
+  }
+
+  /**
+   * Promote an adapter insertion acknowledgement to confirmed C5 only when the
+   * adapter can independently observe the expected text in page state.
+   */
+  private async confirmTextInsertion(
+    detail: ToolExecutionCompleteDetail,
+    destinationUrl: string | undefined,
+    activePlugin: AdapterPlugin,
+  ): Promise<boolean> {
+    if (typeof detail.result !== 'string') return false;
+
+    let verification: TextInsertionVerification = 'unavailable';
+    try {
+      verification = activePlugin.verifyTextInsertion
+        ? await activePlugin.verifyTextInsertion(detail.result)
+        : 'unavailable';
+    } catch (verificationError) {
+      logger.warn('[AutomationService] Text insertion page-state verification failed:', verificationError);
+    }
+
+    if (verification === 'verified') {
+      this.recordDeliveryOutcome(detail, destinationUrl, 'delivered');
+      return true;
+    }
+
+    if (verification === 'mismatch') {
+      this.recordDeliveryOutcome(detail, destinationUrl, 'failed', 'page-state-mismatch', {
+        retainResult: true,
+      });
+      return false;
+    }
+
+    this.recordDeliveryOutcome(detail, destinationUrl, 'acknowledged', 'page-state-unverified', {
+      retainResult: true,
+    });
+    return false;
+  }
+
+  /** Reconcile an acknowledgement-only receipt without repeating the insertion. */
+  private async reconcileAcknowledgedDelivery(
+    detail: ToolExecutionCompleteDetail,
+    destinationUrl: string | undefined,
+  ): Promise<boolean> {
+    if (!storeRefs.getCurrentAdapterState) return false;
+    const { plugin: activePlugin, isReady } = await storeRefs.getCurrentAdapterState();
+    if (!isReady || !activePlugin) return false;
+    return this.confirmTextInsertion(detail, destinationUrl, activePlugin);
+  }
+
+  /**
    * Handle Auto Insert functionality
    * Inserts text or attaches files based on the execution result
    */
-  private async handleAutoInsert(detail: ToolExecutionCompleteDetail): Promise<boolean> {
+  private async handleAutoInsert(
+    detail: ToolExecutionCompleteDetail,
+    destinationUrl?: string,
+    options?: { ignoreAutoInsertPreference?: boolean },
+  ): Promise<boolean> {
     const preferences = await storeRefs.getUserPreferences?.();
     const delay = preferences?.autoInsertDelay || 0;
 
@@ -311,7 +498,33 @@ export class AutomationService {
       await new Promise(resolve => setTimeout(resolve, delay * 1000));
     }
 
-    logger.debug('[AutomationService] Handling auto insert', { appliedDelay: delay });
+    // Destination recheck after any configured delay: never retarget a stale delivery
+    if (!this.isDestinationCurrent(destinationUrl)) {
+      this.recordDeliveryOutcome(detail, destinationUrl, 'skipped', 'destination-changed', {
+        retainResult: true,
+      });
+      return false;
+    }
+
+    // Preference recheck after any configured delay (Stage 4): a toggle-off during
+    // the delay halts the stale action instead of delivering anyway.
+    if (!options?.ignoreAutoInsertPreference) {
+      const prefsAfterDelay = await storeRefs.getUserPreferences?.();
+      if (prefsAfterDelay && prefsAfterDelay.autoInsert === false) {
+        logger.debug('[AutomationService] auto-insert disabled during delay; halting stale action');
+        this.recordDeliveryOutcome(detail, destinationUrl, 'skipped', 'auto-insert-disabled-during-delay', {
+          retainResult: true,
+        });
+        return false;
+      }
+    }
+
+    logger.debug('[AutomationService] Handling auto insert', {
+      appliedDelay: delay,
+      callId: detail.callId,
+      functionName: detail.functionName,
+      destinationUrl,
+    });
 
     // Additional safety check: Don't auto-insert if skipAutoInsertCheck is true
     if (detail.skipAutoInsertCheck) {
@@ -330,6 +543,9 @@ export class AutomationService {
 
       if (!isReady || !activePlugin) {
         logger.warn('[AutomationService] No active adapter available for auto insert');
+        this.recordDeliveryOutcome(detail, destinationUrl, 'failed', 'no-active-adapter', {
+          retainResult: true,
+        });
         return false;
       }
 
@@ -338,13 +554,14 @@ export class AutomationService {
       // Handle file attachment
       if (detail.isFileAttachment && detail.file && attachFile) {
         logger.debug('[AutomationService] Auto inserting file:', detail.file.name);
-        
+
         try {
           const success = await attachFile(detail.file);
-          
+
           if (success) {
             logger.debug('[AutomationService] File attached successfully via auto insert');
-            
+            this.recordDeliveryOutcome(detail, destinationUrl, 'delivered');
+
             // Optionally insert confirmation text if provided
             if (detail.confirmationText && insertText) {
               logger.debug('[AutomationService] Inserting file confirmation text');
@@ -357,49 +574,57 @@ export class AutomationService {
                 }
               }, 100);
             }
-            
+
             return true;
           } else {
             logger.warn('[AutomationService] File attachment failed');
+            this.recordDeliveryOutcome(detail, destinationUrl, 'failed', 'file-attachment-failed');
             return false;
           }
         } catch (attachError) {
           logger.error('[AutomationService] Error calling attachFile method:', attachError);
+          this.recordDeliveryOutcome(detail, destinationUrl, 'failed', 'file-attachment-error');
           logger.error('[AutomationService] attachFile context info:', {
             hasAttachFile: !!attachFile,
             attachFileType: typeof attachFile,
             activePluginName: activePlugin?.name,
-            fileName: detail.file?.name
+            fileName: detail.file?.name,
           });
           return false;
         }
       }
-      
+
       // Handle text insertion
       else if (detail.result && insertText) {
         logger.debug('[AutomationService] Auto inserting text result');
-        
+
         try {
           const success = await insertText(detail.result);
-          
+
           if (success) {
-            logger.debug('[AutomationService] Text inserted successfully via auto insert');
-            return true;
+            logger.debug('[AutomationService] Adapter acknowledged text insertion; verifying page state');
+            return await this.confirmTextInsertion(detail, destinationUrl, activePlugin);
           } else {
             logger.warn('[AutomationService] Text insertion failed');
+            this.recordDeliveryOutcome(detail, destinationUrl, 'failed', 'insert-text-failed', {
+              retainResult: true,
+            });
             return false;
           }
         } catch (insertError) {
           logger.error('[AutomationService] Error calling insertText method:', insertError);
+          this.recordDeliveryOutcome(detail, destinationUrl, 'failed', 'insert-text-error', {
+            retainResult: true,
+          });
           logger.error('[AutomationService] insertText context info:', {
             hasInsertText: !!insertText,
             insertTextType: typeof insertText,
-            activePluginName: activePlugin?.name
+            activePluginName: activePlugin?.name,
           });
           return false;
         }
       }
-      
+
       // No valid insertion method found
       else {
         logger.warn('[AutomationService] No valid insertion method found for auto insert', {
@@ -407,11 +632,10 @@ export class AutomationService {
           isFileAttachment: detail.isFileAttachment,
           hasFile: !!detail.file,
           hasInsertText: !!insertText,
-          hasAttachFile: !!attachFile
+          hasAttachFile: !!attachFile,
         });
         return false;
       }
-
     } catch (error) {
       logger.error('[AutomationService] Error during auto insert:', error);
       return false;
@@ -422,7 +646,7 @@ export class AutomationService {
    * Handle Auto Submit functionality
    * Submits the current form after auto insertion
    */
-  private async handleAutoSubmit(detail: ToolExecutionCompleteDetail): Promise<boolean> {
+  private async handleAutoSubmit(detail: ToolExecutionCompleteDetail, destinationUrl?: string): Promise<boolean> {
     const preferences = await storeRefs.getUserPreferences?.();
     const delay = preferences?.autoSubmitDelay || 0;
 
@@ -431,7 +655,26 @@ export class AutomationService {
       await new Promise(resolve => setTimeout(resolve, delay * 1000));
     }
 
-    logger.debug('[AutomationService] Handling auto submit', { appliedDelay: delay });
+    // Destination recheck after any configured delay: never retarget a stale delivery
+    if (!this.isDestinationCurrent(destinationUrl)) {
+      return false;
+    }
+
+    // Preference recheck after any configured delay (Stage 4): a toggle-off during
+    // the delay halts the stale action. No receipt change: delivered-but-unsubmitted
+    // is already the truthful recorded state.
+    const prefsAfterDelay = await storeRefs.getUserPreferences?.();
+    if (prefsAfterDelay && prefsAfterDelay.autoSubmit === false) {
+      logger.debug('[AutomationService] auto-submit disabled during delay; not submitting');
+      return false;
+    }
+
+    logger.debug('[AutomationService] Handling auto submit', {
+      appliedDelay: delay,
+      callId: detail.callId,
+      functionName: detail.functionName,
+      destinationUrl,
+    });
 
     try {
       // Get current adapter from the adapter hook
@@ -444,6 +687,7 @@ export class AutomationService {
 
       if (!isReady || !activePlugin || !submitForm) {
         logger.warn('[AutomationService] No active adapter or submit capability available for auto submit');
+        this.recordSubmissionOutcome(detail, 'failed', 'no-submit-capability');
         return false;
       }
 
@@ -454,28 +698,120 @@ export class AutomationService {
 
       try {
         const success = await submitForm();
-        
+
         if (success) {
           logger.debug('[AutomationService] Form submitted successfully via auto submit');
+          this.recordSubmissionOutcome(detail, 'submitted');
           return true;
         } else {
           logger.warn('[AutomationService] Form submission failed');
+          this.recordSubmissionOutcome(detail, 'failed', 'submit-form-failed');
           return false;
         }
       } catch (submitError) {
         logger.error('[AutomationService] Error calling submitForm method:', submitError);
+        this.recordSubmissionOutcome(detail, 'failed', 'submit-form-error');
         logger.error('[AutomationService] submitForm context info:', {
           hasSubmitForm: !!submitForm,
           submitFormType: typeof submitForm,
-          activePluginName: activePlugin?.name
+          activePluginName: activePlugin?.name,
         });
         return false;
       }
-
     } catch (error) {
       logger.error('[AutomationService] Error during auto submit:', error);
       return false;
     }
+  }
+
+  /**
+   * Retry delivery for a failed/skipped operation using the RETAINED RESULT.
+   * Never re-executes the tool: the server invocation count is unchanged.
+   * Rejects when the destination no longer matches (Stage 1 rule).
+   */
+  public async retryDelivery(callId: string): Promise<{ success: boolean; reason?: string }> {
+    return this.enqueuePageMutation(() => this.retryDeliveryNow(callId));
+  }
+
+  private async retryDeliveryNow(callId: string): Promise<{ success: boolean; reason?: string }> {
+    const receipt = getDeliveryReceipt(callId);
+    if (!receipt) {
+      return { success: false, reason: 'no-receipt' };
+    }
+    if (receipt.submitted === true || receipt.submission?.stage === 'submitted') {
+      return { success: false, reason: 'already-submitted' };
+    }
+    const reconcileAcknowledgementOnly = receipt.stage === 'acknowledged';
+    const retrySubmissionOnly = receipt.stage === 'delivered' && receipt.submission?.stage === 'failed';
+    if (receipt.stage === 'delivered' && !retrySubmissionOnly) {
+      return { success: false, reason: 'already-delivered' };
+    }
+    if (!retrySubmissionOnly && !receipt.retainedResult) {
+      return { success: false, reason: 'no-retained-result' };
+    }
+    if (!this.isDestinationCurrent(receipt.destinationUrl || undefined)) {
+      return { success: false, reason: 'destination-changed' };
+    }
+
+    // Numeric budget (Stage 4): refusal IS the stop condition — no auto-retry loops.
+    if ((receipt.attempts ?? 0) >= MAX_RETRY_ATTEMPTS) {
+      logger.warn(
+        `[AutomationService] Retry budget exhausted for callId=${callId} ` +
+          `(${receipt.attempts}/${MAX_RETRY_ATTEMPTS}); refusing further retries`,
+      );
+      return { success: false, reason: 'retry-budget-exhausted' };
+    }
+    // Consume budget before acting so a crash mid-retry still counts.
+    recordRetryAttempt(callId);
+
+    logger.info(`[AutomationService] Retrying delivery for callId=${callId} from retained result`);
+
+    const retryDetail: ToolExecutionCompleteDetail = {
+      result: receipt.retainedResult,
+      isFileAttachment: false,
+      skipAutoInsertCheck: false,
+      callId: receipt.callId,
+      functionName: receipt.functionName,
+    };
+
+    if (reconcileAcknowledgementOnly) {
+      if (receipt.resultTruncated) {
+        return { success: false, reason: 'retained-result-truncated' };
+      }
+      const verified = await this.reconcileAcknowledgedDelivery(retryDetail, receipt.destinationUrl);
+      if (!verified) {
+        return { success: false, reason: 'page-state-unverified' };
+      }
+
+      const preferences = await storeRefs.getUserPreferences?.();
+      if (preferences?.autoSubmit) {
+        await this.handleAutoSubmit(retryDetail, receipt.destinationUrl);
+      }
+      return { success: true };
+    }
+
+    if (retrySubmissionOnly) {
+      const submitSuccess = await this.handleAutoSubmit(retryDetail, receipt.destinationUrl);
+      return submitSuccess ? { success: true } : { success: false, reason: 'submit-failed' };
+    }
+
+    // Retry is an explicit user action, not automation: bypass the auto-insert
+    // preference recheck (the user asked for this delivery).
+    const insertSuccess = await this.handleAutoInsert(retryDetail, receipt.destinationUrl, {
+      ignoreAutoInsertPreference: true,
+    });
+    if (!insertSuccess) {
+      return { success: false, reason: 'insert-failed' };
+    }
+
+    // A submitted receipt was rejected above. If auto-submit is currently enabled,
+    // continue from the freshly recovered C5 state into C6.
+    const preferences = await storeRefs.getUserPreferences?.();
+    if (preferences?.autoSubmit) {
+      await this.handleAutoSubmit(retryDetail, receipt.destinationUrl);
+    }
+
+    return { success: true };
   }
 
   /**
@@ -507,7 +843,7 @@ export class AutomationService {
     try {
       const automationState = await this.getAutomationState();
       if (automationState) {
-        (window as any).__mcpAutomationState = automationState;
+        (window as Window & { __mcpAutomationState?: AutomationState }).__mcpAutomationState = automationState;
         logger.debug('[AutomationService] Exposed automation state to window:', automationState);
       }
     } catch (error) {
@@ -540,23 +876,23 @@ export function cleanupAutomationService(): void {
 export default automationService;
 
 // Development utilities
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+if (typeof window !== 'undefined' && IS_DEV) {
   // Expose automation service for debugging
-  (window as any).__automationService = {
+  (window as Window & { __automationService?: unknown }).__automationService = {
     service: automationService,
     getState: async () => await automationService.getCurrentAutomationState(),
     testAutoInsert: async (text: string) => {
       return automationService.triggerTestAutomation({
         result: text,
         isFileAttachment: false,
-        skipAutoInsertCheck: false
+        skipAutoInsertCheck: false,
       });
     },
     testAutoSubmit: async () => {
       return automationService.triggerTestAutomation({
         result: 'Test result for auto submit',
         isFileAttachment: false,
-        skipAutoInsertCheck: true // Force insert so submit can run
+        skipAutoInsertCheck: true, // Force insert so submit can run
       });
     },
     testFileAttachment: async (fileName: string = 'test.txt', content: string = 'Test file content') => {
@@ -566,10 +902,17 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
         file,
         fileName,
         confirmationText: `File ${fileName} attached successfully`,
-        skipAutoInsertCheck: false
+        skipAutoInsertCheck: false,
       });
-    }
+    },
+    // Stage 2: delivery-recovery inspection and retry (dev builds)
+    listDeliveryReceipts: () => listDeliveryReceipts(),
+    getDeliveryReceipt: (callId: string) => getDeliveryReceipt(callId),
+    retryDelivery: async (callId: string) => automationService.retryDelivery(callId),
+    // Stage 3: unified operation observation (dev builds)
+    observeOperations: () => observeOperations(),
+    formatOperations: () => formatOperationObservations(),
   };
-  
+
   logger.debug('[AutomationService] Debug utilities exposed on window.__automationService');
 }

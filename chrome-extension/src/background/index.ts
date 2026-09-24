@@ -462,6 +462,20 @@ self.addEventListener('error', event => {
 
 // --- Lifecycle Events ---
 
+chrome.commands.onCommand.addListener(command => {
+  if (command === 'toggle-sidebar') {
+    logger.debug('[Background] Received toggle-sidebar command');
+    // Send to active tab in current window
+    chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+      const activeTab = tabs[0];
+      if (activeTab?.id) {
+        chrome.tabs
+          .sendMessage(activeTab.id, { command: 'toggleSidebar' })
+          .catch(err => logger.debug('[Background] Error sending toggleSidebar to tab:', err));
+      }
+    });
+  }
+});
 chrome.runtime.onInstalled.addListener(async details => {
   logger.debug('Extension installed or updated:', details.reason);
 
@@ -656,14 +670,41 @@ async function handleMcpMessage(
 
     switch (messageType) {
       case 'mcp:call-tool': {
-        const { toolName, args, adapterName } = payload as CallToolRequest & { adapterName?: string };
+        const { toolName, args, adapterName, callId, attemptId, timeout } = payload as CallToolRequest & {
+          adapterName?: string;
+        };
         if (!toolName) {
           throw new Error('Tool name is required');
         }
 
-        logger.debug(`Calling tool: ${toolName} from adapter: ${adapterName || 'unknown'}`);
-        result = await callToolWithBackwardsCompatibility(getServerUrl(), toolName, args || {}, adapterName);
-        logger.debug(`Tool call completed: ${toolName}`);
+        logger.debug(
+          `Calling tool: ${toolName} from adapter: ${adapterName || 'unknown'} ` +
+            `(callId: ${callId || 'none'}, attemptId: ${attemptId || 'none'}, timeout: ${timeout || 'none'})`,
+        );
+
+        const abortController = new AbortController();
+        const timeoutId = timeout
+          ? setTimeout(() => abortController.abort(new Error(`MCP Tool call timed out after ${timeout}ms`)), timeout)
+          : undefined;
+
+        try {
+          result = await callToolWithBackwardsCompatibility(
+            getServerUrl(),
+            toolName,
+            args || {},
+            adapterName,
+            undefined,
+            abortController.signal,
+            callId,
+            attemptId,
+          );
+        } finally {
+          if (timeoutId) clearTimeout(timeoutId);
+        }
+
+        logger.debug(
+          `Tool call completed: ${toolName} (callId: ${callId || 'none'}, attemptId: ${attemptId || 'none'})`,
+        );
         break;
       }
 

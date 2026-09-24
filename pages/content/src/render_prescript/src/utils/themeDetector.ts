@@ -553,7 +553,7 @@ export function detectTheme(): ThemeMode {
     const metaTags = document.querySelectorAll(
       'meta[name*="theme"], meta[name*="color-scheme"], meta[name*="theme-color"]',
     );
-    for (const meta of metaTags) {
+    for (const meta of Array.from(metaTags)) {
       const content = meta.getAttribute('content')?.toLowerCase();
       if (content?.includes('dark')) {
         logThemeDetection('Dark theme detected from meta tags');
@@ -890,7 +890,7 @@ export function startThemeMonitoring(): void {
     return; // Already monitoring
   }
 
-  let debounceTimeout: number;
+  let debounceTimeout: ReturnType<typeof setTimeout>;
 
   const checkThemeChange = () => {
     clearTimeout(debounceTimeout);

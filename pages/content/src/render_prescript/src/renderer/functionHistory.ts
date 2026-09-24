@@ -156,9 +156,9 @@ export const updateHistoryPanel = (
       logger.debug(`Re-executing function ${executionData.functionName} with arguments:`, executionData.params);
 
       try {
-        // Use async/await with the new mcpClient API
-        const result = await mcpClient.callTool(executionData.functionName, executionData.params);
-        
+        // Use async/await with the new mcpClient API; pass operation identity for correlation
+        const result = await mcpClient.callTool(executionData.functionName, executionData.params, executionData.callId);
+
         displayResult(resultsPanel, loadingIndicator, true, result);
 
         // Update the execution record with new timestamp
@@ -172,11 +172,10 @@ export const updateHistoryPanel = (
 
         // Update the history panel with the new timestamp
         updateHistoryPanel(historyPanel, updatedExecutionData, mcpClient);
-        
       } catch (toolError: any) {
         // Enhanced error handling for different error types
         let errorMessage = toolError instanceof Error ? toolError.message : String(toolError);
-        
+
         // Check for connection-related errors and provide better user feedback
         if (errorMessage.includes('not connected') || errorMessage.includes('connection')) {
           errorMessage = 'Connection lost. Please check your MCP server connection.';
@@ -185,20 +184,14 @@ export const updateHistoryPanel = (
         } else if (errorMessage.includes('server unavailable') || errorMessage.includes('SERVER_UNAVAILABLE')) {
           errorMessage = 'MCP server is unavailable. Please check the server status.';
         }
-        
+
         displayResult(resultsPanel, loadingIndicator, false, errorMessage);
       }
-
     } catch (error: any) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error('Re-execute error:', error);
-      
-      displayResult(
-        resultsPanel,
-        loadingIndicator,
-        false,
-        `Unexpected error: ${errorMessage}`,
-      );
+
+      displayResult(resultsPanel, loadingIndicator, false, `Unexpected error: ${errorMessage}`);
     }
   };
 

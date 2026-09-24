@@ -1,8 +1,9 @@
-import type { 
-  AdapterPlugin, 
-  PluginContext, 
-  AdapterCapability, 
-  DetectedTool 
+import type {
+  AdapterPlugin,
+  PluginContext,
+  AdapterCapability,
+  DetectedTool,
+  TextInsertionVerification,
 } from '../plugin-types';
 
 /**
@@ -59,6 +60,27 @@ export abstract class BaseAdapterPlugin implements AdapterPlugin {
     return false;
   }
 
+  /**
+   * Read the currently focused editable element after an insertion acknowledgement.
+   * A generic observation can confirm presence, but cannot safely call absence a
+   * mismatch because the active element is not guaranteed to be the adapter target.
+   * Site adapters may override this when they can observe their exact target.
+   */
+  async verifyTextInsertion(text: string): Promise<TextInsertionVerification> {
+    const activeElement = document.activeElement as (HTMLElement & { value?: string }) | null;
+    if (!activeElement) return 'unavailable';
+
+    if (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA') {
+      return typeof activeElement.value === 'string' && activeElement.value.includes(text) ? 'verified' : 'unavailable';
+    }
+
+    if (activeElement.isContentEditable) {
+      return (activeElement.textContent ?? '').includes(text) ? 'verified' : 'unavailable';
+    }
+
+    return 'unavailable';
+  }
+
   async submitForm(options?: { formElement?: HTMLFormElement }): Promise<boolean> {
     this.context.logger.warn('submitForm not implemented by this adapter.');
     return false;
@@ -84,7 +106,7 @@ export abstract class BaseAdapterPlugin implements AdapterPlugin {
     this.context.logger.warn('navigateToUrl not implemented by this adapter.');
     return false;
   }
-  
+
   async executeScript<T>(script: string | (() => T)): Promise<T | null> {
     this.context.logger.warn('executeScript not implemented by this adapter.');
     return null;
@@ -101,11 +123,14 @@ export abstract class BaseAdapterPlugin implements AdapterPlugin {
     return this.currentStatus;
   }
 
-  protected setStatus(status: 'active' | 'inactive' | 'error' | 'initializing' | 'disabled' | 'pending', error?: string | Error): void {
+  protected setStatus(
+    status: 'active' | 'inactive' | 'error' | 'initializing' | 'disabled' | 'pending',
+    error?: string | Error,
+  ): void {
     this.currentStatus = status;
     if (status === 'error' && error) {
-        this.context.logger.error('Status set to error:', error);
-        // Optionally emit an event or update store directly if context allows
+      this.context.logger.error('Status set to error:', error);
+      // Optionally emit an event or update store directly if context allows
     }
   }
 
@@ -117,7 +142,7 @@ export abstract class BaseAdapterPlugin implements AdapterPlugin {
   onPageChanged?(url: string, oldUrl?: string): void {
     this.context.logger.debug(`onPageChanged (Base): from ${oldUrl || 'N/A'} to ${url}`);
   }
-  
+
   onHostChanged?(newHost: string, oldHost?: string): void {
     this.context.logger.debug(`onHostChanged (Base): from ${oldHost || 'N/A'} to ${newHost}`);
     // Base implementation could re-check isSupported or trigger adapter re-evaluation

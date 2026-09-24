@@ -751,9 +751,9 @@ export const addExecuteButton = (blockDiv: HTMLDivElement, rawContent: string): 
       resultsPanel.innerHTML = '';
       resultsPanel.appendChild(loadingIndicator);
 
-      // Call tool using the new mcpClient async API
+      // Call tool using the new mcpClient async API; pass operation identity for correlation
       try {
-        const result = await mcpClient.callTool(functionName, parameters);
+        const result = await mcpClient.callTool(functionName, parameters, callId);
 
         resetButtonState();
         displayResult(resultsPanel, loadingIndicator, true, result);
@@ -765,7 +765,6 @@ export const addExecuteButton = (blockDiv: HTMLDivElement, rawContent: string): 
 
         // Update history panel with mcpClient reference
         updateHistoryPanel(historyPanel, executionData, mcpClient);
-
       } catch (toolError: any) {
         resetButtonState();
 
@@ -783,7 +782,6 @@ export const addExecuteButton = (blockDiv: HTMLDivElement, rawContent: string): 
 
         displayResult(resultsPanel, loadingIndicator, false, errorMessage);
       }
-
     } catch (error: any) {
       resetButtonState();
       resultsPanel.style.display = 'block';
@@ -791,12 +789,7 @@ export const addExecuteButton = (blockDiv: HTMLDivElement, rawContent: string): 
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error('Execute button error:', error);
 
-      displayResult(
-        resultsPanel,
-        loadingIndicator,
-        false,
-        `Unexpected error: ${errorMessage}`,
-      );
+      displayResult(resultsPanel, loadingIndicator, false, `Unexpected error: ${errorMessage}`);
     }
   };
 
@@ -906,8 +899,10 @@ export const extractFunctionParameters = (rawContent: string): Record<string, an
         } else {
           // Try to parse as JSON if it looks like JSON (starts with { or [)
           const trimmedValue = value.trim();
-          if ((trimmedValue.startsWith('{') && trimmedValue.endsWith('}')) ||
-            (trimmedValue.startsWith('[') && trimmedValue.endsWith(']'))) {
+          if (
+            (trimmedValue.startsWith('{') && trimmedValue.endsWith('}')) ||
+            (trimmedValue.startsWith('[') && trimmedValue.endsWith(']'))
+          ) {
             try {
               value = JSON.parse(trimmedValue);
               if (CONFIG.debug) logger.debug(`Auto-parsed JSON for parameter ${name}:`, value);
@@ -1053,6 +1048,8 @@ const attachResultAsFile = async (
                           isFileAttachment: false,
                           fileName: '',
                           skipAutoInsertCheck: true,
+                          callId,
+                          functionName,
                         },
                       }),
                     );
@@ -1073,6 +1070,8 @@ const attachResultAsFile = async (
                       isFileAttachment: false,
                       fileName: '',
                       skipAutoInsertCheck: true,
+                      callId,
+                      functionName,
                     },
                   }),
                 );
@@ -1090,6 +1089,8 @@ const attachResultAsFile = async (
             fileName,
             confirmationText,
             skipAutoInsertCheck,
+            callId,
+            functionName,
           };
 
           // Use requestAnimationFrame for better performance
@@ -1129,6 +1130,8 @@ const attachResultAsFile = async (
                         isFileAttachment: false,
                         fileName: '',
                         skipAutoInsertCheck: true,
+                        callId,
+                        functionName,
                       },
                     }),
                   );
@@ -1149,6 +1152,8 @@ const attachResultAsFile = async (
                     isFileAttachment: false,
                     fileName: '',
                     skipAutoInsertCheck: true,
+                    callId,
+                    functionName,
                   },
                 }),
               );
@@ -1165,6 +1170,8 @@ const attachResultAsFile = async (
           fileName,
           confirmationText,
           skipAutoInsertCheck,
+          callId,
+          functionName,
         };
 
         requestAnimationFrame(() => {
@@ -1201,6 +1208,8 @@ const attachResultAsFile = async (
                       isFileAttachment: false,
                       fileName: '',
                       skipAutoInsertCheck: true,
+                      callId,
+                      functionName,
                     },
                   }),
                 );
@@ -1221,6 +1230,8 @@ const attachResultAsFile = async (
                   isFileAttachment: false,
                   fileName: '',
                   skipAutoInsertCheck: true,
+                  callId,
+                  functionName,
                 },
               }),
             );
@@ -1237,6 +1248,8 @@ const attachResultAsFile = async (
         fileName,
         confirmationText,
         skipAutoInsertCheck,
+        callId,
+        functionName,
       };
 
       requestAnimationFrame(() => {
@@ -1497,6 +1510,8 @@ export const displayResult = (
                       isFileAttachment: false,
                       fileName: '',
                       skipAutoInsertCheck: true,
+                      callId,
+                      functionName,
                     },
                   }),
                 );
@@ -1520,6 +1535,8 @@ export const displayResult = (
                       isFileAttachment: false,
                       fileName: '',
                       skipAutoInsertCheck: true,
+                      callId,
+                      functionName,
                     },
                   }),
                 );
@@ -1560,6 +1577,8 @@ export const displayResult = (
                   isFileAttachment: false,
                   fileName: '',
                   skipAutoInsertCheck: true,
+                  callId,
+                  functionName,
                 },
               }),
             );
@@ -1634,7 +1653,8 @@ export const displayResult = (
     // Handle auto-attachment for large results
     if (
       rawResultText.length > MAX_INSERT_LENGTH &&
-      adapter && adapterSupportsCapability('file-attachment') &&
+      adapter &&
+      adapterSupportsCapability('file-attachment') &&
       WEBSITE_NAME_FOR_MAX_INSERT_LENGTH_CHECK.includes(websiteName)
     ) {
       logger.debug(`Auto-attaching file: Result length (${rawResultText.length}) exceeds ${MAX_INSERT_LENGTH}`);
@@ -1671,6 +1691,8 @@ export const displayResult = (
                             isFileAttachment: false,
                             fileName: '',
                             skipAutoInsertCheck: true,
+                            callId,
+                            functionName,
                           },
                         }),
                       );
@@ -1691,6 +1713,8 @@ export const displayResult = (
                         isFileAttachment: false,
                         fileName: '',
                         skipAutoInsertCheck: true,
+                        callId,
+                        functionName,
                       },
                     }),
                   );
@@ -1716,13 +1740,16 @@ export const displayResult = (
       // Dispatch event for normal-sized results
       const wrappedResult = `<function_result call_id="${callId}">\n${rawResultText}\n</function_result>`;
 
-      // Dispatch event - delays are handled by automation service
+      // Dispatch event - delays are handled by automation service.
+      // Identity is carried on every dispatch so delivery correlates with execution.
       requestAnimationFrame(() => {
         document.dispatchEvent(
           new CustomEvent('mcp:tool-execution-complete', {
             detail: {
               result: wrappedResult,
-              skipAutoInsertCheck: false
+              skipAutoInsertCheck: false,
+              callId,
+              functionName,
             },
           }),
         );

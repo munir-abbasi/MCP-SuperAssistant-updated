@@ -1,6 +1,6 @@
 /**
  * Message type definitions for MCP communication
- * 
+ *
  * These types ensure consistency between the context bridge, MCP client, and background script
  */
 
@@ -32,13 +32,19 @@ export interface ResponseMessage<T = any> extends BaseMessage {
 // MCP-specific message types and payloads
 
 // Tool execution
+// callId: logical operation identity supplied by the renderer (per tool-call card).
+// attemptId: one concrete dispatch attempt for that logical operation.
 export interface CallToolRequest {
   toolName: string;
   args: Record<string, unknown>;
+  callId?: string;
+  attemptId?: string;
+  timeout?: number;
 }
 
 export interface CallToolResponse {
   result: any;
+  callId?: string;
 }
 
 // Connection status
@@ -117,7 +123,7 @@ export interface HeartbeatResponseBroadcast {
 }
 
 // Message type union for better type safety
-export type McpMessageType = 
+export type McpMessageType =
   | 'mcp:call-tool'
   | 'mcp:get-connection-status'
   | 'mcp:get-tools'
@@ -168,7 +174,7 @@ export enum ErrorCategory {
   TOOL_ERROR = 'tool_error',
   VALIDATION_ERROR = 'validation_error',
   TIMEOUT_ERROR = 'timeout_error',
-  UNKNOWN_ERROR = 'unknown_error'
+  UNKNOWN_ERROR = 'unknown_error',
 }
 
 // Enhanced error structure
@@ -193,16 +199,16 @@ export function isValidMessageType(type: string): type is McpMessageType {
     'connection:status-changed',
     'mcp:tool-update',
     'mcp:server-config-updated',
-    'mcp:heartbeat-response'
+    'mcp:heartbeat-response',
   ];
-  
+
   return validTypes.includes(type as McpMessageType);
 }
 
 export function createRequestMessage<T extends keyof McpMessageMap>(
   type: T,
   payload: McpMessageMap[T]['request'],
-  id?: string
+  id?: string,
 ): RequestMessage<McpMessageMap[T]['request']> {
   return {
     type,
@@ -210,7 +216,7 @@ export function createRequestMessage<T extends keyof McpMessageMap>(
     origin: 'content',
     timestamp: Date.now(),
     id: id || `msg_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
-    expectResponse: true
+    expectResponse: true,
   };
 }
 
@@ -219,7 +225,7 @@ export function createResponseMessage<T extends keyof McpMessageMap>(
   payload: McpMessageMap[T]['response'],
   originalMessage: RequestMessage,
   success: boolean = true,
-  processingTime?: number
+  processingTime?: number,
 ): ResponseMessage<McpMessageMap[T]['response']> {
   return {
     type,
@@ -228,14 +234,14 @@ export function createResponseMessage<T extends keyof McpMessageMap>(
     timestamp: Date.now(),
     id: originalMessage.id,
     success,
-    processingTime
+    processingTime,
   };
 }
 
 export function createErrorResponse(
   originalMessage: RequestMessage,
   error: string | McpError,
-  processingTime?: number
+  processingTime?: number,
 ): ResponseMessage {
   return {
     type: originalMessage.type,
@@ -244,18 +250,15 @@ export function createErrorResponse(
     id: originalMessage.id,
     error: typeof error === 'string' ? error : error.message,
     success: false,
-    processingTime
+    processingTime,
   };
 }
 
-export function createBroadcastMessage<T>(
-  type: McpMessageType,
-  payload: T
-): BaseMessage {
+export function createBroadcastMessage<T>(type: McpMessageType, payload: T): BaseMessage {
   return {
     type,
     payload,
     origin: 'background',
-    timestamp: Date.now()
+    timestamp: Date.now(),
   };
 }

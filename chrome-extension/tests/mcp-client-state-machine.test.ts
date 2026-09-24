@@ -65,6 +65,37 @@ describe('McpClient State Machine & Execution Tracking', () => {
     assert.strictEqual((client as any).activeCalls.size, 0);
   });
 
+  it('tracks separate dispatch attempts for the same logical operation', async () => {
+    const client = new McpClient();
+    (client as any).connectionState = ConnectionState.CONNECTED;
+    (client as any).activePlugin = {
+      metadata: { transportType: 'streamable-http' },
+      disconnect: async () => {},
+      callTool: async () => new Promise(() => {}),
+    };
+    (client as any).client = { close: async () => {} } as unknown as Client;
+
+    const started: Array<{ callId?: string; attemptId: string }> = [];
+    client.on('tool:call-started', event => started.push(event));
+
+    const first = client.callTool('tool', {}, undefined, undefined, 'logical-call', 'attempt-1');
+    const second = client.callTool('tool', {}, undefined, undefined, 'logical-call', 'attempt-2');
+
+    assert.strictEqual((client as any).activeCalls.size, 2);
+    assert.deepStrictEqual(
+      started.map(event => ({ callId: event.callId, attemptId: event.attemptId })),
+      [
+        { callId: 'logical-call', attemptId: 'attempt-1' },
+        { callId: 'logical-call', attemptId: 'attempt-2' },
+      ],
+    );
+
+    await client.disconnect();
+    const settled = await Promise.allSettled([first, second]);
+    assert.ok(settled.every(result => result.status === 'rejected'));
+    assert.strictEqual((client as any).activeCalls.size, 0);
+  });
+
   it('should ignore duplicate connect requests while CONNECTING', async () => {
     const client = new McpClient();
 

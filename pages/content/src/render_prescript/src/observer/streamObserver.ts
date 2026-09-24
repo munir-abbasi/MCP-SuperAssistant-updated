@@ -106,7 +106,7 @@ const contentAnalysisCache = new Map<
 >();
 
 // Debounced rendering to prevent rapid-fire updates
-const renderingDebouncer = new Map<string, number>();
+const renderingDebouncer = new Map<string, ReturnType<typeof setTimeout>>();
 const RENDER_DEBOUNCE_MS = 50; // 50ms debounce for smooth rendering
 
 // Make resyncingBlocks globally accessible to prevent re-rendering during resync
@@ -673,7 +673,7 @@ export const checkStreamingUpdates = (): void => {
   for (const container of targetContainers) {
     for (const selector of CONFIG.targetSelectors) {
       const elements = container.querySelectorAll<HTMLElement>(selector);
-      for (const element of elements) {
+      for (const element of Array.from(elements)) {
         const blockId = element.getAttribute('data-block-id');
         if (!blockId) continue;
 

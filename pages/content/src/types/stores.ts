@@ -44,6 +44,27 @@ export interface ToolExecution {
   timestamp: number;
   status: 'pending' | 'success' | 'error';
   error?: string;
+  /** Operation identity from the renderer (tool-call card). Correlates execution with delivery. */
+  callId?: string;
+  /** Evidence about whether the request may have crossed the content→background dispatch boundary. */
+  executionEvidence?: {
+    dispatchState: 'not-dispatched' | 'possibly-dispatched' | 'response-received' | 'unknown';
+    attemptCount: number;
+    /** Distinguishes this concrete dispatch from other executions sharing the same logical callId. */
+    attemptId?: string;
+  };
+  /**
+   * Delivery outcome (Stage 2). Execution `status` stays execution-scoped; this
+   * records what happened to the result afterwards so execution-success plus
+   * delivery-failure remains a distinguishable outcome. Vocabulary matches the
+   * delivery receipts in `services/delivery-recovery.ts`.
+   */
+  delivery?: {
+    stage: 'acknowledged' | 'delivered' | 'failed' | 'skipped';
+    at: number;
+    destinationUrl: string;
+    error?: string;
+  };
 }
 
 export interface SidebarState {
@@ -55,10 +76,10 @@ export interface SidebarState {
 
 export interface UserPreferences {
   autoSubmit: boolean;
-  autoInsert: boolean;  // New automation field
+  autoInsert: boolean; // New automation field
   autoExecute: boolean; // New automation field
-  autoInsertDelay: number;  // Delay in seconds for auto insert
-  autoSubmitDelay: number;  // Delay in seconds for auto submit
+  autoInsertDelay: number; // Delay in seconds for auto insert
+  autoSubmitDelay: number; // Delay in seconds for auto submit
   autoExecuteDelay: number; // Delay in seconds for auto execute
   notifications: boolean;
   theme: 'light' | 'dark' | 'system';
@@ -68,6 +89,7 @@ export interface UserPreferences {
   isMinimized: boolean;
   customInstructions: string;
   customInstructionsEnabled: boolean;
+  mcpTimeout?: number; // Timeout for MCP tool calls in milliseconds
 }
 
 export interface Notification {

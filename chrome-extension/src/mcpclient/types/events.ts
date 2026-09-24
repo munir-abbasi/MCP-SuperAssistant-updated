@@ -36,9 +36,9 @@ export interface ConnectionEvents {
 }
 
 export interface ToolEvents {
-  'tool:call-started': { toolName: string; args: any };
-  'tool:call-completed': { toolName: string; result: any; duration: number };
-  'tool:call-failed': { toolName: string; error: Error; duration: number };
+  'tool:call-started': { toolName: string; args: any; callId?: string; attemptId: string };
+  'tool:call-completed': { toolName: string; result: any; duration: number; callId?: string; attemptId: string };
+  'tool:call-failed': { toolName: string; error: Error; duration: number; callId?: string; attemptId: string };
   'tools:list-updated': { tools: any[]; type: TransportType };
 }
 

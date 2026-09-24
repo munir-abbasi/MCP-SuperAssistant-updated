@@ -1,6 +1,58 @@
 import { readFileSync } from 'node:fs';
 
-const packageJson = JSON.parse(readFileSync('./package.json', 'utf8'));
+const packageJson = JSON.parse(readFileSync('./package.json', 'utf8')) as { version: string };
+
+const MANIFEST_VERSION_MAX_COMPONENT = 65535;
+const MANIFEST_STABLE_BUILD_COMPONENT = MANIFEST_VERSION_MAX_COMPONENT;
+const MANIFEST_PRERELEASE_SEQUENCE_MAX = 9999;
+
+const prereleaseBase = {
+  alpha: 10000,
+  beta: 30000,
+  rc: 50000,
+} as const;
+
+/**
+ * Chrome extension versions must contain only 1-4 dot-separated integers.
+ * Keep package.json SemVer for package/release identity while encoding its
+ * precedence into a browser-safe fourth component:
+ *
+ *   0.6.2-alpha.1 -> 0.6.2.10001
+ *   0.6.2-beta.1  -> 0.6.2.30001
+ *   0.6.2-rc.1    -> 0.6.2.50001
+ *   0.6.2         -> 0.6.2.65535
+ *
+ * This keeps prereleases below the corresponding stable release and fails the
+ * build instead of emitting a manifest Chrome cannot load.
+ */
+export const toManifestVersion = (packageVersion: string): string => {
+  const match = packageVersion.match(/^(\d+)\.(\d+)\.(\d+)(?:-(alpha|beta|rc)(?:\.(\d+))?)?(?:\+[0-9A-Za-z.-]+)?$/);
+
+  if (!match) {
+    throw new Error(`Unsupported package version for browser manifest: ${packageVersion}`);
+  }
+
+  const [, majorRaw, minorRaw, patchRaw, prerelease, sequenceRaw] = match;
+  const core = [majorRaw, minorRaw, patchRaw].map(Number);
+
+  if (core.some(component => component > MANIFEST_VERSION_MAX_COMPONENT)) {
+    throw new Error(`Package version component exceeds browser manifest limit: ${packageVersion}`);
+  }
+
+  if (!prerelease) {
+    return `${core.join('.')}.${MANIFEST_STABLE_BUILD_COMPONENT}`;
+  }
+
+  const sequence = Number(sequenceRaw ?? 0);
+  if (sequence > MANIFEST_PRERELEASE_SEQUENCE_MAX) {
+    throw new Error(`Package prerelease sequence exceeds browser manifest limit: ${packageVersion}`);
+  }
+
+  const prereleaseKey = prerelease as keyof typeof prereleaseBase;
+  return `${core.join('.')}.${prereleaseBase[prereleaseKey] + sequence}`;
+};
+
+const manifestVersion = toManifestVersion(packageJson.version);
 
 /**
  * @prop default_locale
@@ -26,7 +78,8 @@ const manifest = {
       id: 'saurabh@mcpsuperassistant.ai',
     },
   },
-  version: packageJson.version,
+  version: manifestVersion,
+  version_name: packageJson.version,
   description: 'MCP SuperAssistant',
   host_permissions: [
     '*://*.perplexity.ai/*',
@@ -50,7 +103,15 @@ const manifest = {
   ],
 
   permissions: ['storage', 'clipboardWrite'],
-  // permissions: ['storage', 'scripting', 'clipboardWrite'],
+  commands: {
+    'toggle-sidebar': {
+      suggested_key: {
+        default: 'Ctrl+Shift+S',
+        mac: 'MacCtrl+Shift+S',
+      },
+      description: 'Toggle MCP SuperAssistant Sidebar',
+    },
+  },
   // options_page: 'options/index.html',
   background: {
     service_worker: 'background.js',

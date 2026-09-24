@@ -22,16 +22,18 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
     'text-insertion',
     'form-submission',
     'file-attachment',
-    'dom-manipulation'
+    'dom-manipulation',
   ];
 
   // CSS selectors for DeepSeek's UI elements
   // Updated selectors based on current DeepSeek interface
   private readonly selectors = {
     // Primary chat input selector - DeepSeek uses textarea elements
-    CHAT_INPUT: 'textarea[spellcheck="false"], textarea[data-gramm="false"], textarea[placeholder*="Ask"], textarea[placeholder*="Message DeepSeek"], textarea.chat-input, div[contenteditable="true"]',
+    CHAT_INPUT:
+      '#chat-input, textarea#chat-input, textarea[id*="input"], textarea[placeholder*="Ask"], textarea[placeholder*="Message DeepSeek"], textarea.chat-input, textarea[spellcheck="false"], div[contenteditable="true"]',
     // Submit button selectors (multiple fallbacks)
-    SUBMIT_BUTTON: 'button[aria-label*="Send"], button[data-testid="send-button"], button.send-button, svg.send-icon',
+    SUBMIT_BUTTON:
+      'button[aria-label*="Send"], div[role="button"]:has(svg), button[data-testid="send-button"], button.send-button',
     // File upload related selectors
     FILE_UPLOAD_BUTTON: 'button[aria-label*="attach"], button[aria-label*="file"], input[type="file"]',
     FILE_INPUT: 'input[type="file"]',
@@ -42,9 +44,10 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
     // File preview elements
     FILE_PREVIEW: '.file-preview, .attachment-preview, .uploaded-file',
     // Button insertion points (for MCP popover) - DeepSeek specific
-    BUTTON_INSERTION_CONTAINER: '.ec4f5d61, .chat-input-actions, .input-actions, .actions-wrapper',
+    BUTTON_INSERTION_CONTAINER:
+      'div:has(> button[aria-label*="attach"]), .chat-input-actions, .input-actions, .actions-wrapper, .ec4f5d61',
     // Alternative insertion points
-    FALLBACK_INSERTION: '.input-area, .chat-input-container, ._24fad49, .bf38813a, .aaff8b8f'
+    FALLBACK_INSERTION: '.input-area, .chat-input-container, .bf38813a, .aaff8b8f',
   };
 
   // URL patterns for navigation tracking
@@ -154,12 +157,12 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
       }
     }
   `;
-  
+
   // Setup state tracking
   private storeEventListenersSetup: boolean = false;
   private domObserversSetup: boolean = false;
   private uiIntegrationSetup: boolean = false;
-  
+
   // Instance tracking for debugging
   private static instanceCount = 0;
   private instanceId: number;
@@ -174,7 +177,9 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
   async initialize(context: PluginContext): Promise<void> {
     // Guard against multiple initialization
     if (this.currentStatus === 'initializing' || this.currentStatus === 'active') {
-      this.context?.logger.warn(`DeepSeek adapter instance #${this.instanceId} already initialized or active, skipping re-initialization`);
+      this.context?.logger.warn(
+        `DeepSeek adapter instance #${this.instanceId} already initialized or active, skipping re-initialization`,
+      );
       return;
     }
 
@@ -206,7 +211,7 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
     // Emit activation event for store synchronization
     this.context.eventBus.emit('adapter:activated', {
       pluginName: this.name,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -232,7 +237,7 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
     // Emit deactivation event
     this.context.eventBus.emit('adapter:deactivated', {
       pluginName: this.name,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -255,7 +260,7 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
     // Final cleanup
     this.cleanupUIIntegration();
     this.cleanupDOMObservers();
-    
+
     // Reset all setup flags
     this.storeEventListenersSetup = false;
     this.domObserversSetup = false;
@@ -267,7 +272,9 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
    * Enhanced with better selector handling and event integration
    */
   async insertText(text: string, options?: { targetElement?: HTMLElement }): Promise<boolean> {
-    this.context.logger.debug(`Attempting to insert text into DeepSeek chat input: ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}`);
+    this.context.logger.debug(
+      `Attempting to insert text into DeepSeek chat input: ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}`,
+    );
 
     let targetElement: HTMLElement | null = null;
 
@@ -299,7 +306,7 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
       if (targetElement.tagName === 'TEXTAREA') {
         const textarea = targetElement as HTMLTextAreaElement;
         const currentText = textarea.value;
-        
+
         // Append the text to the original value on a new line if there's existing content
         const newContent = currentText ? currentText + '\n\n' + text : text;
         textarea.value = newContent;
@@ -311,11 +318,13 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
         textarea.dispatchEvent(new InputEvent('input', { bubbles: true }));
         textarea.dispatchEvent(new Event('change', { bubbles: true }));
 
-        this.context.logger.debug(`Text inserted into textarea successfully. Original: ${currentText.length}, Added: ${text.length}, Total: ${newContent.length}`);
+        this.context.logger.debug(
+          `Text inserted into textarea successfully. Original: ${currentText.length}, Added: ${text.length}, Total: ${newContent.length}`,
+        );
       } else if (targetElement.getAttribute('contenteditable') === 'true') {
         // Handle contenteditable div
         const currentText = targetElement.textContent || '';
-        
+
         // Move cursor to the end
         const selection = window.getSelection();
         const range = document.createRange();
@@ -339,7 +348,7 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
         // Fallback for other element types
         const originalValue = (targetElement as any).value || targetElement.textContent || '';
         const newContent = originalValue ? originalValue + '\n\n' + text : text;
-        
+
         if ('value' in targetElement) {
           (targetElement as any).value = newContent;
         } else {
@@ -354,11 +363,15 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
       }
 
       // Emit success event to the new event system
-      this.emitExecutionCompleted('insertText', { text }, {
-        success: true,
-        targetElementType: targetElement.tagName,
-        insertedLength: text.length
-      });
+      this.emitExecutionCompleted(
+        'insertText',
+        { text },
+        {
+          success: true,
+          targetElementType: targetElement.tagName,
+          insertedLength: text.length,
+        },
+      );
 
       return true;
     } catch (error) {
@@ -413,13 +426,17 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
       submitButton.click();
 
       // Emit success event to the new event system
-      this.emitExecutionCompleted('submitForm', {
-        formElement: options?.formElement?.tagName || 'unknown'
-      }, {
-        success: true,
-        method: 'submitButton.click',
-        buttonSelector: selectors.find(s => document.querySelector(s.trim()) === submitButton)
-      });
+      this.emitExecutionCompleted(
+        'submitForm',
+        {
+          formElement: options?.formElement?.tagName || 'unknown',
+        },
+        {
+          success: true,
+          method: 'submitButton.click',
+          buttonSelector: selectors.find(s => document.querySelector(s.trim()) === submitButton),
+        },
+      );
 
       this.context.logger.debug('DeepSeek chat input submitted successfully');
       return true;
@@ -438,7 +455,7 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
     try {
       // Find the chat input element
       const chatInput = document.querySelector(this.selectors.CHAT_INPUT.split(', ')[0].trim()) as HTMLElement;
-      
+
       if (!chatInput) {
         this.context.logger.error('Cannot find chat input for Enter key submission');
         this.emitExecutionFailed('submitForm', 'Chat input not found for Enter key submission');
@@ -459,11 +476,15 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
       chatInput.dispatchEvent(enterKeyEvent);
 
       // Emit success event
-      this.emitExecutionCompleted('submitForm', {}, {
-        success: true,
-        method: 'enterKey',
-        fallback: true
-      });
+      this.emitExecutionCompleted(
+        'submitForm',
+        {},
+        {
+          success: true,
+          method: 'enterKey',
+          fallback: true,
+        },
+      );
 
       this.context.logger.debug('DeepSeek chat input submitted using Enter key');
       return true;
@@ -497,7 +518,7 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
 
       // Try to find file input element
       let fileInput: HTMLInputElement | null = null;
-      
+
       if (options?.inputElement) {
         fileInput = options.inputElement;
       } else {
@@ -508,15 +529,19 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
         // Direct file input method
         const success = await this.attachFileToInput(file, fileInput);
         if (success) {
-          this.emitExecutionCompleted('attachFile', {
-            fileName: file.name,
-            fileType: file.type,
-            fileSize: file.size,
-            method: 'fileInput'
-          }, {
-            success: true,
-            attachmentMethod: 'direct-input'
-          });
+          this.emitExecutionCompleted(
+            'attachFile',
+            {
+              fileName: file.name,
+              fileType: file.type,
+              fileSize: file.size,
+              method: 'fileInput',
+            },
+            {
+              success: true,
+              attachmentMethod: 'direct-input',
+            },
+          );
           return true;
         }
       }
@@ -524,15 +549,19 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
       // Try drag and drop simulation as fallback
       const dropSuccess = await this.simulateFileDrop(file);
       if (dropSuccess) {
-        this.emitExecutionCompleted('attachFile', {
-          fileName: file.name,
-          fileType: file.type,
-          fileSize: file.size,
-          method: 'dragDrop'
-        }, {
-          success: true,
-          attachmentMethod: 'drag-drop-simulation'
-        });
+        this.emitExecutionCompleted(
+          'attachFile',
+          {
+            fileName: file.name,
+            fileType: file.type,
+            fileSize: file.size,
+            method: 'dragDrop',
+          },
+          {
+            success: true,
+            attachmentMethod: 'drag-drop-simulation',
+          },
+        );
         return true;
       }
 
@@ -592,17 +621,17 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
 
       const dragEnterEvent = new DragEvent('dragenter', {
         bubbles: true,
-        dataTransfer: dataTransfer
+        dataTransfer: dataTransfer,
       });
 
       const dragOverEvent = new DragEvent('dragover', {
         bubbles: true,
-        dataTransfer: dataTransfer
+        dataTransfer: dataTransfer,
       });
 
       const dropEvent = new DragEvent('drop', {
         bubbles: true,
-        dataTransfer: dataTransfer
+        dataTransfer: dataTransfer,
       });
 
       // Dispatch events
@@ -644,8 +673,8 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
 
     // Check if we're on a supported DeepSeek page
     const supportedPatterns = [
-      /^https?:\/\/(?:www\.)?chat\.deepseek\.com\/.*/,  // Chat pages
-      /^https?:\/\/(?:www\.)?chat\.deepseek\.com$/       // Base chat page
+      /^https?:\/\/(?:www\.)?chat\.deepseek\.com\/.*/, // Chat pages
+      /^https?:\/\/(?:www\.)?chat\.deepseek\.com$/, // Base chat page
     ];
 
     const isSupported = supportedPatterns.some(pattern => pattern.test(currentUrl));
@@ -728,14 +757,14 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
     this.context.logger.debug(`Setting up store event listeners for DeepSeek adapter instance #${this.instanceId}`);
 
     // Listen for tool execution events from the store
-    this.context.eventBus.on('tool:execution-completed', (data) => {
+    this.context.eventBus.on('tool:execution-completed', data => {
       this.context.logger.debug('Tool execution completed:', data);
       // Handle auto-actions based on store state
       this.handleToolExecutionCompleted(data);
     });
 
     // Listen for UI state changes
-    this.context.eventBus.on('ui:sidebar-toggle', (data) => {
+    this.context.eventBus.on('ui:sidebar-toggle', data => {
       this.context.logger.debug('Sidebar toggled:', data);
     });
 
@@ -751,10 +780,10 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
     this.context.logger.debug(`Setting up DOM observers for DeepSeek adapter instance #${this.instanceId}`);
 
     // Set up mutation observer to detect page changes and re-inject UI if needed
-    this.mutationObserver = new MutationObserver((mutations) => {
+    this.mutationObserver = new MutationObserver(mutations => {
       let shouldReinject = false;
 
-      mutations.forEach((mutation) => {
+      mutations.forEach(mutation => {
         if (mutation.type === 'childList') {
           // Check if our MCP popover was removed
           if (!document.getElementById('mcp-popover-container')) {
@@ -776,9 +805,9 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
     // Start observing
     this.mutationObserver.observe(document.body, {
       childList: true,
-      subtree: true
+      subtree: true,
     });
-    
+
     this.domObserversSetup = true;
   }
 
@@ -786,19 +815,23 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
     // Allow multiple calls for UI integration (for re-injection after page changes)
     // but log it for debugging
     if (this.uiIntegrationSetup) {
-      this.context.logger.debug(`UI integration already set up for instance #${this.instanceId}, re-injecting for page changes`);
+      this.context.logger.debug(
+        `UI integration already set up for instance #${this.instanceId}, re-injecting for page changes`,
+      );
     } else {
       this.context.logger.debug(`Setting up UI integration for DeepSeek adapter instance #${this.instanceId}`);
       this.uiIntegrationSetup = true;
     }
 
     // Wait for page to be ready, then inject MCP popover
-    this.waitForPageReady().then(() => {
-      this.injectMCPPopoverWithRetry();
-    }).catch((error) => {
-      this.context.logger.warn('Failed to wait for page ready:', error);
-      // Don't retry if we can't find insertion point
-    });
+    this.waitForPageReady()
+      .then(() => {
+        this.injectMCPPopoverWithRetry();
+      })
+      .catch(error => {
+        this.context.logger.warn('Failed to wait for page ready:', error);
+        // Don't retry if we can't find insertion point
+      });
 
     // Set up periodic check to ensure popover stays injected
     // this.setupPeriodicPopoverCheck();
@@ -808,7 +841,7 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
     return new Promise((resolve, reject) => {
       let attempts = 0;
       const maxAttempts = 5; // Maximum 10 seconds (20 * 500ms)
-      
+
       const checkReady = () => {
         attempts++;
         const insertionPoint = this.findButtonInsertionPoint();
@@ -955,7 +988,7 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
       '.aaff8b8f', // Chat input area
       '.chat-input-actions',
       '.input-actions',
-      '.actions-wrapper'
+      '.actions-wrapper',
     ];
 
     for (const selector of fallbackSelectors) {
@@ -1027,41 +1060,47 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
 
     try {
       // Import React and ReactDOM dynamically to avoid bundling issues
-      import('react').then(React => {
-        import('react-dom/client').then(ReactDOM => {
-          import('../../components/mcpPopover/mcpPopover').then(({ MCPPopover }) => {
-            // Create toggle state manager that integrates with new stores
-            const toggleStateManager = this.createToggleStateManager();
+      import('react')
+        .then(React => {
+          import('react-dom/client')
+            .then(ReactDOM => {
+              import('../../components/mcpPopover/mcpPopover')
+                .then(({ MCPPopover }) => {
+                  // Create toggle state manager that integrates with new stores
+                  const toggleStateManager = this.createToggleStateManager();
 
-            // DeepSeek-specific button configuration to match native design
-            const adapterButtonConfig = {
-              className: 'mcp-ds-button',
-              contentClassName: 'mcp-ds-button-content',
-              textClassName: 'mcp-ds-button-text',
-              iconClassName: 'mcp-ds-button-icon',
-              activeClassName: 'mcp-button-active'
-            };
+                  // DeepSeek-specific button configuration to match native design
+                  const adapterButtonConfig = {
+                    className: 'mcp-ds-button',
+                    contentClassName: 'mcp-ds-button-content',
+                    textClassName: 'mcp-ds-button-text',
+                    iconClassName: 'mcp-ds-button-icon',
+                    activeClassName: 'mcp-button-active',
+                  };
 
-            // Create React root and render
-            const root = ReactDOM.createRoot(container);
-            root.render(
-              React.createElement(MCPPopover, {
-                toggleStateManager: toggleStateManager,
-                adapterButtonConfig: adapterButtonConfig,
-                adapterName: 'DeepSeekAdapter'
-              })
-            );
+                  // Create React root and render
+                  const root = ReactDOM.createRoot(container);
+                  root.render(
+                    React.createElement(MCPPopover, {
+                      toggleStateManager: toggleStateManager,
+                      adapterButtonConfig: adapterButtonConfig,
+                      adapterName: 'DeepSeekAdapter',
+                    }),
+                  );
 
-            this.context.logger.debug('MCP popover rendered successfully with DeepSeek styling');
-          }).catch(error => {
-            this.context.logger.error('Failed to import MCPPopover component:', error);
-          });
-        }).catch(error => {
-          this.context.logger.error('Failed to import ReactDOM:', error);
+                  this.context.logger.debug('MCP popover rendered successfully with DeepSeek styling');
+                })
+                .catch(error => {
+                  this.context.logger.error('Failed to import MCPPopover component:', error);
+                });
+            })
+            .catch(error => {
+              this.context.logger.error('Failed to import ReactDOM:', error);
+            });
+        })
+        .catch(error => {
+          this.context.logger.error('Failed to import React:', error);
         });
-      }).catch(error => {
-        this.context.logger.error('Failed to import React:', error);
-      });
     } catch (error) {
       this.context.logger.error('Failed to render MCP popover:', error);
     }
@@ -1077,7 +1116,7 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
         try {
           // Get state from UI store - MCP enabled state should be the persistent MCP toggle state
           const uiState = context.stores.ui;
-          
+
           // Get the persistent MCP enabled state and other preferences
           const mcpEnabled = uiState?.mcpEnabled ?? false;
           const autoSubmitEnabled = uiState?.preferences?.autoSubmit ?? false;
@@ -1088,7 +1127,7 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
             mcpEnabled: mcpEnabled, // Use the persistent MCP state
             autoInsert: autoSubmitEnabled,
             autoSubmit: autoSubmitEnabled,
-            autoExecute: false // Default for now, can be extended
+            autoExecute: false, // Default for now, can be extended
           };
         } catch (error) {
           context.logger.error('Error getting toggle state:', error);
@@ -1097,13 +1136,15 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
             mcpEnabled: false,
             autoInsert: false,
             autoSubmit: false,
-            autoExecute: false
+            autoExecute: false,
           };
         }
       },
 
       setMCPEnabled: (enabled: boolean) => {
-        context.logger.debug(`Setting MCP ${enabled ? 'enabled' : 'disabled'} - controlling sidebar visibility via MCP state`);
+        context.logger.debug(
+          `Setting MCP ${enabled ? 'enabled' : 'disabled'} - controlling sidebar visibility via MCP state`,
+        );
 
         try {
           // Primary method: Control MCP state through UI store (which will automatically control sidebar)
@@ -1112,7 +1153,7 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
             context.logger.debug(`MCP state set to: ${enabled} via UI store`);
           } else {
             context.logger.warn('UI store setMCPEnabled method not available');
-            
+
             // Fallback: Control sidebar visibility directly if MCP state setter not available
             if (context.stores.ui?.setSidebarVisibility) {
               context.stores.ui.setSidebarVisibility(enabled, 'mcp-popover-toggle-fallback');
@@ -1138,7 +1179,9 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
             context.logger.warn('activeSidebarManager not available on window - will rely on UI store only');
           }
 
-          context.logger.debug(`MCP toggle completed: MCP ${enabled ? 'enabled' : 'disabled'}, sidebar ${enabled ? 'shown' : 'hidden'}`);
+          context.logger.debug(
+            `MCP toggle completed: MCP ${enabled ? 'enabled' : 'disabled'}, sidebar ${enabled ? 'shown' : 'hidden'}`,
+          );
         } catch (error) {
           context.logger.error('Error in setMCPEnabled:', error);
         }
@@ -1182,11 +1225,11 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
         if (popoverContainer) {
           const currentState = stateManager.getState();
           const event = new CustomEvent('mcp:update-toggle-state', {
-            detail: { toggleState: currentState }
+            detail: { toggleState: currentState },
           });
           popoverContainer.dispatchEvent(event);
         }
-      }
+      },
     };
 
     return stateManager;
@@ -1215,8 +1258,8 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
         parameters,
         result,
         timestamp: Date.now(),
-        status: 'success'
-      }
+        status: 'success',
+      },
     });
   }
 
@@ -1224,7 +1267,7 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
     this.context.eventBus.emit('tool:execution-failed', {
       toolName,
       error,
-      callId: this.generateCallId()
+      callId: this.generateCallId(),
     });
   }
 
@@ -1241,7 +1284,7 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
     try {
       // Check if there's an active sidebar manager
       const activeSidebarManager = (window as any).activeSidebarManager;
-      
+
       if (!activeSidebarManager) {
         this.context.logger.warn('No active sidebar manager found after navigation');
         return;
@@ -1249,7 +1292,6 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
 
       // Sidebar manager exists, just ensure MCP popover connection is working
       this.ensureMCPPopoverConnection();
-      
     } catch (error) {
       this.context.logger.error('Error checking sidebar state after navigation:', error);
     }
@@ -1260,7 +1302,7 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
    */
   private ensureMCPPopoverConnection(): void {
     this.context.logger.debug('Ensuring MCP popover connection after navigation');
-    
+
     try {
       // Check if MCP popover is still injected
       if (!this.isMCPPopoverInjected()) {
@@ -1300,7 +1342,7 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
     // Emit page change event to stores
     this.context.eventBus.emit('app:site-changed', {
       site: url,
-      hostname: window.location.hostname
+      hostname: window.location.hostname,
     });
   }
 
@@ -1314,7 +1356,7 @@ export class DeepSeekAdapter extends BaseAdapterPlugin {
       // Emit deactivation event using available event type
       this.context.eventBus.emit('adapter:deactivated', {
         pluginName: this.name,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     } else {
       // Re-setup for new host

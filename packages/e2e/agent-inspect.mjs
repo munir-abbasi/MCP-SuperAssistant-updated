@@ -39,8 +39,9 @@ const revision = {
     .map((l) => l.slice(3).trim()),
 };
 
+const topologyPresent = existsSync(TOPology_PATH);
 const topology = { path: TOPology_PATH, boundaries: [], interfaces: [] };
-if (existsSync(TOPology_PATH)) {
+if (topologyPresent) {
   const src = readFileSync(TOPology_PATH, 'utf8');
   const boundaryIds = [...src.matchAll(/^\s*- id: ([A-Z_]+)$/gm)]
     .map((m) => m[1]);
@@ -60,7 +61,8 @@ if (existsSync(TOPology_PATH)) {
 
 const evidence = [];
 const QUAL_DIR = 'docs/qualification';
-if (existsSync(QUAL_DIR)) {
+const qualificationPresent = existsSync(QUAL_DIR);
+if (qualificationPresent) {
   for (const name of readdirSync(QUAL_DIR)) {
     if (!name.endsWith('.md')) continue;
     const rel = `${QUAL_DIR}/${name}`;
@@ -98,6 +100,7 @@ const packet = {
   schema_note:
     'disposable Situation Packet seed (Stage 7 shim); derivation only, no stored truth',
   mode: 'maintenance',
+  source_files_present: { control_map: topologyPresent, qualification_dir: qualificationPresent },
   revision,
   topology,
   evidence,
@@ -119,8 +122,16 @@ if (jsonFlag) {
   });
   console.log('SITUATION PACKET SEED (compiled, disposable — verify against implementation)');
   console.log(`revision:      ${revision.branch} @ ${(revision.head || 'unknown').slice(0, 12)} (${dirty} dirty path${dirty === 1 ? '' : 's'})`);
-  console.log(`topology:      ${TOPology_PATH} — ${topology.boundaries.length} boundaries, ${topology.interfaces.length} interfaces`);
-  console.log(`evidence:      ${evidence.length} qualification document(s)`);
+  if (topologyPresent) {
+    console.log(`topology:      ${TOPology_PATH} — ${topology.boundaries.length} boundaries, ${topology.interfaces.length} interfaces`);
+  } else {
+    console.log(`topology:      ${TOPology_PATH} — not present in this checkout (control map is not tracked)`);
+  }
+  if (qualificationPresent) {
+    console.log(`evidence:      ${evidence.length} qualification document(s)`);
+  } else {
+    console.log('evidence:      unavailable — docs/qualification is not present in this checkout');
+  }
   if (staleCandidates.length) {
     console.log(`stale candidates (date-based only — confirm with each receipt's invalidates_on):`);
     for (const e of staleCandidates) console.log(`  - ${e.file} (newest date ${e.newest_date_in_document})`);
@@ -128,7 +139,12 @@ if (jsonFlag) {
   console.log(`runtime:       not compiled — use the dev-build observation surfaces (see --json)`);
   console.log(`unknowns:      goal, acceptance, authority, runtime checkpoint, effect class — resolve before acting`);
   console.log('');
-  console.log('NEXT: route the task through docs/agent-control-map.yaml; read the one owning');
-  console.log('implementation surface plus one evidence surface; select one admitted action or stop.');
+  if (topologyPresent) {
+    console.log('NEXT: route the task through docs/agent-control-map.yaml; read the one owning');
+    console.log('implementation surface plus one evidence surface; select one admitted action or stop.');
+  } else {
+    console.log('NEXT: the control map is not in this checkout — read the owning implementation');
+    console.log('surface plus one evidence surface (if present); select one admitted action or stop.');
+  }
 }
 console.error('\n[agent-inspect] read-only: no repository files were read except the topology map and qualification inventory; nothing was written.');

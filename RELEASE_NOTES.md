@@ -29,8 +29,6 @@ delivery recovery, agent-facing control documentation, and repository gates for 
 
 ### Agent and Repository Tooling
 
-- Adds the AGENTS/SYSTEM/ARCHITECTURE/AGENT_GUIDE documentation tower, the static agent
-  control map, and scoped qualification evidence.
 - Ships the Stage 10 benchmark harness and the read-only `pnpm agent:inspect --json`
   Situation Packet shim.
 - Introduces a fast GitHub Actions gate for type-checking, node tests, and linting on
@@ -55,10 +53,7 @@ Load the unpacked extension from `dist/` in a Chromium browser. Use
 
 ## Qualification Scope
 
-This release does not claim universal live-site qualification. Current browser, site,
-transport, and runtime evidence is scoped in [`docs/qualification/`](docs/qualification/).
-Open and historical issue dispositions remain documented in
-[`DEFERRED_ISSUES.md`](DEFERRED_ISSUES.md).
+This release does not claim universal live-site qualification.
 
 ## Previous Releases
 

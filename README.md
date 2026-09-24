@@ -19,7 +19,6 @@ Brings MCP to ChatGPT, Perplexity, Grok, Gemini, Google AI Studio, OpenRouter, K
     
    ![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)
    ![Build Status](https://img.shields.io/badge/Status-Active-success?style=flat-square)
-   ![CI](https://github.com/munir-abbasi/MCP-SuperAssistant-updated/actions/workflows/ci.yml/badge.svg)
    ![Release](https://img.shields.io/github/v/tag/munir-abbasi/MCP-SuperAssistant-updated?label=release)
 
 </div>
@@ -50,14 +49,14 @@ The extension is a **closed loop around one operation**: a tool call shows up, t
 
 An agent driving this system reasons about the operation first, then follows provenance to the smallest authoritative source set that can answer its question. That is what makes the system inspectable and repairable: ownership, impact, evidence, and write-back paths are explicit, and every runtime boundary has one authoritative documentation locus plus a deterministic route to the smallest relevant evidence or observation surface.
 
-> **Current development-tree safety qualification (2026-09-23):** the repository does not yet establish exactly-once semantics for external-effecting MCP tool calls. The previously identified hidden `mcp:call-tool` redispatch path in the generic content/background message bridge is repaired (hard single-dispatch at the bridge boundary; see `docs/qualification/issue-coverage-ledger.md`), but a timeout/retry outcome still leaves the server-side effect unknown, and formal effect-class/action admission remains open. Until that contract is qualified, avoid treating Auto-Execute or a timeout/retry outcome as safe for non-idempotent writes where a duplicate external effect would matter.
+> **Current development-tree safety qualification (2026-09-23):** the repository does not yet establish exactly-once semantics for external-effecting MCP tool calls. The previously identified hidden `mcp:call-tool` redispatch path in the generic content/background message bridge is repaired (hard single-dispatch at the bridge boundary), but a timeout/retry outcome still leaves the server-side effect unknown, and formal effect-class/action admission remains open. Until that contract is qualified, avoid treating Auto-Execute or a timeout/retry outcome as safe for non-idempotent writes where a duplicate external effect would matter.
 
 ## Registered Adapter Platforms
 
-The registry ships dedicated adapters for the platforms below. The qualification matrix
-holds a dated, scoped ChatGPT snapshot; on its own it does **not** qualify a later source
-revision or packaged artifact. Every other registered site adapter stays experimental or
-unsupported until someone verifies it.
+The registry ships dedicated adapters for the platforms below. The current qualification
+evidence is a dated, scoped ChatGPT snapshot; on its own it does **not** qualify a later
+source revision or packaged artifact. Every other registered site adapter stays
+experimental or unsupported until someone verifies it.
 
 - [ChatGPT](https://chatgpt.com/)
 - [Google Gemini](https://gemini.google.com/)
@@ -279,7 +278,7 @@ pnpm zip
 
 ### Verification
 
-The same gates run in CI (`.github/workflows/ci.yml`) on every push to `main` and on pull requests:
+Run the local gates before every push:
 
 ```bash
 pnpm type-check                          # TypeScript across all packages
@@ -287,7 +286,8 @@ pnpm --filter chrome-extension test      # node test suite
 pnpm lint                                # eslint across all packages
 ```
 
-A separate workflow checks Prettier formatting on JS/TS/JSON files, and `build-zip.yml` builds the packaged extension artifact on every push.
+`pnpm prettier` checks formatting, and `pnpm zip` builds the packaged extension artifact
+for distribution.
 
 ## Contributing
 
@@ -328,15 +328,12 @@ What this fork changes compared with the upstream [MCP SuperAssistant](https://g
 - **Streamable HTTP fixes.** Correct JSON and SSE-framed tool discovery, proper `Accept` and session headers, fragmented chunk handling.
 - **MCP protocol preservation.** `outputSchema`, `annotations`, `structuredContent`, and other valid MCP fields survive instead of getting stripped.
 - **Hardened site adapter contract.** 13 requirements per supported site: idempotent mounting, SPA navigation survival, semantic selectors, verified insertion and submission, clean teardown.
-- **Chrome/Firefox qualification evidence.** `docs/qualification/support-matrix.md` records a 2026-07-30 packaged Chrome/Firefox-on-Linux qualification snapshot. Revalidate after relevant source, build, or browser changes before describing a newer artifact as qualified. Firefox conversion retains Manifest V3 in the current implementation.
+- **Chrome/Firefox qualification evidence.** A packaged Chrome/Firefox-on-Linux qualification snapshot dated 2026-07-30 was recorded. Revalidate after relevant source, build, or browser changes before describing a newer artifact as qualified. Firefox conversion retains Manifest V3 in the current implementation.
 - **Payload safety.** Explicit size budgets, no megabyte-base64 DOM injection, bounded previews for oversized results.
 - **Deterministic testing.** Regression tests come before every fix, the core flow runs in a real browser, and release artifacts carry integrity-checked SHA-256 hashes.
-- **Issue-ledger discipline.** [DEFERRED_ISSUES.md](./DEFERRED_ISSUES.md) classifies 79 upstream issues against this fork with evidence-based fix status (Fixed/Partial/Open/Won't Fix), code references, and reproduction notes.
+- **Issue-ledger discipline.** 79 upstream issues were classified against this fork with evidence-based fix status (Fixed/Partial/Open/Won't Fix), code references, and reproduction notes.
 
 ## Upstream Issues Status
-
-The full audit of all **79 open upstream issues** against this fork's codebase lives in
-[DEFERRED_ISSUES.md](./DEFERRED_ISSUES.md).
 
 Key fixes already applied in this fork:
 

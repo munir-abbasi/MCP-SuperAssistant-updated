@@ -16,6 +16,7 @@ Read the smallest evidence object that can answer the active Situation Packet qu
 | `accretion-demonstration.md` | historical documentation-reuse experiment, invalidation, and partial independent recheck |
 | `inspection-summary.md` | historical environment snapshot for the July stabilization pass |
 | `ergonomics-benchmark.md` | Stage 10 cold-agent ergonomics benchmark: scenarios, grading matrix, runner contract |
+| `publication-v0.7.0.md` | v0.7.0 publication receipt: CI-green revision, tag-vs-tip delta, fresh-clone gates |
 
 Compiled orientation: `pnpm agent:inspect [--json]` (`packages/e2e/agent-inspect.mjs`) derives a
 disposable Situation Packet seed — revision identity, topology inventory, evidence inventory with

@@ -5,6 +5,9 @@
 >
 > Prepared 2026-09-23 against working tree `master @ be60d93`. All facts below were
 > verified against the actual repository state on that date; nothing here is assumed.
+>
+> **HISTORICAL — executed 2026-09-24.** All steps and gates ran as written; see §7
+> Execution outcome and the Evidence Receipt `docs/qualification/publication-v0.7.0.md`.
 
 ## 0. Objective
 
@@ -249,11 +252,27 @@ The 108 MB `.tmp/` tool state is never touched by any step.
 
 ## 6. Execution checklist
 
-- [ ] Step 1 ignore rules + secret scan — clean gates
-- [ ] Step 2 hook rename, trigger fixes, `ci.yml`, checkout bump, version `0.7.0` — gates green
-- [ ] Step 3 `--unshallow` + `fetch upstream main` — gates green
-- [ ] Step 4 five-commit series — gates green per commit
-- [ ] Step 5 branch consolidation on `main` — gates green
-- [ ] Step 6 push `main` + tag `v0.7.0` — remote refs verified
-- [ ] Step 7 post-push CI green, fresh-clone verification, Evidence Receipt recorded
-- [ ] Mark this document historical after execution
+- [x] Step 1 ignore rules + secret scan — clean gates
+- [x] Step 2 hook rename, trigger fixes, `ci.yml`, checkout bump, version `0.7.0` — gates green
+- [x] Step 3 `--unshallow` + `fetch upstream main` — gates green
+- [x] Step 4 five-commit series — gates green per commit (actual pushed series: the five commits + lint remediation `7a5bfbe` + CI pipeline fix `5b5b4df` + this docs commit)
+- [x] Step 5 branch consolidation on `main` — gates green
+- [x] Step 6 push `main` + tag `v0.7.0` — remote refs verified
+- [x] Step 7 post-push CI green, fresh-clone verification, Evidence Receipt recorded
+- [x] Mark this document historical after execution
+
+## 7. Execution outcome (2026-09-24 — historical record)
+
+- Pushed series: the five publication commits, lint remediation `7a5bfbe`, CI pipeline fix
+  `5b5b4df` (`type-check` gained a `ready` dependency after the first hosted CI run failed on
+  `7a5bfbe` with `@extension/i18n` TS2307 on a clean checkout), plus the docs commit carrying
+  this outcome.
+- `refs/heads/main` advanced `0d40b00` → `5b5b4df`+docs (fast-forward); tag `v0.7.0` = `7a5bfbe`
+  left in place — it differs from the CI-green tip by the one-line pipeline change only.
+- Workflows on `main`: CI **green** (run `36036318492`), format **green**, build-zip **green**
+  with attached artifact; e2e **red** → backlog row in `DIAGNOSIS.md` (workflow lacks
+  `playwright install`; failure pre-dates this work), per §4 risk register.
+- Fresh clone gates at `5b5b4df` — from this repo and from the remote URL — passed
+  install + type-check + chrome-extension tests.
+- Evidence Receipt: `docs/qualification/publication-v0.7.0.md`. Remote `master` ref retained
+  per §2 for a follow-up pass with explicit go-ahead.

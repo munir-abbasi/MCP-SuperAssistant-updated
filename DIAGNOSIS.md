@@ -372,6 +372,7 @@ These require significant investigation or architectural changes.
 | Item | Effort | Notes |
 |------|--------|-------|
 | Set up CI (GitHub Actions) | Medium | Lint + build + test gating |
+| Add `playwright install` step to the hosted e2e workflow | Quick | e2e run is red on `main` because the runner has no Playwright browsers (`Executable doesn't exist ... ms-playwright/chromium-1234`); identical failure pre-dates 2026-09-24; CI/format/build-zip are green — recorded as backlog per `PUSH_TO_MAIN_PLAN.md` risk register |
 | Remove `GITHUB_TOKEN` from shell config | Quick | Credential override issue |
 | Verify icon-16.png size | Quick | Should be crisp 16×16 |
 

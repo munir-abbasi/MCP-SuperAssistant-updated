@@ -42,22 +42,22 @@ To work on the source instead, see [Development](#development) below.
 
 ## Overview
 
-MCP SuperAssistant is a Chrome extension that integrates the Model Context Protocol (MCP) tools with AI platforms like Perplexity, ChatGPT, Google Gemini, Google AI Studio, Grok, and more. It allows users to execute MCP tools directly from these platforms, enhancing the capabilities of web-based AI assistants.
+MCP SuperAssistant is a Chrome extension that brings Model Context Protocol (MCP) tools into AI chat sites (Perplexity, ChatGPT, Google Gemini, Google AI Studio, Grok, and others). The extension spots a tool call in the chat, runs it against your MCP server, and puts the result back into the conversation without you leaving the page.
 
 ### The system model
 
-The extension is designed as a **closed loop around one operation**: a tool call is detected, forwarded to an MCP server, the result is returned, and the result is inserted back into the conversation. Every component — the renderer, the content script, the background service worker, the MCP client, the transport plugins, the site adapters — participates in servicing that one operation. Components own narrow source facts that feed the operation's agent-facing lenses; the operation is the unit of reasoning.
+The extension is a **closed loop around one operation**: a tool call shows up, the extension forwards it to an MCP server, the result comes back, and the result lands in the conversation. The renderer, the content script, the background service worker, the MCP client, the transport plugins, the site adapters — all of them exist to carry that one operation through. Each component owns a narrow set of source facts that feed the operation's agent-facing lenses, and the operation itself is the unit of reasoning.
 
-An agent driving this system reasons about the operation first, then follows provenance to the smallest authoritative source set that can answer its question. This is what makes the system inspectable and repairable: ownership, impact, evidence, and write-back paths are explicit, and each runtime boundary has one authoritative documentation locus plus a deterministic route to the smallest relevant evidence/observation surface.
+An agent driving this system reasons about the operation first, then follows provenance to the smallest authoritative source set that can answer its question. That is what makes the system inspectable and repairable: ownership, impact, evidence, and write-back paths are explicit, and every runtime boundary has one authoritative documentation locus plus a deterministic route to the smallest relevant evidence or observation surface.
 
 > **Current development-tree safety qualification (2026-09-23):** the repository does not yet establish exactly-once semantics for external-effecting MCP tool calls. The previously identified hidden `mcp:call-tool` redispatch path in the generic content/background message bridge is repaired (hard single-dispatch at the bridge boundary; see `docs/qualification/issue-coverage-ledger.md`), but a timeout/retry outcome still leaves the server-side effect unknown, and formal effect-class/action admission remains open. Until that contract is qualified, avoid treating Auto-Execute or a timeout/retry outcome as safe for non-idempotent writes where a duplicate external effect would matter.
 
 ## Registered Adapter Platforms
 
-The current registry contains dedicated adapters for the platforms below. The
-qualification matrix contains a dated, scoped ChatGPT qualification snapshot;
-it does **not** automatically qualify a later source revision or packaged artifact.
-Other registered site adapters remain experimental or unsupported until verified.
+The registry ships dedicated adapters for the platforms below. The qualification matrix
+holds a dated, scoped ChatGPT snapshot; on its own it does **not** qualify a later source
+revision or packaged artifact. Every other registered site adapter stays experimental or
+unsupported until someone verifies it.
 
 - [ChatGPT](https://chatgpt.com/)
 - [Google Gemini](https://gemini.google.com/)
@@ -84,34 +84,32 @@ ChatGPT
 
 [![MCP SuperAssistant Demo](https://img.youtube.com/vi/PY0SKjtmy4E/0.jpg)](https://www.youtube.com/watch?v=PY0SKjtmy4E)
 
-Watch the demo to see MCP SuperAssistant in action!
-
 [MCP SuperAssistant Demo Playlist](https://www.youtube.com/playlist?list=PLOK1DBnkeaJFzxC4M-z7TU7_j04SShX_w)
 
 ## Setup Tutorial
 
 [![Setup Tutorial](https://img.youtube.com/vi/h9f_GX1Ef20/0.jpg)](https://www.youtube.com/watch?v=h9f_GX1Ef20&pp=ygUTbWNwIHN1cGVyIGFzc2lzdGFudA%3D%3D)
 
-**New to MCP SuperAssistant?** Watch this complete setup guide to get started in minutes!
+**First time here?** Watch the setup guide before you start.
 
 [View Setup Tutorial](https://www.youtube.com/watch?v=h9f_GX1Ef20&pp=ygUTbWNwIHN1cGVyIGFzc2lzdGFudA%3D%3D)
 
 ## What is MCP?
 
-The Model Context Protocol (MCP) is an open standard developed by Anthropic that connects AI assistants to systems where data actually lives, including content repositories, business tools, and development environments. It serves as a universal protocol that enables AI systems to securely and dynamically interact with data sources in real time.
+The Model Context Protocol (MCP) is an open standard from Anthropic that connects AI assistants to systems where data actually lives: content repositories, business tools, development environments. AI systems use it to interact with those data sources live, securely, over one shared protocol.
 
 ## Key Features
 
-- **Multiple AI Platform Adapters**: Registered adapters include ChatGPT, Perplexity, Google Gemini, Grok, Google AI Studio, OpenRouter Chat, DeepSeek, T3 Chat, GitHub Copilot, Mistral AI, Kimi, Qwen Chat, and Z Chat; qualification status varies by site
-- **Tool Detection**: Automatically detects MCP tool calls in AI responses
-- **Tool Execution**: Execute MCP tools with a single click
-- **Tool Result Integration**: Seamlessly insert tool execution results back into the AI conversation
-- **Render Mode**: Renders function calls and function results
-- **Auto-Execute Mode**: Automatically execute detected tools
-- **Auto-Submit Mode**: Automatically submit chat input after result insertion
-- **Push Content Mode**: Option to push page content instead of overlaying
-- **Preferences Persistence**: Remembers sidebar position, size, and settings
-- **Dark/Light Mode Support**: Adapts to the AI platform's theme
+- **Multiple AI Platform Adapters**: ChatGPT, Perplexity, Google Gemini, Grok, Google AI Studio, OpenRouter Chat, DeepSeek, T3 Chat, GitHub Copilot, Mistral AI, Kimi, Qwen Chat, and Z Chat; qualification status varies by site
+- **Tool Detection**: the extension finds MCP tool calls in AI responses
+- **Tool Execution**: one click runs the tool
+- **Tool Result Integration**: results go back into the AI conversation
+- **Render Mode**: renders function calls and their results
+- **Auto-Execute Mode**: detected tools run without a click
+- **Auto-Submit Mode**: chat input submits itself right after the results go in
+- **Push Content Mode**: push page content instead of overlaying it
+- **Preferences Persistence**: sidebar position, size, and settings stick around
+- **Dark/Light Mode Support**: the sidebar follows the AI platform's theme
 
 ```mermaid
 flowchart TD
@@ -126,7 +124,7 @@ flowchart TD
 
 ### Connecting to Local Proxy Server
 
-To connect the Chrome extension to a local server for proxying connections. The proxy is a standalone npm package published by the original author — it is not bundled with the extension and works with any fork. You do not need to publish your own proxy.
+The extension reaches your MCP servers through a local proxy. The proxy is a standalone npm package the original author publishes; it is not bundled with the extension, works with any fork, and you never need to publish your own.
 
 #### Run MCP SuperAssistant Proxy via npx:
 
@@ -147,7 +145,7 @@ To connect the Chrome extension to a local server for proxying connections. The 
      }
    }
    ```
-   config.json also supports other MCP server configurations like remote MCP server URLs.
+   config.json also accepts other MCP server configurations, such as remote MCP server URLs.
    Try Composio MCP, Zapier MCP, Smithery, or any other remote MCP server.
 
    **Or use existing config file location from Cursor or other tools:**
@@ -175,10 +173,10 @@ To connect the Chrome extension to a local server for proxying connections. The 
    npx -y @srbhptl39/mcp-superassistant-proxy@latest --help
    ```
    
-   This is useful for:
-   - Proxying remote MCP servers
-   - Adding CORS support to remote servers
-   - Providing health endpoints for monitoring
+   The proxy earns its keep when you need to:
+   - Proxy remote MCP servers
+   - Add CORS support to remote servers
+   - Watch health endpoints for monitoring
 
 #### Connection Steps:
 
@@ -190,41 +188,39 @@ To connect the Chrome extension to a local server for proxying connections. The 
    - For SSE: `http://localhost:3006/sse`
    - For Streamable HTTP: `http://localhost:3006/mcp`
    - For WebSocket: `ws://localhost:3006/message`
-   - Choose the appropriate transport method (SSE or Streamable HTTP or WebSocket) 
-   - You can add any remote MCP server URL here as well, if it supports CORS or is proxied via this local proxy server. Try [Composio MCP](https://mcp.composio.dev/), [Zapier MCP](https://zapier.com/mcp), or [Smithery](https://smithery.ai/), or any other remote MCP server.
-5. Click "Connect" to establish the connection
-6. The status indicator should change to "Connected" if successful
+   - Pick the transport method you started the proxy with (SSE, Streamable HTTP, or WebSocket)
+   - You can also paste any remote MCP server URL here, as long as it handles CORS or runs through this proxy. Try [Composio MCP](https://mcp.composio.dev/), [Zapier MCP](https://zapier.com/mcp), or [Smithery](https://smithery.ai/), or any other remote MCP server.
+5. Click "Connect"
+6. The indicator turns "Connected" when the handshake succeeds
 
 ## Usage
 Example Workflow:
 1. Navigate to a supported AI platform, e.g., ChatGPT.
-2. The MCP SuperAssistant sidebar will appear on the right side of the page
+2. The MCP SuperAssistant sidebar appears on the right side of the page
 3. Configure your MCP Tools to enable and disable the tools you want to use.
 4. In the message prompt area, hover the 'MCP' button to see the available tools and their descriptions.
 5. Add an MCP working instructions prompt to the chat to inform the AI about its new capabilities and how to use the tools. Use the 'Insert' or attach button to add the instructions.
 6. Once the instructions are added, you can ask the AI to read files or perform any related MCP tool operations.
-7. When AI wants to use any tool it will show a custom tool call card with the tool name and parameters.
-8. User can manually execute the tool call by clicking on the "RUN" button on the tool call card, or if Auto-Execute mode is enabled, it will execute automatically.
-9. Automation can be achieved by enabling Auto-Execute and Auto-Submit modes, by clicking on the 'MCP' button and configuring the Auto modes.
+7. When the AI wants to use a tool, it shows a tool call card with the tool name and parameters.
+8. You can run the tool call yourself with the "RUN" button on the card, or let Auto-Execute mode run it for you.
+9. For full automation, open the 'MCP' button and turn on Auto-Execute and Auto-Submit.
 
 
 ## Tips & Tricks
 
-1. **Turn off search mode** (ChatGPT, Perplexity) in AI chat interfaces for a better tool call experience and to prevent MCP SuperAssistant from being derailed.
-2. **Turn on Reasoning mode** (ChatGPT, Perplexity, Grok) in AI chat interfaces — this helps the AI understand context better and generate correct tool calls.
-3. Use newer high-end models as they are better at understanding the context and generating the correct tool calls.
+1. **Turn off search mode** (ChatGPT, Perplexity) in AI chat interfaces so tool calls come out cleaner and MCP SuperAssistant doesn't get derailed.
+2. **Turn on Reasoning mode** (ChatGPT, Perplexity, Grok) in AI chat interfaces — it helps the AI understand the context and generate correct tool calls.
+3. Use newer high-end models; they understand context better and write correct tool calls more often.
 4. Copy the MCP instructions prompt and paste it in the AI chat system prompt (Google AI Studio).
 5. Mention the specific tools you want to use in your conversation.
-6. Use the MCP Auto toggles to control the tool execution.
+6. The MCP Auto toggles control when tools run.
 
 ## Common Issues with MCP SuperAssistant
-
-This page covers the most common issues users encounter with MCP SuperAssistant and provides solutions to resolve them.
 
 ### 1. Extension Not Detecting Tool Calls
 
 - Make sure the extension is enabled in your browser.
-- Make sure the **mcp prompt instructions are properly attached or inserted** in the chat, before starting any chat.
+- Check that the **mcp prompt instructions are properly attached or inserted** in the chat before you start.
 - Check that your AI platform supports tool calls and that the feature is enabled.
 - Refresh the page or restart your browser if the issue persists.
 
@@ -245,11 +241,10 @@ This page covers the most common issues users encounter with MCP SuperAssistant 
 
 ### 4. Incorrect tool call format 
 
-- There are times the model does not generate the correct tool call format as requested, which causes tool detection to fail.
-In such cases, use models that are designed for tool calling or have stronger tool calling capabilities.
+- Sometimes the model writes a tool call in the wrong format, and detection fails. Use a model built for tool calling when that happens.
 - Use the custom instructions prompt, which can be found in the MCP SuperAssistant sidebar.
 - Ask explicitly to use the tools by mentioning them in the prompt.
-- Below is an example of the correct MCP function call format, rendered by the MCP SuperAssistant extension:
+- The extension renders the correct function call format like this:
 
 ```jsonl
 {"type": "function_call_start", "name": "function_name", "call_id": 1}
@@ -296,7 +291,7 @@ A separate workflow checks Prettier formatting on JS/TS/JSON files, and `build-z
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome — open a pull request.
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
@@ -324,24 +319,24 @@ This repository is a maintained fork of the original [MCP SuperAssistant](https:
 
 ## Improvements Over the Original
 
-This fork introduces significant engineering improvements over the upstream [MCP SuperAssistant](https://github.com/srbhptl39/MCP-SuperAssistant):
+What this fork changes compared with the upstream [MCP SuperAssistant](https://github.com/srbhptl39/MCP-SuperAssistant):
 
-- **Truthful connection and discovery state** — Content state uses `disconnected`, `connecting`, `connected`, `error`, and `reconnecting`. Tool-discovery failure is surfaced and moves the MCP client out of the connected state.
-- **CSP-safe validation** — Replaced AJV runtime code generation with `@cfworker/json-schema`. No `unsafe-eval`, no `new Function`, no CSP violations.
-- **Bounded failure** — One malformed tool schema no longer hides all valid tools. Partial discovery exposes which capabilities failed. Tool output errors produce visible, bounded failures.
-- **Active-call cancellation** — Disconnect rejects active tool calls, and explicit `AbortSignal` cancellation is supported.
-- **Streamable HTTP fixes** — Correct JSON and SSE-framed tool discovery, proper `Accept` and session headers, fragmented chunk handling.
-- **MCP protocol preservation** — `outputSchema`, `annotations`, `structuredContent`, and other valid MCP fields are preserved, not stripped.
-- **Hardened site adapter contract** — 13 requirements per supported site: idempotent mounting, SPA navigation survival, semantic selectors, verified insertion and submission, clean teardown.
-- **Chrome/Firefox qualification evidence** — `docs/qualification/support-matrix.md` records a 2026-07-30 packaged Chrome/Firefox-on-Linux qualification snapshot. Revalidate after relevant source/build/browser changes before describing a newer artifact as qualified. Firefox conversion retains Manifest V3 in the current implementation.
-- **Payload safety** — Explicit size budgets, no megabyte-base64 DOM injection, bounded previews for oversized results.
-- **Deterministic testing** — Regression tests before every fix, real-browser core flow, integrity-checked release artifacts with SHA-256 hashes.
-- **Issue-ledger discipline** — 79 upstream issues classified against this fork in [DEFERRED_ISSUES.md](./DEFERRED_ISSUES.md) with evidence-based fix status (Fixed/Partial/Open/Won't Fix), code references, and reproduction notes.
+- **Truthful connection and discovery state.** Content state uses `disconnected`, `connecting`, `connected`, `error`, and `reconnecting`. When tool discovery fails, you see it, and the MCP client leaves the connected state.
+- **CSP-safe validation.** AJV runtime code generation is gone, replaced by `@cfworker/json-schema`. No `unsafe-eval`, no `new Function`, no CSP violations.
+- **Bounded failure.** One malformed tool schema no longer hides every valid tool. Partial discovery tells you which capabilities failed, and tool output errors stay visible and bounded.
+- **Active-call cancellation.** Disconnect rejects active tool calls, and you can cancel explicitly with `AbortSignal`.
+- **Streamable HTTP fixes.** Correct JSON and SSE-framed tool discovery, proper `Accept` and session headers, fragmented chunk handling.
+- **MCP protocol preservation.** `outputSchema`, `annotations`, `structuredContent`, and other valid MCP fields survive instead of getting stripped.
+- **Hardened site adapter contract.** 13 requirements per supported site: idempotent mounting, SPA navigation survival, semantic selectors, verified insertion and submission, clean teardown.
+- **Chrome/Firefox qualification evidence.** `docs/qualification/support-matrix.md` records a 2026-07-30 packaged Chrome/Firefox-on-Linux qualification snapshot. Revalidate after relevant source, build, or browser changes before describing a newer artifact as qualified. Firefox conversion retains Manifest V3 in the current implementation.
+- **Payload safety.** Explicit size budgets, no megabyte-base64 DOM injection, bounded previews for oversized results.
+- **Deterministic testing.** Regression tests come before every fix, the core flow runs in a real browser, and release artifacts carry integrity-checked SHA-256 hashes.
+- **Issue-ledger discipline.** [DEFERRED_ISSUES.md](./DEFERRED_ISSUES.md) classifies 79 upstream issues against this fork with evidence-based fix status (Fixed/Partial/Open/Won't Fix), code references, and reproduction notes.
 
 ## Upstream Issues Status
 
-For a comprehensive audit of all **79 open upstream issues** against this fork's codebase,
-see [DEFERRED_ISSUES.md](./DEFERRED_ISSUES.md).
+The full audit of all **79 open upstream issues** against this fork's codebase lives in
+[DEFERRED_ISSUES.md](./DEFERRED_ISSUES.md).
 
 Key fixes already applied in this fork:
 
@@ -358,7 +353,7 @@ Key fixes already applied in this fork:
 
 ## License
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
 
 The original work is Copyright (c) 2025 Saurabh Patel. Modifications and updates in this fork are Copyright (c) 2026 Munir Abbasi, distributed under the same MIT terms.
 

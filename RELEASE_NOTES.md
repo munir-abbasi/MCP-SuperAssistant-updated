@@ -31,10 +31,10 @@ delivery recovery, agent-facing control documentation, and repository gates for 
 
 - Adds the AGENTS/SYSTEM/ARCHITECTURE/AGENT_GUIDE documentation tower, the static agent
   control map, and scoped qualification evidence.
-- Adds the Stage 10 benchmark harness and the read-only `pnpm agent:inspect --json`
+- Ships the Stage 10 benchmark harness and the read-only `pnpm agent:inspect --json`
   Situation Packet shim.
-- Adds a fast GitHub Actions gate for type-checking, node tests, and linting on `main`;
-  retains separate build-artifact and browser E2E workflows.
+- Introduces a fast GitHub Actions gate for type-checking, node tests, and linting on
+  `main`; the separate build-artifact and browser E2E workflows stay.
 - Restores the Husky pre-commit hook and excludes local browser profiles, agent state,
   probes, and generated test artifacts from version control.
 

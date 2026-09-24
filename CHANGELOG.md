@@ -105,8 +105,8 @@ Current release of the `munir-abbasi/MCP-SuperAssistant-updated` fork.
 
 ### Known Limitations (at v0.6.1)
 - Browser E2E is a Playwright + MV3 platform limitation (event-driven service
-  workers, no persistent popup/options page). Protocol behavior covered by
-  fixture-server tests.
+  workers, no persistent popup/options page). Fixture-server tests cover
+  protocol behavior.
 
 ---
 

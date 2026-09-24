@@ -23,7 +23,7 @@ if (typeof window !== 'undefined') {
 
       // Prevent the sidebar from getting into an inconsistent state
       try {
-        const activeSidebarManager = (window as any).activeSidebarManager;
+        const activeSidebarManager = window.activeSidebarManager;
         if (activeSidebarManager) {
           // Force re-initialization after a small delay
           setTimeout(() => {

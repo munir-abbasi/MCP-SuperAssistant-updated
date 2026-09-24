@@ -2,7 +2,7 @@ import { ContextBridgeDispatchError, contextBridge } from './context-bridge';
 import { useConnectionStore } from '../stores/connection.store';
 import { useToolStore } from '../stores/tool.store';
 import { eventBus } from '../events/event-bus';
-import type { ServerConfig, ConnectionStatus } from '../types/stores';
+import type { ServerConfig, ConnectionStatus, Tool } from '../types/stores';
 import { logMessage } from '../utils/helpers';
 import { pluginRegistry } from '../plugins';
 
@@ -21,6 +21,14 @@ import { pluginRegistry } from '../plugins';
  * The client follows a singleton pattern to ensure consistent state management
  * across the entire content script lifecycle.
  */
+/** Raw tool primitive as broadcast by the background script */
+interface ToolUpdatePrimitive {
+  name: string;
+  description?: string;
+  input_schema?: unknown;
+  schema?: unknown;
+}
+
 class McpClient {
   private static instance: McpClient | null = null;
   private isInitialized = false;
@@ -179,7 +187,11 @@ class McpClient {
     contextBridge.onMessage('connection:status-changed', message => {
       try {
         // Extract status from the payload (should now be properly structured)
-        const { status, error, isConnected } = message.payload ?? {};
+        const { status, error, isConnected } = (message.payload ?? {}) as {
+          status?: ConnectionStatus;
+          error?: string;
+          isConnected?: boolean;
+        };
 
         // Log the raw message for debugging
         logMessage(`[McpClient] Received connection status message: ${JSON.stringify(message)}`);
@@ -216,7 +228,7 @@ class McpClient {
     // Listen for server config updates
     contextBridge.onMessage('mcp:server-config-updated', message => {
       try {
-        const { config } = message.payload ?? {};
+        const { config } = (message.payload ?? {}) as { config?: Partial<ServerConfig> };
         if (config) {
           logMessage(`[McpClient] Received server config update: ${JSON.stringify(config)}`);
           this.handleServerConfigUpdate(config);
@@ -233,7 +245,10 @@ class McpClient {
     // Listen for heartbeat responses
     contextBridge.onMessage('mcp:heartbeat-response', message => {
       try {
-        const { timestamp, isConnected } = message.payload ?? {};
+        const { timestamp, isConnected } = (message.payload ?? {}) as {
+          timestamp?: number;
+          isConnected?: boolean;
+        };
         if (timestamp) {
           // Also update connection status based on heartbeat
           if (typeof isConnected === 'boolean') {
@@ -308,14 +323,14 @@ class McpClient {
   /**
    * Handle tool updates from background script
    */
-  private handleToolUpdate(tools: any[]): void {
+  private handleToolUpdate(tools: ToolUpdatePrimitive[]): void {
     logMessage(`[McpClient] Received tool update with ${tools.length} tools`);
 
     // Normalize tool data to ensure consistent schema
     const normalizedTools = tools.map(tool => ({
       name: tool.name,
       description: tool.description || '',
-      input_schema: tool.input_schema || tool.schema || {},
+      input_schema: (tool.input_schema || tool.schema || {}) as Tool['input_schema'],
       // Legacy support
       schema: typeof tool.schema === 'string' ? tool.schema : JSON.stringify(tool.input_schema || {}),
     }));
@@ -391,7 +406,7 @@ class McpClient {
   /**
    * Call a tool on the MCP server with enhanced error handling and validation
    */
-  async callTool(toolName: string, args: Record<string, unknown>, callId?: string): Promise<any> {
+  async callTool(toolName: string, args: Record<string, unknown>, callId?: string): Promise<unknown> {
     if (!this.isInitialized) {
       throw new Error('McpClient not initialized');
     }
@@ -502,7 +517,7 @@ class McpClient {
   /**
    * Retrieve the list of available tools with enhanced caching and validation
    */
-  async getAvailableTools(forceRefresh = false): Promise<any[]> {
+  async getAvailableTools(forceRefresh = false): Promise<Tool[]> {
     if (!this.isInitialized) {
       throw new Error('McpClient not initialized');
     }
@@ -558,12 +573,12 @@ class McpClient {
       // Emit reconnecting event immediately
       eventBus.emit('connection:status-changed', { status: 'reconnecting', error: undefined });
 
-      const response = await contextBridge.sendMessage(
+      const response = (await contextBridge.sendMessage(
         'background',
         'mcp:force-reconnect',
         {},
         { timeout: 25_000 }, // Increased timeout for reconnection
-      );
+      )) as { isConnected?: boolean; error?: string } | null | undefined;
 
       const isConnected = response?.isConnected ?? false;
 
@@ -643,7 +658,14 @@ class McpClient {
     logMessage('[McpClient] Getting server config');
 
     try {
-      const config = await contextBridge.sendMessage('background', 'mcp:get-server-config', {}, { timeout: 5_000 });
+      const config = (await contextBridge.sendMessage(
+        'background',
+        'mcp:get-server-config',
+        {},
+        {
+          timeout: 5_000,
+        },
+      )) as ServerConfig;
 
       logMessage('[McpClient] Server config retrieved successfully');
       return config;
@@ -665,12 +687,12 @@ class McpClient {
     logMessage('[McpClient] Getting current connection status');
 
     try {
-      const statusResponse = await contextBridge.sendMessage(
+      const statusResponse = (await contextBridge.sendMessage(
         'background',
         'mcp:get-connection-status',
         {},
         { timeout: 5_000 },
-      );
+      )) as { status: string; isConnected: boolean; timestamp: number };
 
       logMessage(`[McpClient] Current connection status retrieved: ${statusResponse.status}`);
       return statusResponse;
@@ -692,12 +714,12 @@ class McpClient {
     logMessage(`[McpClient] Updating server config: ${JSON.stringify(config)}`);
 
     try {
-      const response = await contextBridge.sendMessage(
+      const response = (await contextBridge.sendMessage(
         'background',
         'mcp:update-server-config',
         { config },
         { timeout: 15_000 }, // Increased timeout for reconnection process
-      );
+      )) as { success?: boolean } | null | undefined;
 
       const success = !!response?.success;
 

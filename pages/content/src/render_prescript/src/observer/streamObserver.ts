@@ -10,13 +10,19 @@ declare global {
     _stalledStreamRetryCount?: Map<string, number>;
     _updateQueue?: Map<string, HTMLElement>;
     _processUpdateQueue?: () => void;
+    resyncingBlocks?: Set<string>;
+    completedStreams?: Map<string, boolean>;
   }
 }
 
 // Import required functions
 import { CONFIG } from '../core/config';
 import { renderFunctionCall } from '../renderer/index';
-import { extractParameters, containsFunctionCalls, extractLanguageTag } from '../parser/index';
+import {
+  extractParameters,
+  containsFunctionCalls as _containsFunctionCalls,
+  extractLanguageTag as _extractLanguageTag,
+} from '../parser/index';
 import { extractJSONParameters } from '../parser/jsonFunctionParser';
 
 // Maps to store observers and state for streaming content
@@ -53,7 +59,7 @@ const REQUIRED_STABLE_CHECKS = 2; // Require 2 consecutive stable checks
 /**
  * Check if completion state is stable to prevent jitter
  */
-const isCompletionStable = (blockId: string): boolean => {
+const _isCompletionStable = (blockId: string): boolean => {
   const now = Date.now();
   const tracker = completionStabilityTracker.get(blockId);
 
@@ -111,7 +117,7 @@ const RENDER_DEBOUNCE_MS = 50; // 50ms debounce for smooth rendering
 
 // Make resyncingBlocks globally accessible to prevent re-rendering during resync
 if (typeof window !== 'undefined') {
-  (window as any).resyncingBlocks = resyncingBlocks;
+  window.resyncingBlocks = resyncingBlocks;
 }
 
 // Fast chunk detection system for immediate response
@@ -320,7 +326,7 @@ const processChunkImmediate = (
 /**
  * Fast content analysis using pre-compiled patterns and caching
  */
-const analyzeFunctionContent = (
+const _analyzeFunctionContent = (
   content: string,
   useCache: boolean = true,
 ): {
@@ -694,7 +700,7 @@ export let progressiveUpdateTimer: ReturnType<typeof setInterval> | null = null;
  * @param blockId ID of the function block to complete
  * @param finalContent Final content of the stream
  */
-const performSeamlessCompletion = (blockId: string, finalContent: string): void => {
+const performSeamlessCompletion = (blockId: string, _finalContent: string): void => {
   if (CONFIG.debug) {
     logger.debug(`Performing seamless completion for block ${blockId}`);
   }

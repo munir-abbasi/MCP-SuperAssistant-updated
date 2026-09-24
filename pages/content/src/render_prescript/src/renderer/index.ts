@@ -7,7 +7,7 @@ export * from './styles';
 // Import proper types and dependencies
 import { CONFIG } from '../core/config';
 import type { FunctionInfo, ParamValueElement } from '../core/types';
-import { Parameter } from '../core/types';
+import { Parameter as _Parameter } from '../core/types';
 import { extractParameters } from '../parser/index';
 import { stabilizeBlock, unstabilizeBlock, addExecuteButton, smoothlyUpdateBlockContent } from './components';
 import { createOrUpdateParamElement } from './functionBlock';
@@ -28,7 +28,7 @@ interface RenderOptions {
  * @param functionInfo Information about the function call
  * @param options Rendering options
  */
-const updateExistingFunctionBlock = (
+const _updateExistingFunctionBlock = (
   block: HTMLElement,
   functionContent: string,
   functionInfo: FunctionInfo,
@@ -40,7 +40,7 @@ const updateExistingFunctionBlock = (
   if (CONFIG.debug) console.debug(`Updating existing function block: ${blockId}`);
 
   // Check if we're transitioning from loading to complete
-  const wasLoading = block.classList.contains('function-loading');
+  const _wasLoading = block.classList.contains('function-loading');
   const isComplete = functionInfo.isComplete;
 
   // Directly update state and content when transitioning or already complete
@@ -97,7 +97,7 @@ const updateExistingFunctionBlock = (
 /**
  * Update parameters in a function block
  */
-const updateParameters = (block: HTMLElement, functionInfo: FunctionInfo, options: RenderOptions): void => {
+const updateParameters = (block: HTMLElement, _functionInfo: FunctionInfo, _options: RenderOptions): void => {
   // Get extracted parameters
   const parameters = extractParameters(
     block.getAttribute('data-content') || '',

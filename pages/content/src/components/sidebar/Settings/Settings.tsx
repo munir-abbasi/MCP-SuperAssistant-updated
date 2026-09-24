@@ -81,11 +81,14 @@ const Settings: React.FC = () => {
             {/* Auto Insert */}
             <div className="flex items-center justify-between">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Auto Insert</label>
+                <label htmlFor="auto-insert" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Auto Insert
+                </label>
                 <p className="text-xs text-slate-500 dark:text-slate-400">Automatically insert suggested content</p>
               </div>
               <input
                 type="checkbox"
+                id="auto-insert"
                 checked={preferences.autoInsert || false}
                 onChange={e => handleToggle('autoInsert', e.target.checked)}
                 className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
@@ -95,13 +98,16 @@ const Settings: React.FC = () => {
             {/* Auto Submit */}
             <div className="flex items-center justify-between">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Auto Submit</label>
+                <label htmlFor="auto-submit" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Auto Submit
+                </label>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   Automatically submit the form after insertion
                 </p>
               </div>
               <input
                 type="checkbox"
+                id="auto-submit"
                 checked={preferences.autoSubmit || false}
                 onChange={e => handleToggle('autoSubmit', e.target.checked)}
                 className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
@@ -111,13 +117,16 @@ const Settings: React.FC = () => {
             {/* Auto Execute */}
             <div className="flex items-center justify-between">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Auto Execute</label>
+                <label htmlFor="auto-execute" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Auto Execute
+                </label>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   Automatically execute functions without asking
                 </p>
               </div>
               <input
                 type="checkbox"
+                id="auto-execute"
                 checked={preferences.autoExecute || false}
                 onChange={e => handleToggle('autoExecute', e.target.checked)}
                 className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"

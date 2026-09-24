@@ -1,5 +1,6 @@
 import { BaseAdapterPlugin } from './base.adapter';
 import type { AdapterCapability, PluginContext } from '../plugin-types';
+import type { DetectedTool, ToolExecution } from '../../types/stores';
 
 /**
  * Z Adapter for Z AI (z.ai)
@@ -33,7 +34,7 @@ export class ZAdapter extends BaseAdapterPlugin {
     FILE_INPUT:
       'input[type="file"][multiple][accept*=".pdf,.docx,.doc,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.csv,.py,.txt,.md,.bmp,.gif"], input[type="file"][multiple]',
     // Main panel and container selectors
-    MAIN_PANEL: 'form.w-full.flex.gap-1\.5',
+    MAIN_PANEL: 'form.w-full.flex.gap-1.5',
     // Drop zones for file attachment
     DROP_ZONE: 'input[type="file"][multiple][hidden]',
     // File preview elements
@@ -208,46 +209,8 @@ export class ZAdapter extends BaseAdapterPlugin {
     }
 
     try {
-      // Check if we're on the homepage and use the special method
-      const currentUrl = window.location.href;
-      if (currentUrl === 'https://chat.z.ai/' || currentUrl === 'https://z.ai/' || true) {
-        // this.context.logger.debug('Homepage detected, using InputEvent method for text insertion');
-        this.context.logger.debug('Using InputEvent method for text insertion for all pages');
-        return await this.insertTextViaInputEvent(targetElement, text);
-      }
-
-      // // For other pages, use the existing method
-      // const isContentEditable = this.isContentEditableElement(targetElement);
-      // const originalValue = this.getElementContent(targetElement);
-
-      // // Focus the input element
-      // targetElement.focus();
-
-      // // Insert the text by updating the value and dispatching appropriate events
-      // // Append the text to the original value on a new line if there's existing content
-      // const newContent = originalValue ? originalValue + '\n\n' + text : text;
-
-      // if (isContentEditable) {
-      //   (targetElement as HTMLElement).textContent = newContent;
-      // } else {
-      //   (targetElement as HTMLInputElement | HTMLTextAreaElement).value = newContent;
-      // }
-
-      // // Dispatch events to simulate user typing for better compatibility
-      // targetElement.dispatchEvent(new Event('input', { bubbles: true }));
-      // targetElement.dispatchEvent(new Event('change', { bubbles: true }));
-
-      // // Emit success event to the new event system
-      // this.emitExecutionCompleted('insertText', { text }, {
-      //   success: true,
-      //   originalLength: originalValue.length,
-      //   newLength: text.length,
-      //   totalLength: newContent.length,
-      //   method: 'standard'
-      // });
-
-      // this.context.logger.debug(`Text inserted successfully. Original: ${originalValue.length}, Added: ${text.length}, Total: ${newContent.length}`);
-      // return true;
+      this.context.logger.debug('Using InputEvent method for text insertion for all pages');
+      return await this.insertTextViaInputEvent(targetElement, text);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.context.logger.error(`Error inserting text into Z chat input: ${errorMessage}`);
@@ -507,7 +470,7 @@ export class ZAdapter extends BaseAdapterPlugin {
    * Attach a file to the Z chat input
    * Enhanced with better error handling and integration with new architecture
    */
-  async attachFile(file: File, options?: { inputElement?: HTMLInputElement }): Promise<boolean> {
+  async attachFile(file: File, _options?: { inputElement?: HTMLInputElement }): Promise<boolean> {
     this.context.logger.debug(`Attempting to attach file: ${file.name} (${file.size} bytes, ${file.type})`);
 
     try {
@@ -973,7 +936,7 @@ export class ZAdapter extends BaseAdapterPlugin {
     this.mcpPopoverContainer = null;
   }
 
-  private handleToolExecutionCompleted(data: any): void {
+  private handleToolExecutionCompleted(data: { execution: ToolExecution }): void {
     this.context.logger.debug('Handling tool execution completion in Z adapter:', data);
 
     // Use the base class method to check if we should handle events
@@ -983,8 +946,8 @@ export class ZAdapter extends BaseAdapterPlugin {
     }
 
     // Get current UI state from stores to determine auto-actions
-    const uiState = this.context.stores.ui;
-    if (uiState && data.execution) {
+    const _uiState = this.context.stores.ui;
+    if (data.execution) {
       // Handle auto-insert, auto-submit based on store state
       // This integrates with the new architecture's state management
       this.context.logger.debug('Tool execution handled with new architecture integration');
@@ -1118,7 +1081,7 @@ export class ZAdapter extends BaseAdapterPlugin {
 
   private createToggleStateManager() {
     const context = this.context;
-    const adapterName = this.name;
+    const _adapterName = this.name;
 
     // Create the state manager object
     const stateManager = {
@@ -1172,16 +1135,16 @@ export class ZAdapter extends BaseAdapterPlugin {
           }
 
           // Secondary method: Control through global sidebar manager as additional safeguard
-          const sidebarManager = (window as any).activeSidebarManager;
+          const sidebarManager = window.activeSidebarManager;
           if (sidebarManager) {
             if (enabled) {
               context.logger.debug('Showing sidebar via activeSidebarManager');
-              sidebarManager.show().catch((error: any) => {
+              sidebarManager.show().catch((error: unknown) => {
                 context.logger.error('Error showing sidebar:', error);
               });
             } else {
               context.logger.debug('Hiding sidebar via activeSidebarManager');
-              sidebarManager.hide().catch((error: any) => {
+              sidebarManager.hide().catch((error: unknown) => {
                 context.logger.error('Error hiding sidebar:', error);
               });
             }
@@ -1260,7 +1223,7 @@ export class ZAdapter extends BaseAdapterPlugin {
     return !!document.getElementById('mcp-popover-container');
   }
 
-  private emitExecutionCompleted(toolName: string, parameters: any, result: any): void {
+  private emitExecutionCompleted(toolName: string, parameters: Record<string, unknown>, result: unknown): void {
     this.context.eventBus.emit('tool:execution-completed', {
       execution: {
         id: this.generateCallId(),
@@ -1293,7 +1256,7 @@ export class ZAdapter extends BaseAdapterPlugin {
 
     try {
       // Check if there's an active sidebar manager
-      const activeSidebarManager = (window as any).activeSidebarManager;
+      const activeSidebarManager = window.activeSidebarManager;
 
       if (!activeSidebarManager) {
         this.context.logger.warn('No active sidebar manager found after navigation');
@@ -1378,7 +1341,7 @@ export class ZAdapter extends BaseAdapterPlugin {
     }
   }
 
-  onToolDetected?(tools: any[]): void {
+  onToolDetected?(tools: DetectedTool[]): void {
     this.context.logger.debug(`Tools detected in Z adapter:`, tools);
 
     // Forward to tool store

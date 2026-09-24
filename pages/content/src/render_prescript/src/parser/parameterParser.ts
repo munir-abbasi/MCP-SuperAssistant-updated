@@ -83,7 +83,6 @@ export const extractParameters = (content: string, blockId: string | null = null
   const partialParams: PartialParameterState = blockId ? partialParameterState.get(blockId) || {} : {};
 
   let match;
-  let lastIndex = 0;
   const newPartialState: PartialParameterState = {};
 
   // Process all complete and partial parameter tags
@@ -149,7 +148,6 @@ export const extractParameters = (content: string, blockId: string | null = null
         value: paramValue,
         isComplete: true,
       });
-      lastIndex = endPos + 12; // Move past the closing tag
     } else {
       // Parameter with start tag but no end tag (still streaming)
       const partialValue = content.substring(startPos);

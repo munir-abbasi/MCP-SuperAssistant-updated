@@ -55,7 +55,7 @@ export abstract class BaseAdapterPlugin implements AdapterPlugin {
   }
 
   // Core functionality - to be implemented by specific adapters if capability is supported
-  async insertText(text: string, options?: { targetElement?: HTMLElement }): Promise<boolean> {
+  async insertText(_text: string, _options?: { targetElement?: HTMLElement }): Promise<boolean> {
     this.context.logger.warn('insertText not implemented by this adapter.');
     return false;
   }
@@ -81,12 +81,12 @@ export abstract class BaseAdapterPlugin implements AdapterPlugin {
     return 'unavailable';
   }
 
-  async submitForm(options?: { formElement?: HTMLFormElement }): Promise<boolean> {
+  async submitForm(_options?: { formElement?: HTMLFormElement }): Promise<boolean> {
     this.context.logger.warn('submitForm not implemented by this adapter.');
     return false;
   }
 
-  async attachFile(file: File, options?: { inputElement?: HTMLInputElement }): Promise<boolean> {
+  async attachFile(_file: File, _options?: { inputElement?: HTMLInputElement }): Promise<boolean> {
     this.context.logger.warn('attachFile not implemented by this adapter.');
     return false;
   }
@@ -97,17 +97,17 @@ export abstract class BaseAdapterPlugin implements AdapterPlugin {
     throw new Error('Not implemented');
   }
 
-  async selectElement(selector: string): Promise<HTMLElement | null> {
+  async selectElement(_selector: string): Promise<HTMLElement | null> {
     this.context.logger.warn('selectElement not implemented by this adapter.');
     return null;
   }
 
-  async navigateToUrl(url: string): Promise<boolean> {
+  async navigateToUrl(_url: string): Promise<boolean> {
     this.context.logger.warn('navigateToUrl not implemented by this adapter.');
     return false;
   }
 
-  async executeScript<T>(script: string | (() => T)): Promise<T | null> {
+  async executeScript<T>(_script: string | (() => T)): Promise<T | null> {
     this.context.logger.warn('executeScript not implemented by this adapter.');
     return null;
   }

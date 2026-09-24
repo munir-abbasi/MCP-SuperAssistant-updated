@@ -4,6 +4,7 @@
  * Listens to application events and tracks them via analytics service
  */
 import { eventBus } from './events';
+import type { RuntimeErrorContext } from './events/event-types';
 import { analyticsService } from '../../../chrome-extension/utils/analytics-service';
 import { createLogger } from '@extension/shared/lib/logger';
 
@@ -93,7 +94,7 @@ export function initializeAnalyticsListeners(): void {
  * Determine error category from context
  */
 function determineErrorCategory(
-  context?: string | Record<string, any>,
+  context?: string | RuntimeErrorContext,
 ): 'connection' | 'tool_execution' | 'adapter' | 'ui' | 'unknown' {
   if (!context) return 'unknown';
 

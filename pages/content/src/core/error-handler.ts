@@ -6,20 +6,13 @@
  */
 
 import { eventBus } from '../events/event-bus';
+import type { RuntimeErrorContext } from '../events/event-types';
 import type { CircuitBreaker } from './circuit-breaker';
 import { createLogger } from '@extension/shared/lib/logger';
 
 const logger = createLogger('GlobalErrorHandler');
 
-export interface ErrorContext {
-  component?: string;
-  operation?: string;
-  user?: string;
-  source?: string;
-  details?: Record<string, any>;
-  metadata?: Record<string, any>;
-  fromEventBus?: boolean; // Flag to prevent recursive error handling
-}
+export type ErrorContext = RuntimeErrorContext;
 
 export interface ErrorReport {
   error: Error;
@@ -87,7 +80,7 @@ class GlobalErrorHandler {
     // Handle Chrome extension context invalidation
     if (typeof chrome !== 'undefined' && chrome.runtime) {
       // Monitor for runtime errors without overriding the API
-      chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+      chrome.runtime.onMessage.addListener((_message, _sender, _sendResponse) => {
         // This is just for monitoring, we don't interfere with the message flow
         return false;
       });
@@ -182,7 +175,7 @@ class GlobalErrorHandler {
   /**
    * Add breadcrumb for debugging
    */
-  addBreadcrumb(message: string, category: string = 'default', data?: Record<string, any>): void {
+  addBreadcrumb(message: string, category: string = 'default', data?: Record<string, unknown>): void {
     eventBus.emit('error:breadcrumb', {
       message,
       category,

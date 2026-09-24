@@ -1,7 +1,14 @@
-import type { AdapterConfig, AdapterOverrides } from './types';
+import type {
+  AdapterConfig,
+  AdapterOverrides as _AdapterOverrides,
+  AdapterSelectors,
+  AdapterFeatures,
+  AdapterUIConfig,
+} from './types';
 import { GEMINI_DEFAULT_CONFIG } from './gemini.config';
 import { CHATGPT_DEFAULT_CONFIG } from './chatgpt.config';
 import { createLogger } from '@extension/shared/lib/logger';
+import type { PluginContext } from '../../plugin-types';
 
 /**
  * Configuration manager for adapters
@@ -13,7 +20,7 @@ const logger = createLogger('AdapterConfigManager');
 export class AdapterConfigManager {
   private static instance: AdapterConfigManager;
   private configCache = new Map<string, AdapterConfig>();
-  private context: any = null;
+  private context!: PluginContext;
 
   private constructor() {}
 
@@ -27,7 +34,7 @@ export class AdapterConfigManager {
   /**
    * Initialize with plugin context
    */
-  initialize(context: any) {
+  initialize(context: PluginContext) {
     this.context = context;
     this.setupEventListeners();
   }
@@ -40,14 +47,14 @@ export class AdapterConfigManager {
     if (!this.context?.eventBus) return;
 
     // Listen for adapter config updates from the existing remote config system
-    this.context.eventBus.on('remote-config:adapter-configs-updated', (data: any) => {
+    this.context.eventBus.on('remote-config:adapter-configs-updated', data => {
       logger.debug('[AdapterConfigManager] Received adapter config updates from existing system');
       logger.debug(data);
       this.handleAdapterConfigUpdate(data.adapterConfigs);
     });
 
     // Also listen for general remote config updates as fallback
-    this.context.eventBus.on('remote-config:updated', (data: any) => {
+    this.context.eventBus.on('remote-config:updated', data => {
       if (data.changes.some((change: string) => change.includes('adapter'))) {
         logger.debug('[AdapterConfigManager] Detected adapter-related config changes, clearing cache');
         this.clearCache();
@@ -58,7 +65,7 @@ export class AdapterConfigManager {
   /**
    * Handle adapter configuration updates from the existing remote config system
    */
-  private handleAdapterConfigUpdate(adapterConfigs: Record<string, any>) {
+  private handleAdapterConfigUpdate(adapterConfigs: Record<string, unknown>) {
     logger.debug('[AdapterConfigManager] Processing adapter config update:', adapterConfigs);
 
     // Clear relevant cache entries
@@ -338,7 +345,7 @@ export class AdapterConfigManager {
    * Merge a specific UI section with override support
    * Provides fail-safe behavior by validating remote config before applying overrides
    */
-  private mergeUISection<T extends Record<string, any>>(
+  private mergeUISection<T extends Record<string, unknown>>(
     sectionName: string,
     defaultSection: T,
     remoteSection: Partial<T> | undefined,
@@ -375,7 +382,7 @@ export class AdapterConfigManager {
         // Only override if remote config has a valid value for this key
         const remoteValue = remoteConfig[key as keyof AdapterConfig];
         if (remoteValue !== null && remoteValue !== undefined) {
-          (updatedResult as any)[key] = remoteValue;
+          Object.assign(updatedResult, { [key]: remoteValue });
           logger.debug(`Applied key override for: ${key}`);
         } else {
           logger.warn(`Skipping key override for ${key} - remote value is null/undefined`);
@@ -391,7 +398,7 @@ export class AdapterConfigManager {
   /**
    * Validate that a UI section has required properties before allowing override
    */
-  private validateUISection(sectionName: string, remoteSection: any, defaultSection: any): boolean {
+  private validateUISection(sectionName: string, remoteSection: unknown, defaultSection: object): boolean {
     if (!remoteSection || typeof remoteSection !== 'object') {
       return false;
     }
@@ -418,31 +425,33 @@ export class AdapterConfigManager {
   /**
    * Validate and sanitize selectors section for override
    */
-  private validateAndSanitizeSelectors(remoteSelectors: any, defaultSelectors: any): any {
+  private validateAndSanitizeSelectors(remoteSelectors: unknown, defaultSelectors: AdapterSelectors): AdapterSelectors {
     if (!remoteSelectors || typeof remoteSelectors !== 'object') {
       logger.warn('[AdapterConfigManager] Invalid remote selectors for override, using defaults');
       return defaultSelectors;
     }
 
+    const selectors = remoteSelectors as Record<string, unknown>;
+
     // Ensure at least core selectors are present
     const coreSelectors = ['chatInput', 'submitButton'];
-    const hasCore = coreSelectors.every(
-      key =>
-        key in remoteSelectors && typeof remoteSelectors[key] === 'string' && remoteSelectors[key].trim().length > 0,
-    );
+    const hasCore = coreSelectors.every(key => {
+      const value = selectors[key];
+      return key in selectors && typeof value === 'string' && value.trim().length > 0;
+    });
 
     if (!hasCore) {
       logger.warn('[AdapterConfigManager] Remote selectors missing core selectors, merging with defaults');
-      return { ...defaultSelectors, ...remoteSelectors };
+      return { ...defaultSelectors, ...selectors };
     }
 
-    return { ...defaultSelectors, ...remoteSelectors };
+    return { ...defaultSelectors, ...selectors };
   }
 
   /**
    * Validate and sanitize features section for override
    */
-  private validateAndSanitizeFeatures(remoteFeatures: any, defaultFeatures: any): any {
+  private validateAndSanitizeFeatures(remoteFeatures: unknown, defaultFeatures: AdapterFeatures): AdapterFeatures {
     if (!remoteFeatures || typeof remoteFeatures !== 'object') {
       logger.warn('[AdapterConfigManager] Invalid remote features for override, using defaults');
       return defaultFeatures;
@@ -465,22 +474,24 @@ export class AdapterConfigManager {
   /**
    * Validate and sanitize UI section for override
    */
-  private validateAndSanitizeUI(remoteUI: any, defaultUI: any): any {
+  private validateAndSanitizeUI(remoteUI: unknown, defaultUI: AdapterUIConfig): AdapterUIConfig {
     if (!remoteUI || typeof remoteUI !== 'object') {
       logger.warn('[AdapterConfigManager] Invalid remote UI config for override, using defaults');
       return defaultUI;
     }
 
+    const ui = remoteUI as Partial<AdapterUIConfig>;
+
     // For UI override, we still want to merge sub-sections to ensure completeness
     return {
       ...defaultUI,
-      ...remoteUI,
+      ...ui,
       // Ensure critical sub-sections exist
-      typing: remoteUI.typing || defaultUI.typing,
-      animations: remoteUI.animations || defaultUI.animations,
-      retry: remoteUI.retry || defaultUI.retry,
-      fileUpload: remoteUI.fileUpload || defaultUI.fileUpload,
-      polling: remoteUI.polling || defaultUI.polling,
+      typing: ui.typing || defaultUI.typing,
+      animations: ui.animations || defaultUI.animations,
+      retry: ui.retry || defaultUI.retry,
+      fileUpload: ui.fileUpload || defaultUI.fileUpload,
+      polling: ui.polling || defaultUI.polling,
     };
   }
 }

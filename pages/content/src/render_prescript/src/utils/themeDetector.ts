@@ -42,7 +42,19 @@ const THEME_CHANGE_DELAY = 100; // ms
  * @param message The message to log
  * @param data Optional data to include in the log
  */
-function logThemeDetection(message: string, data?: any): void {
+declare global {
+  interface Window {
+    _themeMediaQueryListeners?: {
+      dark: { query: MediaQueryList; handler: (e: MediaQueryListEvent) => void };
+      light: { query: MediaQueryList; handler: (e: MediaQueryListEvent) => void };
+    };
+    _themeStorageListener?: (e: StorageEvent) => void;
+    _themeCustomEventListeners?: { handler: (e: Event) => void; events: string[] };
+    _themeVariableWatcher?: { element: HTMLDivElement; observer: ResizeObserver };
+  }
+}
+
+function logThemeDetection(message: string, data?: unknown): void {
   if (CONFIG.debug) {
     logger.debug(`${message}`, data || '');
   }
@@ -211,7 +223,7 @@ function detectThemeWithScoring(): { theme: ThemeMode; confidence: number; score
             }
           }
         }
-      } catch (error) {
+      } catch (_error) {
         // Continue with other elements
       }
     }
@@ -278,7 +290,7 @@ function detectThemeWithScoring(): { theme: ThemeMode; confidence: number; score
           if (brightness > 180) textAnalysis.lightTextCount++;
           else if (brightness < 100) textAnalysis.darkTextCount++;
         }
-      } catch (error) {
+      } catch (_error) {
         // Continue with other elements
       }
     });
@@ -305,7 +317,7 @@ function detectThemeWithScoring(): { theme: ThemeMode; confidence: number; score
         if (brightness < 128) darkScore += weights.systemColors;
         else lightScore += weights.systemColors;
       }
-    } catch (error) {
+    } catch (_error) {
       // Ignore errors
     }
 
@@ -403,8 +415,8 @@ function getColorBrightness(colorValue: string): number | null {
  */
 function detectWebsiteSpecificTheme(): ThemeMode | null {
   const hostname = window.location.hostname.toLowerCase();
-  const pathname = window.location.pathname.toLowerCase();
-  const search = window.location.search.toLowerCase();
+  const _pathname = window.location.pathname.toLowerCase();
+  const _search = window.location.search.toLowerCase();
 
   // GitHub
   if (hostname.includes('github.com')) {
@@ -985,7 +997,7 @@ export function startThemeMonitoring(): void {
     lightModeMediaQuery.addEventListener('change', handleMediaQueryChange);
 
     // Store references for cleanup
-    (window as any)._themeMediaQueryListeners = {
+    window._themeMediaQueryListeners = {
       dark: { query: darkModeMediaQuery, handler: handleMediaQueryChange },
       light: { query: lightModeMediaQuery, handler: handleMediaQueryChange },
     };
@@ -1003,7 +1015,7 @@ export function startThemeMonitoring(): void {
   };
 
   window.addEventListener('storage', handleStorageChange);
-  (window as any)._themeStorageListener = handleStorageChange;
+  window._themeStorageListener = handleStorageChange;
 
   // Listen for custom theme change events that websites might dispatch
   const customThemeEvents = [
@@ -1027,7 +1039,7 @@ export function startThemeMonitoring(): void {
     window.addEventListener(eventType, handleCustomThemeEvent);
   });
 
-  (window as any)._themeCustomEventListeners = {
+  window._themeCustomEventListeners = {
     handler: handleCustomThemeEvent,
     events: customThemeEvents,
   };
@@ -1075,7 +1087,7 @@ export function startThemeMonitoring(): void {
     setInterval(triggerObservation, 1000); // Check every second
     variableObserver.observe(themeVariableWatcher);
 
-    (window as any)._themeVariableWatcher = {
+    window._themeVariableWatcher = {
       element: themeVariableWatcher,
       observer: variableObserver,
     };
@@ -1097,38 +1109,38 @@ export function stopThemeMonitoring(): void {
   }
 
   // Clean up media query listeners
-  const mediaQueryListeners = (window as any)._themeMediaQueryListeners;
+  const mediaQueryListeners = window._themeMediaQueryListeners;
   if (mediaQueryListeners) {
     mediaQueryListeners.dark?.query?.removeEventListener('change', mediaQueryListeners.dark.handler);
     mediaQueryListeners.light?.query?.removeEventListener('change', mediaQueryListeners.light.handler);
-    delete (window as any)._themeMediaQueryListeners;
+    delete window._themeMediaQueryListeners;
   }
 
   // Clean up storage listener
-  const storageListener = (window as any)._themeStorageListener;
+  const storageListener = window._themeStorageListener;
   if (storageListener) {
     window.removeEventListener('storage', storageListener);
-    delete (window as any)._themeStorageListener;
+    delete window._themeStorageListener;
   }
 
   // Clean up custom event listeners
-  const customEventListeners = (window as any)._themeCustomEventListeners;
+  const customEventListeners = window._themeCustomEventListeners;
   if (customEventListeners) {
     customEventListeners.events.forEach((eventType: string) => {
       document.removeEventListener(eventType, customEventListeners.handler);
       window.removeEventListener(eventType, customEventListeners.handler);
     });
-    delete (window as any)._themeCustomEventListeners;
+    delete window._themeCustomEventListeners;
   }
 
   // Clean up CSS variable watcher
-  const variableWatcher = (window as any)._themeVariableWatcher;
+  const variableWatcher = window._themeVariableWatcher;
   if (variableWatcher) {
     variableWatcher.observer?.disconnect();
     if (variableWatcher.element && variableWatcher.element.parentNode) {
       variableWatcher.element.parentNode.removeChild(variableWatcher.element);
     }
-    delete (window as any)._themeVariableWatcher;
+    delete window._themeVariableWatcher;
   }
 
   logThemeDetection('Enhanced theme monitoring stopped and cleaned up');
@@ -1156,6 +1168,19 @@ export function removeThemeChangeListener(callback: ThemeChangeCallback): void {
  */
 export function forceThemeRedetection(): ThemeMode {
   cachedTheme = null;
+  return detectTheme();
+}
+
+export function forceThemeMode(theme: ThemeMode): void {
+  cachedTheme = theme;
+  updateAllFunctionBlockThemes();
+}
+
+export function clearCachedTheme(): void {
+  cachedTheme = null;
+}
+
+export function detectHostTheme(): ThemeMode {
   return detectTheme();
 }
 
@@ -1200,7 +1225,7 @@ export function applyThemeClass(element: HTMLElement): void {
  */
 export function updateAllFunctionBlockThemes(): void {
   if (renderedFunctionBlocks && renderedFunctionBlocks.size > 0) {
-    renderedFunctionBlocks.forEach((block, key) => {
+    renderedFunctionBlocks.forEach((block, _key) => {
       applyThemeClass(block);
     });
     logThemeDetection(`Updated theme for ${renderedFunctionBlocks.size} function blocks`);

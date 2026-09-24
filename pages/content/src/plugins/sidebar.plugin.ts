@@ -242,7 +242,7 @@ export class SidebarPlugin implements AdapterPlugin {
       this.sidebarManager = SidebarManager.getInstance(siteType);
 
       // Expose sidebar manager globally for backward compatibility
-      (window as any).activeSidebarManager = this.sidebarManager;
+      window.activeSidebarManager = this.sidebarManager;
 
       logger.debug(`Sidebar manager initialized for site type: ${siteType}`);
     } catch (error) {

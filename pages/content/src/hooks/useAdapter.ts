@@ -99,6 +99,7 @@ export function useCurrentAdapter() {
 // Hook for adapter management
 export function useAdapterManagement() {
   const { adapters, registerPlugin, unregisterPlugin } = useRegisteredAdapters();
+  const { activeAdapterName } = useActiveAdapter();
   const emit = useEventEmitter();
 
   const activateAdapter = useCallback(
@@ -118,8 +119,6 @@ export function useAdapterManagement() {
 
   const deactivateCurrentAdapter = useCallback(async (): Promise<boolean> => {
     try {
-      // Get current active adapter name first
-      const { activeAdapterName } = useActiveAdapter();
       if (activeAdapterName) {
         emit('plugin:deactivation-requested', { pluginName: activeAdapterName, timestamp: Date.now() });
         return true;
@@ -130,7 +129,7 @@ export function useAdapterManagement() {
       logger.error('[useAdapterManagement] Failed to deactivate adapter:', errorMessage);
       return false;
     }
-  }, [emit]);
+  }, [activeAdapterName, emit]);
 
   const getAdapterForHostname = useCallback(
     (hostname: string): AdapterPlugin | null => {
@@ -204,7 +203,7 @@ export function useAdapterStatus() {
       type: string;
       adapterName?: string;
       timestamp: number;
-      data?: any;
+      data?: unknown;
     }>
   >([]);
 

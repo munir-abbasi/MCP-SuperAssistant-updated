@@ -246,4 +246,3 @@ export function getConfig(): FunctionCallRendererConfig {
 export const CONFIG = getConfig();
 
 // Re-export the config interface and utility functions
-export type { FunctionCallRendererConfig };

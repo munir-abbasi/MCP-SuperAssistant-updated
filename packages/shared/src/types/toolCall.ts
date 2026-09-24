@@ -5,7 +5,7 @@
 export interface ToolCall {
   serverName: string;
   toolName: string;
-  arguments: Record<string, any>;
+  arguments: Record<string, unknown>;
   rawContent: string;
 }
 

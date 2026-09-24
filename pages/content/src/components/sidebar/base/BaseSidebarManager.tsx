@@ -2,8 +2,8 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { logMessage } from '@src/utils/helpers';
 import {
-  injectShadowDomCSS,
-  debugShadowDomStyling,
+  injectShadowDomCSS as _injectShadowDomCSS,
+  debugShadowDomStyling as _debugShadowDomStyling,
   applyDarkMode,
   applyLightMode,
   injectTailwindToShadowDom,
@@ -358,7 +358,7 @@ export abstract class BaseSidebarManager {
 
     // Start new initialization process
     logMessage('Starting sidebar manager initialization...');
-    this._initializationPromise = new Promise<void>(async (resolve, reject) => {
+    this._initializationPromise = (async () => {
       try {
         // For maximum compatibility, only require document to exist
         // Don't wait for body if it's not ready - we'll append later
@@ -439,7 +439,6 @@ export abstract class BaseSidebarManager {
 
         // Mark as successfully initialized *before* resolving
         this._isInitialized = true;
-        resolve();
       } catch (error) {
         console.error('Error initializing Sidebar manager with Shadow DOM:', error);
         logMessage(
@@ -448,12 +447,12 @@ export abstract class BaseSidebarManager {
         // Reset flags on error and clean up
         this._isInitialized = false;
         this.destroy(); // destroy might be too aggressive, consider specific cleanup
-        reject(error);
+        throw error;
       } finally {
         // Clear the promise regardless of outcome
         this._initializationPromise = null;
       }
-    });
+    })();
 
     return this._initializationPromise;
   }
@@ -469,7 +468,7 @@ export abstract class BaseSidebarManager {
     try {
       // Ensure initialization is complete before proceeding
       await this.initialize();
-    } catch (error) {
+    } catch (_error) {
       logMessage('Initialization failed during show(), cannot proceed.');
       this._isVisible = false; // Reset visibility if init failed
       return; // Don't proceed if initialization failed

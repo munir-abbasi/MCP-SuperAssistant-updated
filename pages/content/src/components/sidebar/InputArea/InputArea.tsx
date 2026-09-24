@@ -13,7 +13,7 @@ interface InputAreaProps {
   onToggleMinimize: () => void;
 }
 
-const InputArea: React.FC<InputAreaProps> = ({ onSubmit, onToggleMinimize }) => {
+const InputArea: React.FC<InputAreaProps> = ({ onSubmit, onToggleMinimize: _onToggleMinimize }) => {
   const [inputText, setInputText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 

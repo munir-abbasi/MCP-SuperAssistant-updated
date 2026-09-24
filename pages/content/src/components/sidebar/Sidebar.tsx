@@ -1,26 +1,34 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import type React from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useCurrentAdapter } from '@src/hooks/useAdapter';
 import { useTheme, useSidebarState, useUserPreferences, useConnectionStatus } from '@src/hooks';
-import { useUIStore } from '@src/stores/ui.store';
+import { useUIStore as _useUIStore } from '@src/stores/ui.store';
 import ServerStatus from './ServerStatus/ServerStatus';
 import AvailableTools from './AvailableTools/AvailableTools';
 import InstructionManager from './Instructions/InstructionManager';
-import InputArea from './InputArea/InputArea';
+import _InputArea from './InputArea/InputArea';
 import Settings from './Settings/Settings';
 import { useMcpCommunication } from '@src/hooks/useMcpCommunication';
 import { logMessage } from '@src/utils/helpers';
 import { eventBus } from '@src/events/event-bus';
-import { Typography, Toggle, ToggleWithoutLabel, ResizeHandle, Icon, Button } from './ui';
+import { Typography, Toggle as _Toggle, ToggleWithoutLabel, ResizeHandle, Icon, Button } from './ui';
 import { cn } from '@src/lib/utils';
 import { Card, CardContent } from '@src/components/ui/card';
 import type { UserPreferences } from '@src/types/stores';
 import { createLogger } from '@extension/shared/lib/logger';
+import type { SidebarManager } from './SidebarManager';
+
+declare global {
+  interface Window {
+    availableTools?: Array<{ name: string; description: string; schema: string; input_schema: unknown }>;
+  }
+}
 // Debug helper function to check if activeSidebarManager is available
 
-const logger = createLogger('Sidebar');
+const _logger = createLogger('Sidebar');
 
 const checkActiveSidebarManager = (): boolean => {
-  const available = !!(window as any).activeSidebarManager;
+  const available = !!window.activeSidebarManager;
   logMessage(`[Sidebar] checkActiveSidebarManager: ${available}`);
   return available;
 };
@@ -69,10 +77,10 @@ const Sidebar: React.FC<SidebarProps> = ({ initialPreferences }) => {
     isVisible: sidebarVisible,
     isMinimized: storeSidebarMinimized,
     width: storeSidebarWidth,
-    toggleSidebar,
+    toggleSidebar: _toggleSidebar,
     toggleMinimize,
     resizeSidebar,
-    setSidebarVisibility,
+    setSidebarVisibility: _setSidebarVisibility,
   } = useSidebarState();
   const { preferences, updatePreferences } = useUserPreferences();
   const { status: connectionStatus } = useConnectionStatus();
@@ -81,72 +89,30 @@ const Sidebar: React.FC<SidebarProps> = ({ initialPreferences }) => {
   const [initializationError, setInitializationError] = useState<string | null>(null);
   const [extensionContextInvalid, setExtensionContextInvalid] = useState<boolean>(false);
   const [isComponentMounted, setIsComponentMounted] = useState<boolean>(false);
-  const [renderKey, setRenderKey] = useState<number>(0); // Force re-render key
+  const [_renderKey, _setRenderKey] = useState<number>(0); // Force re-render key
   const [isInitializing, setIsInitializing] = useState<boolean>(true); // Track initialization state
 
-  // Get communication methods with guaranteed safe fallbacks and error boundaries
-  let communicationMethods;
-  try {
-    communicationMethods = useMcpCommunication();
-  } catch (error) {
-    // Handle extension context invalidation gracefully
-    if (error instanceof Error && error.message.includes('Extension context invalidated')) {
-      logMessage('[Sidebar] Extension context invalidated during hook initialization');
-      // Don't set state during render - use useEffect instead
-      React.useEffect(() => {
-        setExtensionContextInvalid(true);
-        setInitializationError('Extension was reloaded. Please refresh the page to restore functionality.');
-      }, []);
+  const communicationMethods = useMcpCommunication();
 
-      // Provide fallback methods
-      communicationMethods = {
-        availableTools: [],
-        sendMessage: async () => 'Extension context invalidated',
-        refreshTools: async () => [],
-        forceReconnect: async () => false,
-        serverStatus: 'disconnected' as const,
-        updateServerConfig: async () => false,
-        getServerConfig: async () => ({ uri: '' }),
-      };
-    } else {
-      logMessage(
-        `[Sidebar] Unexpected error in useMcpCommunication: ${error instanceof Error ? error.message : String(error)}`,
-      );
-      // Provide safe fallback methods for any other error
-      communicationMethods = {
-        availableTools: [],
-        sendMessage: async () => 'Communication error',
-        refreshTools: async () => [],
-        forceReconnect: async () => false,
-        serverStatus: 'disconnected' as const,
-        updateServerConfig: async () => false,
-        getServerConfig: async () => ({ uri: '' }),
-      };
-    }
-  }
-
-  // Always render immediately - use safe defaults for all communication methods
-  const serverStatus = connectionStatus || communicationMethods?.serverStatus || 'disconnected';
-  const availableTools = communicationMethods?.availableTools || [];
-  const sendMessage = communicationMethods?.sendMessage || (async () => 'Communication not available');
-  const refreshTools = communicationMethods?.refreshTools || (async () => []);
-  const forceReconnect = communicationMethods?.forceReconnect || (async () => false);
+  const serverStatus = connectionStatus || communicationMethods.serverStatus || 'disconnected';
+  const { availableTools, sendMessage, refreshTools, forceReconnect } = communicationMethods;
 
   // Component mounting and stability tracking
   useEffect(() => {
+    const mountedComponentId = componentId.current;
     setIsComponentMounted(true);
-    logMessage(`[Sidebar] Component mounted (ID: ${componentId.current})`);
+    logMessage(`[Sidebar] Component mounted (ID: ${mountedComponentId})`);
 
     // Mark initialization as complete after a brief delay
     const initTimer = setTimeout(() => {
       setIsInitializing(false);
-      logMessage(`[Sidebar] Component initialization completed (ID: ${componentId.current})`);
+      logMessage(`[Sidebar] Component initialization completed (ID: ${mountedComponentId})`);
     }, 100);
 
     return () => {
       clearTimeout(initTimer);
       setIsComponentMounted(false);
-      logMessage(`[Sidebar] Component unmounting (ID: ${componentId.current})`);
+      logMessage(`[Sidebar] Component unmounting (ID: ${mountedComponentId})`);
     };
   }, []);
 
@@ -262,13 +228,13 @@ const Sidebar: React.FC<SidebarProps> = ({ initialPreferences }) => {
     // Small delay to ensure everything is initialized
     const timeoutId = setTimeout(loadInitialTools, 1000);
     return () => clearTimeout(timeoutId);
-  }, [serverStatus, availableTools.length]);
+  }, [availableTools.length, refreshTools, serverStatus]);
 
   // Use store values with fallbacks to initial preferences
   const isMinimized = storeSidebarMinimized ?? initialPreferences?.isMinimized ?? false;
   const sidebarWidth = storeSidebarWidth || initialPreferences?.sidebarWidth || SIDEBAR_DEFAULT_WIDTH;
   const isPushMode = preferences.isPushMode ?? initialPreferences?.isPushMode ?? false;
-  const autoSubmit = preferences.autoSubmit ?? initialPreferences?.autoSubmit ?? false;
+  const _autoSubmit = preferences.autoSubmit ?? initialPreferences?.autoSubmit ?? false;
 
   // Debug logging for state tracking
   useEffect(() => {
@@ -281,7 +247,7 @@ const Sidebar: React.FC<SidebarProps> = ({ initialPreferences }) => {
   const [activeTab, setActiveTab] = useState<'availableTools' | 'instructions' | 'settings'>('availableTools');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [isInputMinimized, setIsInputMinimized] = useState(false);
+  const [_isInputMinimized, setIsInputMinimized] = useState(false);
 
   const sidebarRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -290,9 +256,9 @@ const Sidebar: React.FC<SidebarProps> = ({ initialPreferences }) => {
   const transitionTimerRef = useRef<number | null>(null);
 
   // Helper function to wait for SidebarManager to become available with retry mechanism
-  const waitForSidebarManager = useCallback(async (maxRetries = 10, baseDelay = 50): Promise<any> => {
+  const waitForSidebarManager = useCallback(async (maxRetries = 10, baseDelay = 50): Promise<SidebarManager | null> => {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
-      const sidebarManager = (window as any).activeSidebarManager;
+      const sidebarManager = window.activeSidebarManager;
       if (sidebarManager) {
         logMessage(`[Sidebar] activeSidebarManager found after ${attempt} attempts`);
         return sidebarManager;
@@ -528,7 +494,7 @@ const Sidebar: React.FC<SidebarProps> = ({ initialPreferences }) => {
     toggleMinimize('user action');
   };
 
-  const toggleInputMinimize = () => setIsInputMinimized(prev => !prev);
+  const _toggleInputMinimize = () => setIsInputMinimized(prev => !prev);
 
   const handleResize = useCallback(
     (width: number) => {
@@ -547,7 +513,7 @@ const Sidebar: React.FC<SidebarProps> = ({ initialPreferences }) => {
       // Update push mode styles if enabled
       if (isPushMode) {
         try {
-          const sidebarManager = (window as any).activeSidebarManager;
+          const sidebarManager = window.activeSidebarManager;
           if (sidebarManager && typeof sidebarManager.updatePushModeStyles === 'function') {
             sidebarManager.updatePushModeStyles(constrainedWidth);
           }
@@ -583,7 +549,7 @@ const Sidebar: React.FC<SidebarProps> = ({ initialPreferences }) => {
         resizeSidebar(constrainedWidth);
       }
     },
-    [isPushMode],
+    [isPushMode, resizeSidebar],
   );
 
   const handlePushModeToggle = (checked: boolean) => {
@@ -591,12 +557,12 @@ const Sidebar: React.FC<SidebarProps> = ({ initialPreferences }) => {
     logMessage(`[Sidebar] Push mode ${checked ? 'enabled' : 'disabled'}`);
   };
 
-  const handleAutoSubmitToggle = (checked: boolean) => {
+  const _handleAutoSubmitToggle = (checked: boolean) => {
     updatePreferences({ autoSubmit: checked });
     logMessage(`[Sidebar] Auto submit ${checked ? 'enabled' : 'disabled'}`);
   };
 
-  const handleClearTools = () => {
+  const _handleClearTools = () => {
     logMessage('[Sidebar] Clear tools requested - functionality deprecated');
     // Note: Tool clearing is now handled by the store/MCP client
     // This is kept for UI compatibility but doesn't clear anything
@@ -635,7 +601,7 @@ const Sidebar: React.FC<SidebarProps> = ({ initialPreferences }) => {
 
   // Expose availableTools globally for popover access
   if (typeof window !== 'undefined') {
-    (window as any).availableTools = availableTools;
+    window.availableTools = availableTools;
   }
 
   // Helper to get the current theme icon name
@@ -843,7 +809,7 @@ const Sidebar: React.FC<SidebarProps> = ({ initialPreferences }) => {
                       size="sm"
                       className="w-full mt-2 border-slate-200 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
                       onClick={() => {
-                        const shadowHost = (window as any).activeSidebarManager?.getShadowHost();
+                        const shadowHost = window.activeSidebarManager?.getShadowHost();
                         if (shadowHost && shadowHost.shadowRoot) {
                           logMessage('Shadow DOM debug requested');
                           // Debug functionality removed - use browser dev tools instead

@@ -87,7 +87,7 @@ export const wrapInToolOutput = (content: string): string => {
  * @param data The data to format
  * @returns Formatted JSON string
  */
-export const formatAsJson = (data: any): string => {
+export const formatAsJson = (data: unknown): string => {
   return JSON.stringify(data, null, 2);
 };
 
@@ -220,17 +220,17 @@ export const insertTextToChatInput = (text: string): boolean => {
  * @param result The tool result to insert
  * @returns True if successful, false otherwise
  */
-export const insertToolResultToChatInput = (result: any): boolean => {
+export const insertToolResultToChatInput = (result: unknown): boolean => {
   try {
     // Format the tool result as JSON string
     // const formattedResult = formatAsJson(result);
     // const wrappedResult = wrapInToolOutput(formattedResult);
     // Convert result to string if it's not already a string
+    const formattedResult = typeof result === 'string' ? result : (JSON.stringify(result, null, 2) ?? String(result));
     if (typeof result !== 'string') {
-      result = JSON.stringify(result, null, 2);
       logMessage('Converted tool result to string format');
     }
-    return insertTextToChatInput(result);
+    return insertTextToChatInput(formattedResult);
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logMessage(`Error formatting tool result: ${errorMessage}`);

@@ -4,7 +4,7 @@
  * @param wait Wait time in milliseconds
  * @returns A debounced version of the function
  */
-export const debounce = <T extends (...args: any[]) => any>(
+export const debounce = <T extends (...args: never[]) => unknown>(
   func: T,
   wait: number,
 ): ((...args: Parameters<T>) => void) => {

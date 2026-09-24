@@ -14,7 +14,7 @@ import { useConnectionStore } from './stores/connection.store';
 import { useUIStore } from './stores/ui.store';
 import { useConfigStore } from './stores/config.store';
 import { useAdapterStore } from './stores/adapter.store';
-import { initializeLogger } from '@extension/shared/lib/logger';
+import { initializeLogger, createLogger } from '@extension/shared/lib/logger';
 
 // Import the new initialization system
 import { applicationInit, applicationCleanup, initializationUtils } from './core/main-initializer';
@@ -33,7 +33,31 @@ import {
 
 // Import the automation service
 import { initializeAllServices, cleanupAllServices } from './services';
-import { createLogger } from '@extension/shared/lib/logger';
+import type { FeatureFlag, RemoteNotification } from './stores/config.store';
+
+/** Remote config messages forwarded from the background script */
+interface RemoteConfigMessage {
+  type: string;
+  data: {
+    flags: Record<string, FeatureFlag>;
+    timestamp: number;
+    notifications: RemoteNotification[];
+    config: unknown;
+    adapterConfigs: Record<string, unknown>;
+  };
+}
+
+/** Extension version update message forwarded from the background script */
+interface VersionUpdateMessage {
+  type: string;
+  data: { oldVersion: string; newVersion: string; timestamp: number };
+}
+
+declare global {
+  interface Window {
+    appInitUtils?: typeof initializationUtils;
+  }
+}
 
 // Add this as a global recovery mechanism for the sidebar
 
@@ -44,7 +68,7 @@ function setupSidebarRecovery(): void {
   const recoveryInterval = setInterval(() => {
     try {
       // Check if there's an active sidebar manager
-      const sidebarManager = (window as any).activeSidebarManager;
+      const sidebarManager = window.activeSidebarManager;
       if (!sidebarManager) return;
 
       // Get HTML element to check for push-mode-enabled class
@@ -184,7 +208,7 @@ setupSidebarRecovery();
  * Collects demographic data about the user's environment.
  * This includes browser info, OS, language, screen size, and device type.
  */
-function collectDemographicData(): { [key: string]: any } {
+function collectDemographicData(): { [key: string]: string | number } {
   try {
     const userAgent = navigator.userAgent;
     const language = navigator.language;
@@ -240,11 +264,11 @@ function collectDemographicData(): { [key: string]: any } {
       osVersion = match && match[1] ? match[1].replace(/_/g, '.') : 'Unknown';
     } else if (userAgent.indexOf('Linux') > -1) {
       os = 'Linux';
-      const match = userAgent.match(/Linux ([\w\d\.]+)/);
+      const match = userAgent.match(/Linux ([\w\d.]+)/);
       osVersion = match && match[1] ? match[1] : 'Unknown';
     } else if (userAgent.indexOf('Android') > -1) {
       os = 'Android';
-      const match = userAgent.match(/Android ([\d\.]+)/);
+      const match = userAgent.match(/Android ([\d.]+)/);
       osVersion = match && match[1] ? match[1] : 'Unknown';
     } else if (userAgent.indexOf('iOS') > -1 || userAgent.indexOf('iPhone') > -1 || userAgent.indexOf('iPad') > -1) {
       os = 'iOS';
@@ -317,7 +341,7 @@ function collectDemographicData(): { [key: string]: any } {
       }
 
       // Expose MCP client globally for debugging and legacy compatibility
-      (window as any).mcpClient = mcpClient;
+      window.mcpClient = mcpClient;
       logMessage('MCP client exposed on window.mcpClient');
     } catch (mcpError) {
       logger.error('MCP client initialization warning:', mcpError);
@@ -335,7 +359,7 @@ function collectDemographicData(): { [key: string]: any } {
     // Expose plugin registry globally for adapter access
     try {
       const { pluginRegistry } = await import('./plugins/plugin-registry');
-      (window as any).pluginRegistry = pluginRegistry;
+      window.pluginRegistry = pluginRegistry;
       logMessage('Plugin registry exposed on window.pluginRegistry');
     } catch (pluginError) {
       logger.warn('Failed to expose plugin registry globally:', pluginError);
@@ -343,7 +367,7 @@ function collectDemographicData(): { [key: string]: any } {
 
     // Expose initialization utilities for debugging
     if (process.env.NODE_ENV === 'development') {
-      (window as any).appInitUtils = initializationUtils;
+      window.appInitUtils = initializationUtils;
       logMessage('Initialization utilities exposed on window.appInitUtils');
     }
   } catch (error) {
@@ -375,7 +399,7 @@ eventBus.on('connection:status-changed', ({ status }: { status: ConnectionStatus
       isConnected,
       adapterId: adapterStore.activeAdapterName,
     });
-    (window as any).mcpAdapter = currentAdapterReg.instance;
+    window.mcpAdapter = currentAdapterReg.instance;
   }
 });
 
@@ -430,7 +454,7 @@ if (document.readyState === 'loading') {
 }
 
 // Remote Config message handler
-function handleRemoteConfigMessage(message: any, sendResponse: (response: any) => void): void {
+function handleRemoteConfigMessage(message: RemoteConfigMessage, sendResponse: (response: unknown) => void): void {
   logger.debug(`Processing Remote Config message: ${message.type}`);
 
   try {
@@ -451,7 +475,7 @@ function handleRemoteConfigMessage(message: any, sendResponse: (response: any) =
       }
 
       case 'remote-config:notifications-received': {
-        const { notifications, timestamp } = message.data;
+        const { notifications, timestamp: _timestamp } = message.data;
         logger.debug(`Received notifications: ${notifications.length} notifications`);
 
         // Process notifications through the UI store
@@ -469,7 +493,7 @@ function handleRemoteConfigMessage(message: any, sendResponse: (response: any) =
       }
 
       case 'remote-config:version-config-updated': {
-        const { config, timestamp } = message.data;
+        const { config: _config, timestamp } = message.data;
         logger.debug('[Content] Received version-specific config update');
 
         // Emit event for version config update
@@ -514,7 +538,7 @@ function handleRemoteConfigMessage(message: any, sendResponse: (response: any) =
 }
 
 // App version update handler
-function handleVersionUpdate(message: any, sendResponse: (response: any) => void): void {
+function handleVersionUpdate(message: VersionUpdateMessage, sendResponse: (response: unknown) => void): void {
   try {
     const { oldVersion, newVersion, timestamp } = message.data;
     logger.debug(`Extension updated from ${oldVersion} to ${newVersion}`);
@@ -660,14 +684,14 @@ window.addEventListener('beforeunload', async () => {
 });
 
 // Expose mcpClient to the global window object for renderer or debugging access
-(window as any).mcpClient = mcpClient;
+window.mcpClient = mcpClient;
 logger.debug('[Content Script] mcpClient exposed to window object for renderer use.');
 
 // Set the current adapter to global window object using the new plugin system
 const adapterStore = useAdapterStore.getState();
 const currentAdapterReg = adapterStore.getActiveAdapter();
 if (currentAdapterReg && currentAdapterReg.instance) {
-  (window as any).mcpAdapter = currentAdapterReg.instance;
+  window.mcpAdapter = currentAdapterReg.instance;
   logger.debug(`Current adapter (${currentAdapterReg.plugin.name}) exposed to window object as mcpAdapter.`);
 } else {
   logger.debug('[Content Script] No active adapter found to expose to window object.');

@@ -227,7 +227,7 @@ export const startFunctionResultMonitoring = (): void => {
             const isTargetElement = CONFIG.function_result_selector?.some(selector => {
               try {
                 return element.matches(selector);
-              } catch (e) {
+              } catch (_e) {
                 return false;
               }
             });
@@ -236,7 +236,7 @@ export const startFunctionResultMonitoring = (): void => {
             const hasTargetElements = CONFIG.function_result_selector?.some(selector => {
               try {
                 return element.querySelectorAll(selector).length > 0;
-              } catch (e) {
+              } catch (_e) {
                 return false;
               }
             });

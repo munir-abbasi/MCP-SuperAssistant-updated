@@ -8,13 +8,19 @@ import { createLogger } from '@extension/shared/lib/logger';
 
 const logger = createLogger('parseJSONLine');
 
+declare global {
+  interface Window {
+    __DEBUG_JSON_PARSER?: boolean;
+  }
+}
+
 interface JSONFunctionLine {
   type: 'function_call_start' | 'description' | 'parameter' | 'function_call_end';
   name?: string;
   call_id?: number | string;
   text?: string;
   key?: string;
-  value?: any;
+  value?: unknown;
 }
 
 /**
@@ -45,7 +51,7 @@ const parseJSONLine = (line: string): JSONFunctionLine | null => {
     // This handles localized UI labels like "json复制代码{...}"
     if (cleaned && !cleaned.startsWith('{') && !cleaned.startsWith('[')) {
       // Find first { or [ and try to extract from there
-      const jsonStart = cleaned.search(/[\[{]/);
+      const jsonStart = cleaned.search(/[[{]/);
       if (jsonStart > 0) {
         cleaned = cleaned.substring(jsonStart);
       }
@@ -61,7 +67,7 @@ const parseJSONLine = (line: string): JSONFunctionLine | null => {
     }
 
     return parsed as JSONFunctionLine;
-  } catch (e) {
+  } catch (_e) {
     return null;
   }
 };
@@ -476,7 +482,7 @@ export const containsJSONFunctionCalls = (block: HTMLElement): FunctionInfo => {
     result.partialTagDetected = hasPartialJSON;
   }
 
-  if (typeof window !== 'undefined' && (window as any).__DEBUG_JSON_PARSER) {
+  if (typeof window !== 'undefined' && window.__DEBUG_JSON_PARSER) {
     logger.debug('[JSON Parser] Final result:', {
       hasFunctionCalls: result.hasFunctionCalls,
       detectedBlockType: result.detectedBlockType,
@@ -550,8 +556,8 @@ export const extractJSONFunctionInfo = (
 /**
  * Extract parameters from JSON function calls
  */
-export const extractJSONParameters = (content: string): Record<string, any> => {
-  const parameters: Record<string, any> = {};
+export const extractJSONParameters = (content: string): Record<string, unknown> => {
+  const parameters: Record<string, unknown> = {};
 
   if (!content || typeof content !== 'string') {
     if (CONFIG.debug) {
@@ -586,7 +592,7 @@ export const extractJSONParameters = (content: string): Record<string, any> => {
 
     // Only use regex-extracted value if we don't already have this parameter
     // (prefer complete values from successfully parsed JSON lines)
-    if (!parameters.hasOwnProperty(key)) {
+    if (!Object.prototype.hasOwnProperty.call(parameters, key)) {
       // Unescape the value (handle \n, \t, \", etc.)
       const unescapedValue = value
         .replace(/\\n/g, '\n')

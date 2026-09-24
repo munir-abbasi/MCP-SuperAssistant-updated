@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { eventBus } from '../events';
-import type { AdapterPlugin, PluginRegistration, AdapterCapability } from '../types/plugins';
+import type { AdapterPlugin, PluginRegistration, AdapterCapability, PluginContext } from '../types/plugins';
 import { createLogger } from '@extension/shared/lib/logger';
 
 const logger = createLogger('useAdapterStore');
@@ -137,7 +137,7 @@ export const useAdapterStore = create<AdapterState>()(
               chrome,
               logger: console,
             };
-            await pluginReg.plugin.initialize(pluginContext as any); // Cast as any for now
+            await pluginReg.plugin.initialize(pluginContext as unknown as PluginContext);
             pluginReg.instance = pluginReg.plugin;
             pluginReg.status = 'initialized';
             eventBus.emit('plugin:initialization-complete', { name });
@@ -160,17 +160,17 @@ export const useAdapterStore = create<AdapterState>()(
           eventBus.emit('adapter:activated', { pluginName: name, timestamp: Date.now() });
           eventBus.emit('adapter:capability-changed', { name, capabilities: pluginReg.plugin.capabilities });
           return true;
-        } catch (error: any) {
-          const errorMsg = error instanceof Error ? error.message : String(error);
-          logger.error(`Error activating adapter "${name}":`, error);
+        } catch (error: unknown) {
+          const normalizedError = error instanceof Error ? error : String(error);
+          logger.error(`Error activating adapter "${name}":`, normalizedError);
           pluginReg.status = 'error';
-          pluginReg.error = error;
+          pluginReg.error = normalizedError;
           set({
-            lastAdapterError: { name, error },
+            lastAdapterError: { name, error: normalizedError },
             registeredPlugins: { ...get().registeredPlugins, [name]: pluginReg },
           });
-          eventBus.emit('plugin:activation-failed', { name, error });
-          eventBus.emit('adapter:error', { name, error });
+          eventBus.emit('plugin:activation-failed', { name, error: normalizedError });
+          eventBus.emit('adapter:error', { name, error: normalizedError });
           return false;
         }
       },
@@ -195,16 +195,16 @@ export const useAdapterStore = create<AdapterState>()(
             reason: reason || 'user action',
             timestamp: Date.now(),
           });
-        } catch (error: any) {
-          const errorMsg = error instanceof Error ? error.message : String(error);
-          logger.error(`Error deactivating adapter "${name}":`, error);
+        } catch (error: unknown) {
+          const normalizedError = error instanceof Error ? error : String(error);
+          logger.error(`Error deactivating adapter "${name}":`, normalizedError);
           pluginReg.status = 'error';
-          pluginReg.error = error;
+          pluginReg.error = normalizedError;
           set({
-            lastAdapterError: { name, error },
+            lastAdapterError: { name, error: normalizedError },
             registeredPlugins: { ...get().registeredPlugins, [name]: pluginReg },
           });
-          eventBus.emit('adapter:error', { name, error });
+          eventBus.emit('adapter:error', { name, error: normalizedError });
         }
       },
 

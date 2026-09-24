@@ -24,14 +24,14 @@ export interface Tool {
   name: string;
   description: string;
   // Legacy field used in some UI components
-  schema?: any;
+  schema?: string | Record<string, unknown>;
   // Newer field preferred going forward
-  input_schema: any; // Keeping 'any' as per original spec, can be refined later
+  input_schema: Record<string, unknown>;
 }
 
 export interface DetectedTool {
   name: string;
-  parameters: Record<string, any>;
+  parameters: Record<string, unknown>;
   source: string;
   confidence: number;
 }
@@ -39,8 +39,8 @@ export interface DetectedTool {
 export interface ToolExecution {
   id: string;
   toolName: string;
-  parameters: Record<string, any>;
-  result: any; // Keeping 'any' as per original spec for broad compatibility
+  parameters: Record<string, unknown>;
+  result: unknown;
   timestamp: number;
   status: 'pending' | 'success' | 'error';
   error?: string;

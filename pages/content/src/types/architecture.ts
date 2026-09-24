@@ -51,7 +51,7 @@ export interface ErrorContext {
     isRecoverable?: boolean; // Hint if the error might be recoverable
   };
   tags?: Record<string, string | boolean | number>; // Additional key-value tags for context
-  metadata?: Record<string, any>; // Any other relevant metadata
+  metadata?: Record<string, unknown>; // Any other relevant metadata
 }
 
 export interface HealthCheckResult {
@@ -60,7 +60,7 @@ export interface HealthCheckResult {
   lastCheckTime: number; // Unix timestamp (ms) of the check
   responseTimeMs?: number; // Response time in milliseconds, if applicable
   errorRate?: number; // Error rate as a percentage (0-100), if applicable
-  details?: Record<string, any>; // Service-specific health details (e.g., queue length, db connections)
+  details?: Record<string, unknown>; // Service-specific health details (e.g., queue length, db connections)
   message?: string; // Optional human-readable message about the status
 }
 
@@ -86,7 +86,7 @@ export interface BaseStoreState {
   version?: string; // Version of the store's data structure or schema
 }
 
-export interface ContextBridgeMessage<P = any, R = any> {
+export interface ContextBridgeMessage<P = unknown, R = unknown> {
   // Generic for payload (P) and response (R)
   messageId: string; // Unique ID for this message, for tracking and replies
   type: string; // Defines the action or event type

@@ -5,7 +5,7 @@ import { cva } from 'class-variance-authority';
 
 // Simpler Slot implementation that doesn't try to access children.ref
 const Slot = React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement> & { children?: React.ReactNode }>(
-  ({ children, ...props }, ref) => {
+  ({ children, ...props }, _ref) => {
     if (!children || !React.isValidElement(children)) {
       return null;
     }

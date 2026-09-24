@@ -14,8 +14,15 @@ export interface PerformanceMeasurement {
   name: string;
   duration: number;
   timestamp: number;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
   type: 'sync' | 'async';
+}
+
+/** Non-standard Chrome `performance.memory` extension */
+interface PerformanceMemoryInfo {
+  usedJSHeapSize: number;
+  totalJSHeapSize: number;
+  jsHeapSizeLimit: number;
 }
 
 export interface MemoryUsage {
@@ -44,7 +51,7 @@ class PerformanceMonitor {
   /**
    * Initialize the performance monitor
    */
-  initialize(eventBusInstance: typeof eventBus): void {
+  initialize(_eventBusInstance: typeof eventBus): void {
     if (this.initialized) {
       logger.warn('[PerformanceMonitor] Already initialized');
       return;
@@ -123,7 +130,7 @@ class PerformanceMonitor {
   /**
    * Time a function execution
    */
-  time<T>(name: string, fn: () => T | Promise<T>, context?: Record<string, any>): T | Promise<T> {
+  time<T>(name: string, fn: () => T | Promise<T>, context?: Record<string, unknown>): T | Promise<T> {
     const start = performance.now();
 
     try {
@@ -167,7 +174,7 @@ class PerformanceMonitor {
   /**
    * Mark a performance point
    */
-  mark(name: string, context?: Record<string, any>): void {
+  mark(name: string, context?: Record<string, unknown>): void {
     this.recordMeasurement({
       name,
       duration: 0,
@@ -216,7 +223,7 @@ class PerformanceMonitor {
    */
   getMemoryUsage(): MemoryUsage | null {
     if (typeof performance !== 'undefined' && 'memory' in performance) {
-      const memory = (performance as any).memory;
+      const memory = (performance as Performance & { memory: PerformanceMemoryInfo }).memory;
       return {
         usedJSHeapSize: memory.usedJSHeapSize,
         totalJSHeapSize: memory.totalJSHeapSize,

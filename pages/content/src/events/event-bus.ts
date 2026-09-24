@@ -3,13 +3,20 @@ import { createLogger } from '@extension/shared/lib/logger';
 
 const logger = createLogger('EventBus');
 
+declare global {
+  interface Window {
+    __eventBus?: TypedEventBus;
+    __eventBusDebug?: () => object;
+  }
+}
+
 class TypedEventBus {
   private wildcardListeners = new Set<WildcardEventCallback>();
-  private eventHistory: Array<{ event: string; data: any; timestamp: number }> = [];
+  private eventHistory: Array<{ event: string; data: unknown; timestamp: number }> = [];
   private maxHistorySize = 100;
   private isEnabled = true;
-  private listeners = new Map<keyof EventMap, Set<TypedEventCallback<any>>>();
-  private onceListeners = new Map<keyof EventMap, Set<TypedEventCallback<any>>>();
+  private listeners = new Map<keyof EventMap, Set<TypedEventCallback<keyof EventMap>>>();
+  private onceListeners = new Map<keyof EventMap, Set<TypedEventCallback<keyof EventMap>>>();
   private maxListeners: number = 50; // Default max listeners
   private isEmittingErrorEvent = false; // Guard against recursive error events
 
@@ -122,7 +129,7 @@ class TypedEventBus {
           `This might indicate a memory leak.`,
       );
     }
-    eventListenersSet.add(callback as TypedEventCallback<any>);
+    eventListenersSet.add(callback as TypedEventCallback<keyof EventMap>);
     return () => this.off(event, callback);
   }
 
@@ -138,13 +145,13 @@ class TypedEventBus {
           `This might indicate a memory leak.`,
       );
     }
-    eventListenersSet.add(callback as TypedEventCallback<any>);
+    eventListenersSet.add(callback as TypedEventCallback<keyof EventMap>);
 
     // Return a function that specifically removes this 'once' listener
     return () => {
       const currentOnceListeners = this.onceListeners.get(event);
       if (currentOnceListeners) {
-        currentOnceListeners.delete(callback as TypedEventCallback<any>);
+        currentOnceListeners.delete(callback as TypedEventCallback<keyof EventMap>);
         if (currentOnceListeners.size === 0) {
           this.onceListeners.delete(event);
         }
@@ -155,7 +162,7 @@ class TypedEventBus {
   off<K extends keyof EventMap>(event: K, callback: TypedEventCallback<K>): void {
     const regularListeners = this.listeners.get(event);
     if (regularListeners) {
-      regularListeners.delete(callback as TypedEventCallback<any>);
+      regularListeners.delete(callback as TypedEventCallback<keyof EventMap>);
       if (regularListeners.size === 0) {
         this.listeners.delete(event);
       }
@@ -163,7 +170,7 @@ class TypedEventBus {
 
     const onceOnlyListeners = this.onceListeners.get(event);
     if (onceOnlyListeners) {
-      onceOnlyListeners.delete(callback as TypedEventCallback<any>);
+      onceOnlyListeners.delete(callback as TypedEventCallback<keyof EventMap>);
       if (onceOnlyListeners.size === 0) {
         this.onceListeners.delete(event);
       }
@@ -201,7 +208,7 @@ class TypedEventBus {
     };
   }
 
-  getEventHistory(): Array<{ event: string; data: any; timestamp: number }> {
+  getEventHistory(): Array<{ event: string; data: unknown; timestamp: number }> {
     return [...this.eventHistory]; // Return a copy
   }
 
@@ -254,8 +261,8 @@ export const eventBus = new TypedEventBus();
 // Development tools integration as per Session 2.md
 if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
   if (typeof window !== 'undefined') {
-    (window as any).__eventBus = eventBus;
-    (window as any).__eventBusDebug = () => eventBus.debugInfo();
+    window.__eventBus = eventBus;
+    window.__eventBusDebug = () => eventBus.debugInfo();
   }
 }
 

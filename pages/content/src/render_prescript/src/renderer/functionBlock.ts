@@ -1,11 +1,11 @@
 import { CONFIG } from '../core/config';
 import { containsFunctionCalls, extractLanguageTag } from '../parser/index';
-import { safelySetContent } from '../utils/index';
+import { safelySetContent as _safelySetContent } from '../utils/index';
 import {
   addRawXmlToggle,
   addExecuteButton,
   setupAutoScroll,
-  smoothlyUpdateBlockContent,
+  smoothlyUpdateBlockContent as _smoothlyUpdateBlockContent,
   extractFunctionParameters,
 } from './components';
 import { applyThemeClass } from '../utils/themeDetector';
@@ -25,6 +25,30 @@ declare global {
     _scrollCleanup?: () => void;
     _scrollHandlersInitialized?: boolean;
     value?: string; // For compatibility with input elements
+  }
+}
+
+declare global {
+  interface Window {
+    __mcpAutomationState?: {
+      autoInsert?: boolean;
+      autoSubmit?: boolean;
+      autoExecute?: boolean;
+      autoExecuteDelay?: number;
+    };
+    toggleState?: {
+      autoInsert?: boolean;
+      autoSubmit?: boolean;
+      autoExecute?: boolean;
+    };
+    monaco?: {
+      editor: {
+        onDidCreateEditor: (
+          callback: (editor: { updateOptions: (options: Record<string, unknown>) => void }) => void,
+        ) => unknown;
+      };
+    };
+    MonacoEnvironment?: { getWorkerUrl: () => string };
   }
 }
 
@@ -50,6 +74,7 @@ interface ParsedContent {
 }
 
 interface CachedElements {
+  [key: string]: unknown;
   functionNameElement?: HTMLDivElement;
   paramsContainer?: HTMLDivElement;
   buttonContainer?: HTMLDivElement;
@@ -62,6 +87,13 @@ interface ContentCache {
   callId: string;
   parameters: Record<string, string>;
   lastHash: string;
+}
+
+interface FunctionDetails {
+  functionName: string;
+  callId: string;
+  contentSignature: string;
+  params: Record<string, unknown>;
 }
 
 interface ScrollHandler {
@@ -83,7 +115,7 @@ let rafScheduled = false;
 // Utility function to get automation state
 function getAutomationState() {
   // First try the new store-based state (exposed by automation service)
-  const automationState = (window as any).__mcpAutomationState;
+  const automationState = window.__mcpAutomationState;
   if (automationState) {
     return {
       autoInsert: automationState.autoInsert || false,
@@ -93,7 +125,7 @@ function getAutomationState() {
   }
 
   // Fallback to legacy toggle state
-  const legacyState = (window as any).toggleState;
+  const legacyState = window.toggleState;
   return {
     autoInsert: legacyState?.autoInsert === true,
     autoSubmit: legacyState?.autoSubmit === true,
@@ -146,7 +178,7 @@ const STREAMING_STYLES = {
 
 // Common DOM utilities
 const DOMUtils = {
-  applyStyles: (element: HTMLElement, styles: Record<string, any>): void => {
+  applyStyles: (element: HTMLElement, styles: Record<string, unknown>): void => {
     Object.assign(element.style, styles);
   },
 
@@ -154,7 +186,7 @@ const DOMUtils = {
     tag: string,
     className?: string,
     attributes?: Record<string, string>,
-    styles?: Record<string, any>,
+    styles?: Record<string, unknown>,
   ): T => {
     const element = document.createElement(tag) as T;
     if (className) element.className = className;
@@ -330,13 +362,13 @@ const ScrollUtils = {
     let scrollTimeout: number | undefined;
 
     const onScroll = () => {
-      (element as any)._userHasScrolled = true;
+      element._userHasScrolled = true;
 
       if (scrollTimeout) clearTimeout(scrollTimeout);
       scrollTimeout = window.setTimeout(() => {
         const isNearBottom = element.scrollTop >= element.scrollHeight - element.clientHeight - 50;
         if (isNearBottom) {
-          (element as any)._userHasScrolled = false;
+          element._userHasScrolled = false;
         }
       }, 3000);
     };
@@ -344,18 +376,18 @@ const ScrollUtils = {
     const cleanup = () => {
       element.removeEventListener('scroll', onScroll);
       if (scrollTimeout) clearTimeout(scrollTimeout);
-      (element as any)._scrollInitialized = false;
+      element._scrollInitialized = false;
     };
 
     element.addEventListener('scroll', onScroll, { passive: true });
-    (element as any)._scrollInitialized = true;
-    (element as any)._scrollCleanup = cleanup;
+    element._scrollInitialized = true;
+    element._scrollCleanup = cleanup;
 
     return { element, timeout: scrollTimeout, cleanup };
   },
 
   setupScrollTracking: (paramValueElement: HTMLElement): void => {
-    if (!(paramValueElement as any)._scrollHandlersInitialized) {
+    if (!paramValueElement._scrollHandlersInitialized) {
       ScrollUtils.createScrollHandler(paramValueElement);
 
       const preElement = paramValueElement.querySelector('pre');
@@ -363,7 +395,7 @@ const ScrollUtils = {
         ScrollUtils.createScrollHandler(preElement);
       }
 
-      (paramValueElement as any)._scrollHandlersInitialized = true;
+      paramValueElement._scrollHandlersInitialized = true;
     }
   },
 
@@ -371,7 +403,7 @@ const ScrollUtils = {
     requestAnimationFrame(() => {
       // Auto-scroll the parameter value container
       if (paramValueElement.scrollHeight > paramValueElement.clientHeight) {
-        const shouldAutoScroll = forceScroll || !(paramValueElement as any)._userHasScrolled;
+        const shouldAutoScroll = forceScroll || !paramValueElement._userHasScrolled;
 
         if (shouldAutoScroll) {
           const targetScroll = paramValueElement.scrollHeight - paramValueElement.clientHeight;
@@ -392,7 +424,7 @@ const ScrollUtils = {
       // Auto-scroll the inner pre element if it exists and has content
       const preElement = paramValueElement.querySelector('pre');
       if (preElement && preElement.scrollHeight > preElement.clientHeight) {
-        const shouldAutoScrollPre = forceScroll || !(preElement as any)._userHasScrolled;
+        const shouldAutoScrollPre = forceScroll || !preElement._userHasScrolled;
 
         if (shouldAutoScrollPre) {
           const targetScroll = preElement.scrollHeight - preElement.clientHeight;
@@ -415,10 +447,10 @@ const ScrollUtils = {
   // Enhanced scroll function specifically for streaming content
   performStreamingScroll: (paramValueElement: HTMLElement): void => {
     // Reset user scroll tracking during active streaming
-    (paramValueElement as any)._userHasScrolled = false;
+    paramValueElement._userHasScrolled = false;
     const preElement = paramValueElement.querySelector('pre');
     if (preElement) {
-      (preElement as any)._userHasScrolled = false;
+      preElement._userHasScrolled = false;
     }
 
     // Force scroll to bottom for streaming content
@@ -428,9 +460,9 @@ const ScrollUtils = {
 
 // Monaco editor CSP-compatible configuration
 const configureMonacoEditorForCSP = (): void => {
-  if (typeof window !== 'undefined' && (window as any).monaco) {
+  if (typeof window !== 'undefined' && window.monaco) {
     try {
-      (window as any).monaco.editor.onDidCreateEditor((editor: any) => {
+      window.monaco.editor.onDidCreateEditor(editor => {
         editor.updateOptions({
           wordBasedSuggestions: false,
           snippetSuggestions: false,
@@ -442,7 +474,7 @@ const configureMonacoEditorForCSP = (): void => {
         });
       });
 
-      (window as any).MonacoEnvironment = {
+      window.MonacoEnvironment = {
         getWorkerUrl: () =>
           'data:text/javascript;charset=utf-8,logger.debug("Monaco worker disabled for CSP compatibility");',
       };
@@ -707,7 +739,7 @@ const AutoExpandUtils = {
       // Smooth collapse animation
       const currentHeight = expandableContent.scrollHeight;
       expandableContent.style.maxHeight = currentHeight + 'px';
-      expandableContent.offsetHeight; // Force reflow
+      void expandableContent.offsetHeight; // Force reflow
 
       requestAnimationFrame(() => {
         DOMUtils.applyStyles(expandableContent, {
@@ -851,7 +883,7 @@ const BlockElementUtils = {
         // Get current computed height including padding
         const currentHeight = expandableContent.scrollHeight;
         expandableContent.style.maxHeight = currentHeight + 'px';
-        expandableContent.offsetHeight; // Force reflow
+        void expandableContent.offsetHeight; // Force reflow
 
         requestAnimationFrame(() => {
           DOMUtils.applyStyles(expandableContent, {
@@ -1064,7 +1096,7 @@ const ParamElementUtils = {
 
 // Auto-execution utilities
 const AutoExecutionUtils = {
-  setupOptimizedAutoExecution: (blockId: string, functionDetails: any): void => {
+  setupOptimizedAutoExecution: (blockId: string, functionDetails: FunctionDetails): void => {
     const setupAutoExecution = () => {
       const attempts = executionTracker.incrementAttempts(blockId);
 
@@ -1077,7 +1109,7 @@ const AutoExecutionUtils = {
       logger.debug(`Auto-execute attempt ${attempts}/${MAX_AUTO_EXECUTE_ATTEMPTS} for block ${blockId}`);
 
       // Get auto execute delay from window state
-      const automationState = (window as any).__mcpAutomationState;
+      const automationState = window.__mcpAutomationState;
       const autoExecuteDelay = (automationState?.autoExecuteDelay || 0) * 1000; // Convert to milliseconds
 
       logger.debug(`Using delay of ${autoExecuteDelay}ms for block ${blockId}`);
@@ -1136,7 +1168,7 @@ const AutoExecutionUtils = {
     setupAutoExecution();
   },
 
-  findReplacementBlock: (functionDetails: any): HTMLDivElement | null => {
+  findReplacementBlock: (functionDetails: FunctionDetails): HTMLDivElement | null => {
     const potentialBlocks = document.querySelectorAll<HTMLDivElement>('.function-block');
     for (const block of Array.from(potentialBlocks)) {
       const preElement = block.querySelector('pre');
@@ -1170,7 +1202,7 @@ if (typeof window !== 'undefined') {
 /**
  * Main function to render a function call block
  */
-export const renderFunctionCall = (block: HTMLPreElement, isProcessingRef: { current: boolean }): boolean => {
+export const renderFunctionCall = (block: HTMLPreElement, _isProcessingRef: { current: boolean }): boolean => {
   injectStreamingStyles();
 
   const functionInfo = containsFunctionCalls(block);
@@ -1212,7 +1244,7 @@ export const renderFunctionCall = (block: HTMLPreElement, isProcessingRef: { cur
     block.getAttribute('data-block-id') || `block-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
   // Skip if resyncing or already complete and stable
-  if ((window as any).resyncingBlocks?.has(blockId)) {
+  if (window.resyncingBlocks?.has(blockId)) {
     if (CONFIG.debug) logger.debug(`Skipping render for resyncing block ${blockId}`);
     return false;
   }
@@ -1223,7 +1255,7 @@ export const renderFunctionCall = (block: HTMLPreElement, isProcessingRef: { cur
     return false;
   }
 
-  const preExistingIncompleteBlocks = (window as any).preExistingIncompleteBlocks || new Set<string>();
+  const preExistingIncompleteBlocks = window.preExistingIncompleteBlocks || new Set<string>();
   const isPreExistingIncomplete = preExistingIncompleteBlocks.has(blockId);
 
   let existingDiv = renderedFunctionBlocks.get(blockId);
@@ -1255,13 +1287,13 @@ export const renderFunctionCall = (block: HTMLPreElement, isProcessingRef: { cur
   }
 
   const rawContent = block.textContent?.trim() || '';
-  const { tag, content } = extractLanguageTag(rawContent);
+  const { tag, content: _content } = extractLanguageTag(rawContent);
 
   // Determine if JSON or XML format
   const isJSONFormat = functionInfo.detectedBlockType === 'json';
   let functionName: string;
   let callId: string;
-  let partialParameters: Record<string, string>;
+  let partialParameters: Record<string, unknown>;
   let description: string | null = null;
 
   if (isJSONFormat) {
@@ -1445,7 +1477,7 @@ export const renderFunctionCall = (block: HTMLPreElement, isProcessingRef: { cur
   });
 
   // Handle completion and auto-execution
-  let completeParameters: Record<string, any> | null = null;
+  let completeParameters: Record<string, unknown> | null = null;
   if (functionInfo.isComplete) {
     if (isJSONFormat) {
       completeParameters = extractJSONParameters(rawContent);
@@ -1542,14 +1574,13 @@ export const renderFunctionCall = (block: HTMLPreElement, isProcessingRef: { cur
 export const createOrUpdateParamElement = (
   container: HTMLDivElement,
   name: string,
-  value: any,
+  value: unknown,
   blockId: string,
   isNewRender: boolean,
   isStreaming: boolean = false,
 ): void => {
   const paramId = `${blockId}-${name}`;
-  const paramElementCache = elementQueryCache.get(container) || { lastCacheTime: Date.now() };
-  const paramCache = paramElementCache as any;
+  const paramCache: CachedElements = elementQueryCache.get(container) || { lastCacheTime: Date.now() };
 
   let paramNameElement = paramCache[`name-${paramId}`] as HTMLDivElement | undefined;
   let paramValueElement = paramCache[`value-${paramId}`] as HTMLDivElement | undefined;

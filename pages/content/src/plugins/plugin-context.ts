@@ -53,7 +53,7 @@ export function createPluginContext(pluginName: string): PluginContextType {
       tabs: chrome.tabs,
     },
     logger: createLogger(pluginName),
-    getConfig: <T extends Record<string, any>>() => {
+    getConfig: <T extends Record<string, unknown>>() => {
       const adapterStoreState = useAdapterStore.getState();
       return adapterStoreState.registeredPlugins[pluginName]?.config.settings as T | undefined;
     },

@@ -9,20 +9,20 @@ import type { ServerConfig, ConnectionStatus, Tool } from './stores';
 // Base message structure for all communication
 export interface BaseMessage {
   type: string;
-  payload?: any;
+  payload?: unknown;
   origin: 'content' | 'background' | 'popup' | 'options';
   timestamp: number;
   id?: string;
 }
 
 // Request message structure
-export interface RequestMessage<T = any> extends BaseMessage {
+export interface RequestMessage<T = unknown> extends BaseMessage {
   payload: T;
   expectResponse?: boolean;
 }
 
 // Response message structure
-export interface ResponseMessage<T = any> extends BaseMessage {
+export interface ResponseMessage<T = unknown> extends BaseMessage {
   payload?: T;
   error?: string;
   success?: boolean;
@@ -43,12 +43,12 @@ export interface CallToolRequest {
 }
 
 export interface CallToolResponse {
-  result: any;
+  result: unknown;
   callId?: string;
 }
 
 // Connection status
-export interface GetConnectionStatusRequest {}
+export type GetConnectionStatusRequest = Record<string, never>;
 
 export interface GetConnectionStatusResponse {
   status: ConnectionStatus;
@@ -66,7 +66,7 @@ export interface GetToolsResponse {
 }
 
 // Force reconnect
-export interface ForceReconnectRequest {}
+export type ForceReconnectRequest = Record<string, never>;
 
 export interface ForceReconnectResponse {
   isConnected: boolean;
@@ -75,7 +75,7 @@ export interface ForceReconnectResponse {
 }
 
 // Server configuration
-export interface GetServerConfigRequest {}
+export type GetServerConfigRequest = Record<string, never>;
 
 export interface GetServerConfigResponse {
   config: ServerConfig;
@@ -182,7 +182,7 @@ export interface McpError {
   category: ErrorCategory;
   message: string;
   code?: string | number;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
   timestamp: number;
 }
 

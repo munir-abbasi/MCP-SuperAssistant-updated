@@ -12,8 +12,8 @@ export type PrimitiveValue = {
   name: string;
   description?: string;
   uri?: string;
-  inputSchema?: any;
-  arguments?: any[];
+  inputSchema?: Record<string, unknown>;
+  arguments?: unknown[];
 };
 
 export type Primitive = {
@@ -29,7 +29,7 @@ export interface Tool {
 }
 
 // Callback types for MCP operations
-export type ToolCallCallback = (result: any, error?: string) => void;
+export type ToolCallCallback = (result: unknown, error?: string) => void;
 export type ConnectionStatusCallback = (isConnected: boolean) => void;
 
 // Request tracking for tool calls
@@ -58,9 +58,14 @@ export interface ServerConfig {
 export interface BackgroundCommunication {
   serverStatus: 'connected' | 'disconnected' | 'error' | 'reconnecting';
   availableTools: Tool[];
-  callTool: (toolName: string, args: { [key: string]: unknown }) => Promise<any>;
+  callTool: (toolName: string, args: { [key: string]: unknown }) => Promise<unknown>;
   getAvailableTools: () => Promise<Tool[]>;
-  sendMessage: (tool: any) => Promise<string>;
+  sendMessage: (tool: {
+    name?: string;
+    args?: Record<string, unknown>;
+    toolName?: string;
+    rawArguments?: string;
+  }) => Promise<string>;
   refreshTools: (forceRefresh?: boolean) => Promise<Tool[]>;
   forceReconnect: () => Promise<boolean>;
   isReconnecting: boolean;

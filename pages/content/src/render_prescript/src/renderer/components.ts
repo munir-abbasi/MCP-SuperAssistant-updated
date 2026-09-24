@@ -1,7 +1,7 @@
 import type { ParamValueElement } from '../core/types';
-import { StabilizedBlock } from '../core/types';
+import { StabilizedBlock as _StabilizedBlock } from '../core/types';
 import { CONFIG } from '../core/config';
-import { safelySetContent } from '../utils/index';
+import { safelySetContent as _safelySetContent } from '../utils/index';
 import { storeExecutedFunction, generateContentSignature } from '../mcpexecute/storage';
 import { checkAndDisplayFunctionHistory, createHistoryPanel, updateHistoryPanel } from './functionHistory';
 import { extractJSONParameters, stripLanguageTags, extractCleanContent } from '../parser/jsonFunctionParser';
@@ -11,12 +11,28 @@ import { createLogger } from '@extension/shared/lib/logger';
 
 const logger = createLogger('AdapterAccess');
 
+export interface RenderMcpClient {
+  isReady?: () => boolean;
+  callTool: (toolName: string, args: Record<string, unknown>, callId?: string) => Promise<unknown>;
+}
+
+export interface RenderAdapter {
+  capabilities?: unknown[];
+  insertText?: (text: string, options?: { targetElement?: HTMLElement }) => Promise<boolean>;
+  attachFile?: (file: File, options?: { inputElement?: HTMLInputElement }) => Promise<boolean>;
+  submitForm?: unknown;
+  supportsFileUpload?: () => unknown;
+  insertTextIntoInput?: unknown;
+}
+
 declare global {
   interface Window {
-    mcpAdapter?: any;
-    getCurrentAdapter?: () => any;
-    mcpClient?: any;
-    pluginRegistry?: any;
+    mcpAdapter?: RenderAdapter;
+    getCurrentAdapter?: () => RenderAdapter | null;
+    mcpClient?: RenderMcpClient;
+    pluginRegistry?: {
+      getActivePlugin: () => { name: string; capabilities: unknown[] } | null;
+    };
   }
 }
 
@@ -24,10 +40,10 @@ declare global {
  * Get the current active adapter through the new plugin-based system
  * Falls back to legacy global adapters for backward compatibility
  */
-function getCurrentAdapter(): any {
+function getCurrentAdapter(): RenderAdapter | null {
   try {
     // First try to get adapter through the new plugin registry system
-    const pluginRegistry = (window as any).pluginRegistry;
+    const pluginRegistry = window.pluginRegistry;
     if (pluginRegistry && typeof pluginRegistry.getActivePlugin === 'function') {
       const activePlugin = pluginRegistry.getActivePlugin();
       if (activePlugin && activePlugin.capabilities && activePlugin.capabilities.length > 0) {
@@ -285,7 +301,7 @@ export const addRawXmlToggle = (blockDiv: HTMLDivElement, rawContent: string): v
  *
  * @param paramValueDiv Parameter value div element
  */
-export const setupAutoScroll = (paramValueDiv: ParamValueElement): void => {
+export const setupAutoScroll = (_paramValueDiv: ParamValueElement): void => {
   // Auto scroll disabled.
 };
 
@@ -336,13 +352,13 @@ export const smoothlyUpdateBlockContent = (
 
   // Skip updates for completed blocks to prevent jitter
   const blockId = block.getAttribute('data-block-id');
-  if (blockId && (window as any).completedStreams?.has(blockId)) {
+  if (blockId && window.completedStreams?.has(blockId)) {
     if (CONFIG.debug) logger.debug(`Skipping update for completed block ${blockId}`);
     return;
   }
 
   // Skip updates if block is currently resyncing
-  if (blockId && (window as any).resyncingBlocks?.has(blockId)) {
+  if (blockId && window.resyncingBlocks?.has(blockId)) {
     if (CONFIG.debug) logger.debug(`Skipping update for resyncing block ${blockId}`);
     return;
   }
@@ -386,7 +402,7 @@ export const smoothlyUpdateBlockContent = (
         const template = document.createElement('template');
         template.innerHTML = content;
         fragment.appendChild(template.content);
-      } catch (e) {
+      } catch (_e) {
         // Fallback for CSP-restricted environments
         const div = document.createElement('div');
         div.textContent = content;
@@ -589,7 +605,7 @@ export const addExecuteButton = (blockDiv: HTMLDivElement, rawContent: string): 
   const isJSON = rawContent.includes('"type"') && rawContent.includes('function_call');
   const functionName = extractFunctionName(rawContent);
 
-  let parameters: Record<string, any>;
+  let parameters: Record<string, unknown>;
   let callId: string;
 
   if (isJSON) {
@@ -613,7 +629,7 @@ export const addExecuteButton = (blockDiv: HTMLDivElement, rawContent: string): 
           extractedCallId = parsed.call_id.toString();
           break;
         }
-      } catch (e) {
+      } catch (_e) {
         // Skip invalid lines
       }
     }
@@ -727,7 +743,7 @@ export const addExecuteButton = (blockDiv: HTMLDivElement, rawContent: string): 
 
     try {
       // Use global mcpClient instead of mcpHandler
-      const mcpClient = (window as any).mcpClient;
+      const mcpClient = window.mcpClient;
 
       if (!mcpClient) {
         resetButtonState();
@@ -765,7 +781,7 @@ export const addExecuteButton = (blockDiv: HTMLDivElement, rawContent: string): 
 
         // Update history panel with mcpClient reference
         updateHistoryPanel(historyPanel, executionData, mcpClient);
-      } catch (toolError: any) {
+      } catch (toolError: unknown) {
         resetButtonState();
 
         // Enhanced error handling for connection issues
@@ -782,7 +798,7 @@ export const addExecuteButton = (blockDiv: HTMLDivElement, rawContent: string): 
 
         displayResult(resultsPanel, loadingIndicator, false, errorMessage);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       resetButtonState();
       resultsPanel.style.display = 'block';
 
@@ -830,7 +846,7 @@ const extractFunctionName = (rawContent: string): string | null => {
         if (parsed.type === 'function_call_start' && parsed.name) {
           return parsed.name;
         }
-      } catch (e) {
+      } catch (_e) {
         // Skip invalid JSON lines
       }
     }
@@ -849,18 +865,18 @@ const extractFunctionName = (rawContent: string): string | null => {
  * @param rawContent Raw XML content
  * @returns Object with parameter names and values
  */
-export const extractFunctionParameters = (rawContent: string): Record<string, any> => {
-  const parameters: Record<string, any> = {};
+export const extractFunctionParameters = (rawContent: string): Record<string, unknown> => {
+  const parameters: Record<string, unknown> = {};
 
   // Use pre-compiled regex for better performance
   let match;
   while ((match = PARAM_REGEX.exec(rawContent)) !== null) {
     const name = match[1];
     const type = match[2] || 'string';
-    let value: any = match[3].trim();
+    let value: unknown = match[3].trim();
 
     // Check for CDATA using pre-compiled regex
-    const cdataMatch = CDATA_REGEX.exec(value);
+    const cdataMatch = CDATA_REGEX.exec(value as string);
     if (cdataMatch) {
       try {
         value = cdataMatch[1].trim();
@@ -872,33 +888,35 @@ export const extractFunctionParameters = (rawContent: string): Record<string, an
     }
 
     // Optimized type parsing with pre-compiled regexes
+    const stringValue = value as string;
     switch (type) {
       case 'json':
         try {
-          value = JSON.parse(value);
+          value = JSON.parse(stringValue);
         } catch (e) {
           logger.warn(`Failed to parse JSON for parameter '${name}'.`, e);
         }
         break;
 
-      case 'number':
-        const num = parseFloat(value);
+      case 'number': {
+        const num = parseFloat(stringValue);
         if (!isNaN(num)) value = num;
         break;
+      }
 
       case 'boolean':
-        value = value.toLowerCase() === 'true';
+        value = stringValue.toLowerCase() === 'true';
         break;
 
       default:
         // Auto-detect numeric, boolean, and JSON-like values
-        if (NUMBER_REGEX.test(value)) {
-          value = parseFloat(value);
-        } else if (BOOLEAN_REGEX.test(value)) {
-          value = value.toLowerCase() === 'true';
+        if (NUMBER_REGEX.test(stringValue)) {
+          value = parseFloat(stringValue);
+        } else if (BOOLEAN_REGEX.test(stringValue)) {
+          value = stringValue.toLowerCase() === 'true';
         } else {
           // Try to parse as JSON if it looks like JSON (starts with { or [)
-          const trimmedValue = value.trim();
+          const trimmedValue = stringValue.trim();
           if (
             (trimmedValue.startsWith('{') && trimmedValue.endsWith('}')) ||
             (trimmedValue.startsWith('[') && trimmedValue.endsWith(']'))
@@ -906,7 +924,7 @@ export const extractFunctionParameters = (rawContent: string): Record<string, an
             try {
               value = JSON.parse(trimmedValue);
               if (CONFIG.debug) logger.debug(`Auto-parsed JSON for parameter ${name}:`, value);
-            } catch (e) {
+            } catch (_e) {
               // If JSON parsing fails, keep as string
               if (CONFIG.debug) logger.debug(`Failed to auto-parse JSON for parameter ${name}, keeping as string`);
             }
@@ -930,7 +948,7 @@ export const extractFunctionParameters = (rawContent: string): Record<string, an
  * Updated to work with the new plugin-based adapter system
  */
 const attachResultAsFile = async (
-  adapter: any,
+  adapter: RenderAdapter | null,
   functionName: string,
   callId: string,
   rawResultText: string,
@@ -978,7 +996,7 @@ const attachResultAsFile = async (
 
   const fileName = `${functionName}_result_call_id_${callId}.txt`;
   const file = new File([rawResultText], fileName, { type: 'text/plain' });
-  const originalButtonText = button.textContent || 'Attach File';
+  const _originalButtonText = button.textContent || 'Attach File';
   let confirmationText: string | null = null;
 
   // Optimized button state management
@@ -1281,7 +1299,7 @@ export const displayResult = (
   resultsPanel: HTMLDivElement,
   loadingIndicator: HTMLDivElement,
   success: boolean,
-  result: any,
+  result: unknown,
 ): void => {
   // Cache attributes for performance
   const callId = resultsPanel.getAttribute('data-call-id') || '';
@@ -1306,13 +1324,13 @@ export const displayResult = (
   };
 
   // Optimized error message processing
-  const processErrorMessage = (errorResult: any): string => {
+  const processErrorMessage = (errorResult: unknown): string => {
     let errorMessage = '';
 
     if (typeof errorResult === 'string') {
       errorMessage = errorResult;
     } else if (errorResult && typeof errorResult === 'object') {
-      errorMessage = errorResult.message || 'An unknown error occurred';
+      errorMessage = (errorResult as { message?: string }).message || 'An unknown error occurred';
     } else {
       errorMessage = 'An unknown error occurred';
     }
@@ -1352,12 +1370,13 @@ export const displayResult = (
     // Process result data efficiently
     if (typeof result === 'object') {
       try {
+        const typedResult = result as { content?: Array<{ type?: string; text?: string }> } | null;
         // Check if result has the new format with content array
-        if (result && result.content && Array.isArray(result.content)) {
+        if (typedResult && typedResult.content && Array.isArray(typedResult.content)) {
           // Extract text from content array
-          const textParts = result.content
-            .filter((item: any) => item.type === 'text' && item.text)
-            .map((item: any) => item.text);
+          const textParts = typedResult.content
+            .filter(item => item.type === 'text' && item.text)
+            .map(item => item.text);
 
           if (textParts.length > 0) {
             rawResultText = textParts.join('\n');
@@ -1392,7 +1411,7 @@ export const displayResult = (
           });
           resultContent.appendChild(pre);
         }
-      } catch (e) {
+      } catch (_e) {
         rawResultText = String(result);
         resultContent.textContent = rawResultText;
       }
@@ -1432,7 +1451,7 @@ export const displayResult = (
     }) as HTMLButtonElement;
 
     // Cache button text element
-    const insertButtonText = insertButton.querySelector('span')!;
+    const _insertButtonText = insertButton.querySelector('span')!;
 
     // Optimized insert button click handler
     insertButton.onclick = async () => {

@@ -2,6 +2,16 @@ import { createLogger } from '@extension/shared/lib/logger';
 
 const logger = createLogger('Index');
 
+declare global {
+  interface Window {
+    __pluginSystem?: {
+      getRegistry: () => Promise<unknown>;
+      cleanup: () => Promise<void>;
+      initialize: () => Promise<unknown>;
+    };
+  }
+}
+
 export * from './plugin-types';
 export { pluginRegistry, initializePluginRegistry, cleanupPluginRegistry } from './plugin-registry';
 export { BaseAdapterPlugin } from './adapters/base.adapter';
@@ -32,7 +42,7 @@ export async function cleanupPluginSystem(): Promise<void> {
 
 // Development utilities
 if (process.env.NODE_ENV === 'development') {
-  (window as any).__pluginSystem = {
+  window.__pluginSystem = {
     async getRegistry() {
       const { pluginRegistry } = await import('./plugin-registry');
       return pluginRegistry;

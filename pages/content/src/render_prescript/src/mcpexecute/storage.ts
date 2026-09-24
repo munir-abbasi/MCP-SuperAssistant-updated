@@ -14,7 +14,7 @@ export interface ExecutedFunction {
   callId: string; // Unique ID for the function call
   contentSignature: string; // Hash or signature of the function content
   executedAt: number; // Timestamp when the function was executed
-  params: Record<string, any>; // Parameters used in the function call
+  params: Record<string, unknown>; // Parameters used in the function call
 }
 
 // Define the URL-based storage structure
@@ -37,7 +37,7 @@ const STORAGE_KEY = 'mcp_url_based_function_history';
 export const storeExecutedFunction = (
   functionName: string,
   callId: string,
-  params: Record<string, any>,
+  params: Record<string, unknown>,
   contentSignature: string,
 ): ExecutedFunction => {
   // Get current URL
@@ -76,7 +76,7 @@ export const storeExecutedFunction = (
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(storage));
         saved = true;
-      } catch (error) {
+      } catch (_error) {
         retries++;
         // Short delay before retrying
         if (retries < maxRetries) {
@@ -237,11 +237,11 @@ export const getPreviousExecutionLegacy = (callId: string, contentSignature: str
  * @param params Parameters of the function call
  * @returns A string signature representing the function call
  */
-export const generateContentSignature = (functionName: string, params: Record<string, any>): string => {
+export const generateContentSignature = (functionName: string, params: Record<string, unknown>): string => {
   // Create a simple hash of the function name and parameters
   try {
     // Sort keys of params for deterministic stringification
-    const sortedParams: Record<string, any> = {};
+    const sortedParams: Record<string, unknown> = {};
     Object.keys(params)
       .sort()
       .forEach(key => {
@@ -274,7 +274,7 @@ export const formatExecutionTime = (timestamp: number): string => {
   try {
     const date = new Date(timestamp);
     return date.toLocaleString();
-  } catch (error) {
+  } catch (_error) {
     return 'Unknown date';
   }
 };

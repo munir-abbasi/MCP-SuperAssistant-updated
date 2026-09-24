@@ -48,6 +48,7 @@ const ServerStatus: React.FC<ServerStatusProps> = ({ status: initialStatus }) =>
 
   // Get communication methods with error handling (still needed for some operations)
   const communicationMethods = useMcpCommunication();
+  const forceConnectionStatusCheck = communicationMethods.forceConnectionStatusCheck;
 
   // Use connection status from store, fallback to prop
   const status = connectionStatus || initialStatus || 'unknown';
@@ -139,10 +140,10 @@ const ServerStatus: React.FC<ServerStatusProps> = ({ status: initialStatus }) =>
   // Force immediate connection status check on mount
   useEffect(() => {
     const checkImmediateStatus = async () => {
-      if (communicationMethods.forceConnectionStatusCheck) {
+      if (forceConnectionStatusCheck) {
         try {
           logMessage('[ServerStatus] Forcing immediate connection status check on mount');
-          await communicationMethods.forceConnectionStatusCheck();
+          await forceConnectionStatusCheck();
         } catch (error) {
           logMessage(
             `[ServerStatus] Immediate status check failed: ${error instanceof Error ? error.message : String(error)}`,
@@ -154,7 +155,7 @@ const ServerStatus: React.FC<ServerStatusProps> = ({ status: initialStatus }) =>
     // Small delay to ensure everything is initialized
     const timeoutId = setTimeout(checkImmediateStatus, 100);
     return () => clearTimeout(timeoutId);
-  }, []); // Run only once on mount
+  }, [forceConnectionStatusCheck]);
 
   // Update status message based on connection state from store
   useEffect(() => {

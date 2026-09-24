@@ -11,18 +11,10 @@ import {
   storeExecutedFunction,
   getPreviousExecution,
 } from '../mcpexecute/storage';
-import { displayResult } from './components';
+import { displayResult, type RenderMcpClient } from './components';
 import { createLogger } from '@extension/shared/lib/logger';
 
-// Add type declaration for global mcpClient access
-
 const logger = createLogger('FunctionHistory');
-
-declare global {
-  interface Window {
-    mcpClient?: any;
-  }
-}
 
 /**
  * Create a history panel for previously executed functions
@@ -34,8 +26,8 @@ declare global {
  */
 export const createHistoryPanel = (
   blockDiv: HTMLDivElement,
-  callId: string,
-  contentSignature: string,
+  _callId: string,
+  _contentSignature: string,
 ): HTMLDivElement => {
   // First, remove any existing history panels to ensure we only have one
   const existingPanels = blockDiv.querySelectorAll('.function-history-panel');
@@ -81,7 +73,7 @@ export const createHistoryPanel = (
 export const updateHistoryPanel = (
   historyPanel: HTMLDivElement,
   executionData: ExecutedFunction,
-  mcpClient: any,
+  mcpClient: RenderMcpClient | undefined,
 ): void => {
   // Clear existing content
   historyPanel.innerHTML = '';
@@ -172,7 +164,7 @@ export const updateHistoryPanel = (
 
         // Update the history panel with the new timestamp
         updateHistoryPanel(historyPanel, updatedExecutionData, mcpClient);
-      } catch (toolError: any) {
+      } catch (toolError: unknown) {
         // Enhanced error handling for different error types
         let errorMessage = toolError instanceof Error ? toolError.message : String(toolError);
 
@@ -187,7 +179,7 @@ export const updateHistoryPanel = (
 
         displayResult(resultsPanel, loadingIndicator, false, errorMessage);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error('Re-execute error:', error);
 
@@ -238,7 +230,7 @@ export const checkAndDisplayFunctionHistory = (
     const historyPanel = createHistoryPanel(blockDiv, callId, contentSignature);
 
     // Access the global mcpClient instead of mcpHandler
-    const mcpClient = (window as any).mcpClient;
+    const mcpClient = window.mcpClient;
 
     // Update the panel with the latest execution data
     updateHistoryPanel(historyPanel, latestExecution, mcpClient);

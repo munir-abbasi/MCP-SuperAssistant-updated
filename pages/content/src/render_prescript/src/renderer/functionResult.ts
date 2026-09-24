@@ -132,7 +132,7 @@ const setupExpandCollapse = (
       // Get current computed height including padding
       const currentHeight = expandableContent.scrollHeight;
       expandableContent.style.maxHeight = currentHeight + 'px';
-      expandableContent.offsetHeight; // Force reflow
+      void expandableContent.offsetHeight; // Force reflow
 
       requestAnimationFrame(() => {
         expandableContent.style.maxHeight = '0px';
@@ -274,7 +274,7 @@ const renderFunctionResultContent = (resultContent: string, contentArea: HTMLDiv
     // If it's JSON and has content array, render it properly
     if (jsonResult && jsonResult.content && Array.isArray(jsonResult.content)) {
       // Render each content item
-      jsonResult.content.forEach((item: any) => {
+      jsonResult.content.forEach((item: { type?: string; text: string; url?: string; alt?: string; code?: string }) => {
         if (item.type === 'text') {
           const textDiv = document.createElement('div');
           textDiv.className = 'function-result-text';
@@ -334,7 +334,7 @@ const renderFunctionResultContent = (resultContent: string, contentArea: HTMLDiv
       pre.textContent = JSON.stringify(jsonResult, null, 2);
       contentArea.appendChild(pre);
     }
-  } catch (e) {
+  } catch (_e) {
     // If not JSON, just display as text with proper line breaks
     contentArea.style.whiteSpace = 'pre-wrap';
     contentArea.style.wordBreak = 'break-word';
@@ -378,7 +378,7 @@ export const renderFunctionResult = (block: HTMLElement, isProcessingRef: { curr
 
     // Get the content of the block
     // let content = block.textContent || '';
-    let content = block.textContent || '';
+    const content = block.textContent || '';
 
     // Check if it contains MCP SuperAssistant system message tags
     if (

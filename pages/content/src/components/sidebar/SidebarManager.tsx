@@ -488,7 +488,7 @@ export class SidebarManager extends BaseSidebarManager {
         setTimeout(() => {
           const retryHasClass = document.documentElement.classList.contains('push-mode-enabled');
           const retryHasMargin = document.documentElement.style.marginRight !== '';
-          const retryHasWidth = document.documentElement.style.width !== '';
+          const _retryHasWidth = document.documentElement.style.width !== '';
           const retryComputedStyle = window.getComputedStyle(document.documentElement);
           const retryMarginApplied =
             retryComputedStyle.marginRight === expectedMargin || retryComputedStyle.transform.includes('translateX');

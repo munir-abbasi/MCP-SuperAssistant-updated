@@ -61,12 +61,11 @@ export class Logger implements ILogger {
   private isProductionEnvironment(): boolean {
     // Check Vite environment variable (injected at build time)
     try {
-      // @ts-ignore - import.meta.env is injected by Vite at build time
-      if (typeof import.meta !== 'undefined' && import.meta.env) {
-        // @ts-ignore
-        return import.meta.env.PROD === true;
+      const viteEnv = (import.meta as ImportMeta & { env?: { PROD?: boolean } }).env;
+      if (viteEnv) {
+        return viteEnv.PROD === true;
       }
-    } catch (e) {
+    } catch (_e) {
       // import.meta not available, continue to fallback
     }
 
@@ -78,7 +77,7 @@ export class Logger implements ILogger {
         // Production builds typically don't have 'dev' in the URL
         // This is a heuristic, adjust based on your build process
         return !url.includes('dev');
-      } catch (e) {
+      } catch (_e) {
         // If we can't determine, default to production for safety
       }
     }
@@ -135,7 +134,7 @@ export class Logger implements ILogger {
   /**
    * Format the log message with namespace prefix
    */
-  private formatMessage(...args: any[]): any[] {
+  private formatMessage(...args: unknown[]): unknown[] {
     if (this.namespace) {
       return [`[${this.namespace}]`, ...args];
     }
@@ -145,7 +144,7 @@ export class Logger implements ILogger {
   /**
    * Log a debug message
    */
-  debug(...args: any[]): void {
+  debug(...args: unknown[]): void {
     if (this.shouldLog(LogLevel.DEBUG)) {
       console.debug(...this.formatMessage(...args));
     }
@@ -154,7 +153,7 @@ export class Logger implements ILogger {
   /**
    * Log an info message
    */
-  info(...args: any[]): void {
+  info(...args: unknown[]): void {
     if (this.shouldLog(LogLevel.INFO)) {
       console.info(...this.formatMessage(...args));
     }
@@ -163,7 +162,7 @@ export class Logger implements ILogger {
   /**
    * Log a warning message
    */
-  warn(...args: any[]): void {
+  warn(...args: unknown[]): void {
     if (this.shouldLog(LogLevel.WARN)) {
       console.warn(...this.formatMessage(...args));
     }
@@ -172,7 +171,7 @@ export class Logger implements ILogger {
   /**
    * Log an error message
    */
-  error(...args: any[]): void {
+  error(...args: unknown[]): void {
     if (this.shouldLog(LogLevel.ERROR)) {
       console.error(...this.formatMessage(...args));
     }

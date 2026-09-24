@@ -11,8 +11,13 @@
  */
 
 import { eventBus } from '../events/event-bus';
-import type { EventMap } from '../events/event-types';
-import type { BaseMessage, RequestMessage, ResponseMessage, McpMessageType } from '../types/messages';
+import type { EventMap as _EventMap } from '../events/event-types';
+import type {
+  BaseMessage as _BaseMessage,
+  RequestMessage as _RequestMessage,
+  ResponseMessage as _ResponseMessage,
+  McpMessageType as _McpMessageType,
+} from '../types/messages';
 import { createLogger } from '@extension/shared/lib/logger';
 
 // Legacy compatibility interface
@@ -21,7 +26,7 @@ const logger = createLogger('ContextBridge');
 
 export interface ContextMessage {
   type: string;
-  payload?: any;
+  payload?: unknown;
   origin: 'content' | 'background' | 'popup' | 'options';
   timestamp: number;
   id?: string;
@@ -48,7 +53,10 @@ export class ContextBridgeDispatchError extends Error {
 class ContextBridge {
   private initialized = false;
   private messageListeners = new Map<string, Array<(message: ContextMessage) => void>>();
-  private pendingRequests = new Map<string, { resolve: Function; reject: Function; timeout: NodeJS.Timeout }>();
+  private pendingRequests = new Map<
+    string,
+    { resolve: (value: unknown) => void; reject: (reason?: unknown) => void; timeout: NodeJS.Timeout }
+  >();
   private config: ContextBridgeConfig;
   private isExtensionContextValid = true;
   private lastHealthCheck = 0;
@@ -199,9 +207,9 @@ class ContextBridge {
    * Handle Chrome runtime messages with enhanced error handling and validation
    */
   private handleChromeMessage(
-    message: any,
+    message: Partial<ContextMessage> & { command?: string; error?: string; expectResponse?: boolean },
     sender: chrome.runtime.MessageSender,
-    sendResponse: (response?: any) => void,
+    sendResponse: (response?: unknown) => void,
   ): boolean {
     try {
       if (this.config.enableLogging) {
@@ -331,9 +339,9 @@ class ContextBridge {
   async sendMessage(
     target: 'background' | 'popup' | 'options' | 'content',
     type: string,
-    payload?: any,
+    payload?: unknown,
     options: { timeout?: number; retries?: number } = {},
-  ): Promise<any> {
+  ): Promise<unknown> {
     // Check if extension context is valid
     if (!this.isExtensionContextValid) {
       throw new Error('Extension context is invalid - cannot send message');
@@ -389,9 +397,9 @@ class ContextBridge {
   private async attemptSendMessage(
     target: 'background' | 'popup' | 'options' | 'content',
     type: string,
-    payload?: any,
+    payload?: unknown,
     timeout: number = 5000,
-  ): Promise<any> {
+  ): Promise<unknown> {
     const messageId = this.generateMessageId();
     let dispatchState: BridgeDispatchState = 'not-dispatched';
     const message: ContextMessage = {
@@ -522,7 +530,7 @@ class ContextBridge {
   /**
    * Broadcast a message to all contexts
    */
-  broadcast(type: string, payload?: any, excludeOrigin?: ContextMessage['origin']): void {
+  broadcast(type: string, payload?: unknown, excludeOrigin?: ContextMessage['origin']): void {
     // Check if extension context is valid before attempting to broadcast
     if (!this.isExtensionContextValid) {
       if (this.config.enableLogging) {
@@ -598,14 +606,14 @@ class ContextBridge {
   /**
    * Sync store state across contexts
    */
-  syncStore(storeName: string, state: any): void {
+  syncStore(storeName: string, state: unknown): void {
     this.broadcast('store:sync', { storeName, state });
   }
 
   /**
    * Request store state from other contexts
    */
-  async requestStoreState(storeName: string, fromOrigin: ContextMessage['origin'] = 'background'): Promise<any> {
+  async requestStoreState(storeName: string, fromOrigin: ContextMessage['origin'] = 'background'): Promise<unknown> {
     return this.sendMessage(fromOrigin, 'store:request', { storeName });
   }
 

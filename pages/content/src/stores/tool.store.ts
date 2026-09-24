@@ -21,11 +21,11 @@ export interface ToolState {
   setAvailableTools: (tools: Tool[]) => void;
   addDetectedTool: (tool: DetectedTool) => void;
   clearDetectedTools: () => void;
-  startToolExecution: (toolName: string, parameters: Record<string, any>, callId?: string) => string; // Returns execution ID
+  startToolExecution: (toolName: string, parameters: Record<string, unknown>, callId?: string) => string; // Returns execution ID
   updateToolExecution: (execution: Partial<ToolExecution> & { id: string }) => void;
   completeToolExecution: (
     id: string,
-    result: any,
+    result: unknown,
     status: 'success' | 'error',
     error?: string,
     executionEvidence?: ToolExecution['executionEvidence'],
@@ -90,7 +90,7 @@ export const useToolStore = create<ToolState>()(
         logger.debug('[ToolStore] Detected tools cleared.');
       },
 
-      startToolExecution: (toolName: string, parameters: Record<string, any>, callId?: string): string => {
+      startToolExecution: (toolName: string, parameters: Record<string, unknown>, callId?: string): string => {
         const executionId = `exec_${toolName}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
         const newExecution: ToolExecution = {
           id: executionId,
@@ -131,7 +131,7 @@ export const useToolStore = create<ToolState>()(
 
       completeToolExecution: (
         id: string,
-        result: any,
+        result: unknown,
         status: 'success' | 'error',
         error?: string,
         executionEvidence?: ToolExecution['executionEvidence'],

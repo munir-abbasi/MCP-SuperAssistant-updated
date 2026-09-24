@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 // import { generateInstructions } from './instructionGenerator';
 import { generateInstructionsJson } from './instructionGeneratorJson';
 import { useUserPreferences, useToolEnablement } from '../../../hooks';
-import { useToolStore } from '../../../stores/tool.store';
+import { useToolStore as _useToolStore } from '../../../stores/tool.store';
 import { Typography } from '../ui';
 import { cn } from '@src/lib/utils';
 import { logMessage } from '@src/utils/helpers';
@@ -63,8 +63,16 @@ export const instructionsState = {
   },
 };
 
+/** Compatibility surface of the legacy adapter shim built in Sidebar. */
+interface SidebarAdapterCompat {
+  name: string;
+  insertTextIntoInput: (text: string) => unknown;
+  supportsFileUpload: () => boolean;
+  attachFile: (file: File) => Promise<unknown>;
+}
+
 interface InstructionManagerProps {
-  adapter: any;
+  adapter: SidebarAdapterCompat;
   tools: Array<{ name: string; schema: string; description: string }>;
 }
 
@@ -107,16 +115,16 @@ const ActionButton: React.FC<ActionButtonProps> = ({ onClick, disabled, loading,
 const InstructionManager: React.FC<InstructionManagerProps> = ({ adapter, tools }) => {
   // Use Zustand hooks for user preferences and tool enablement
   const { preferences, updatePreferences } = useUserPreferences();
-  const { enabledTools: enabledToolsSet, isToolEnabled } = useToolEnablement();
+  const { enabledTools: _enabledToolsSet, isToolEnabled } = useToolEnablement();
 
   const [instructions, setInstructions] = useState('');
   const [isEditing, setIsEditing] = useState(false);
-  const [isInserting, setIsInserting] = useState(false);
-  const [isAttaching, setIsAttaching] = useState(false);
-  const [isCopying, setIsCopying] = useState(false);
-  const [copySuccess, setCopySuccess] = useState(false);
-  const [insertSuccess, setInsertSuccess] = useState(false);
-  const [attachSuccess, setAttachSuccess] = useState(false);
+  const [_isInserting, setIsInserting] = useState(false);
+  const [_isAttaching, setIsAttaching] = useState(false);
+  const [_isCopying, setIsCopying] = useState(false);
+  const [_copySuccess, setCopySuccess] = useState(false);
+  const [_insertSuccess, setInsertSuccess] = useState(false);
+  const [_attachSuccess, setAttachSuccess] = useState(false);
 
   // Custom instructions state - get from preferences
   const [customInstructions, setCustomInstructions] = useState(preferences.customInstructions || '');
@@ -231,8 +239,6 @@ const InstructionManager: React.FC<InstructionManagerProps> = ({ adapter, tools 
 
   // Enhanced tool enablement change detection using a simpler approach
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-
     // Create a function to check for changes and update instructions
     const checkAndUpdateInstructions = () => {
       if (tools.length > 0) {
@@ -246,7 +252,7 @@ const InstructionManager: React.FC<InstructionManagerProps> = ({ adapter, tools 
     };
 
     // Set up a periodic check (every 500ms) to catch any missed updates
-    timeoutId = setInterval(checkAndUpdateInstructions, 500);
+    const timeoutId = setInterval(checkAndUpdateInstructions, 500);
 
     return () => {
       clearInterval(timeoutId);
@@ -278,9 +284,9 @@ const InstructionManager: React.FC<InstructionManagerProps> = ({ adapter, tools 
     });
 
     return unsubscribe;
-  }, []); // Empty dependency array to avoid recreating subscription
+  }, [instructions]);
 
-  const handleInsertInChat = useCallback(async () => {
+  const _handleInsertInChat = useCallback(async () => {
     if (!instructions) return;
 
     setIsInserting(true);
@@ -297,7 +303,7 @@ const InstructionManager: React.FC<InstructionManagerProps> = ({ adapter, tools 
     }
   }, [adapter, instructions]);
 
-  const handleCopyToClipboard = useCallback(async () => {
+  const _handleCopyToClipboard = useCallback(async () => {
     if (!instructions) return;
 
     setIsCopying(true);
@@ -314,7 +320,7 @@ const InstructionManager: React.FC<InstructionManagerProps> = ({ adapter, tools 
     }
   }, [instructions]);
 
-  const handleAttachAsFile = useCallback(async () => {
+  const _handleAttachAsFile = useCallback(async () => {
     if (!instructions || !adapter.supportsFileUpload()) return;
 
     setIsAttaching(true);

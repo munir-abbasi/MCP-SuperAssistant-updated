@@ -1,7 +1,7 @@
 import { CONFIG } from '../core/config';
 import { debounce } from '../utils/index';
 import { renderFunctionCall, renderedFunctionBlocks, processedElements } from '../renderer/index';
-import { stabilizeBlock, unstabilizeBlock } from '../renderer/components';
+import { stabilizeBlock as _stabilizeBlock, unstabilizeBlock as _unstabilizeBlock } from '../renderer/components';
 import {
   monitorNode,
   streamingObservers,
@@ -86,7 +86,7 @@ export const processUpdateQueue = (): void => {
   isProcessing = true;
   window._isProcessing = true;
 
-  const stabilizedBlocks = new Map<string, StabilizedBlock>();
+  const _stabilizedBlocks = new Map<string, StabilizedBlock>();
 
   try {
     // if (CONFIG.usePositionFixed) {

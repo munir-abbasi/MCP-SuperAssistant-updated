@@ -18,7 +18,7 @@ import {
 import { globalErrorHandler, performanceMonitor, circuitBreaker, contextBridge } from '../core';
 import { pluginRegistry, cleanupPluginSystem, createPluginContext } from '../plugins';
 import { initializeGlobalEventHandlers, cleanupGlobalEventHandlers } from '../events/event-handlers';
-import { logMessage } from '../utils/helpers';
+import { logMessage as _logMessage } from '../utils/helpers';
 import { createLogger } from '@extension/shared/lib/logger';
 import {
   initializeAnalyticsListeners,
@@ -29,6 +29,33 @@ import {
 // Simple logger implementation
 
 const logger = createLogger('MainInitializer');
+
+declare global {
+  interface Window {
+    _appDebug?: {
+      eventBus: typeof eventBus;
+      stores: {
+        app: typeof useAppStore;
+        connection: typeof useConnectionStore;
+        tool: typeof useToolStore;
+        ui: typeof useUIStore;
+        adapter: typeof useAdapterStore;
+      };
+      services: {
+        globalErrorHandler: typeof globalErrorHandler;
+        performanceMonitor: typeof performanceMonitor;
+        circuitBreaker: typeof circuitBreaker;
+        contextBridge: typeof contextBridge;
+      };
+      getStats: () => {
+        performance: ReturnType<typeof performanceMonitor.getStats>;
+        errors: ReturnType<typeof globalErrorHandler.getErrorStats>;
+        circuitBreaker: ReturnType<typeof circuitBreaker.getStats>;
+      };
+      clearData: () => void;
+    };
+  }
+}
 
 // class Logger {
 //   constructor(private prefix: string) {}
@@ -66,7 +93,7 @@ async function initializeCoreServices(): Promise<void> {
     logger.debug('Development mode enabled.');
     // Expose utilities to window for debugging if in a browser context
     if (typeof window !== 'undefined') {
-      (window as any)._appDebug = {
+      window._appDebug = {
         eventBus,
         stores: {
           app: useAppStore,
@@ -365,7 +392,7 @@ export function getInitializationStatus(): {
   isInitialized: boolean;
   initializationTime?: number;
   errorCount: number;
-  performanceStats: any;
+  performanceStats: ReturnType<typeof performanceMonitor.getStats>;
 } {
   return {
     isInitialized,

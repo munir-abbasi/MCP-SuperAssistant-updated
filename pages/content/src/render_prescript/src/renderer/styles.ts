@@ -1,7 +1,7 @@
 import { isDarkTheme } from '../utils/themeDetector';
 
 // Determine if dark theme should be used
-const useDarkTheme = isDarkTheme();
+const _useDarkTheme = isDarkTheme();
 
 export const styles = `
   /* CSS Custom Properties for Performance */

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { devtools, persist, createJSONStorage } from 'zustand/middleware';
-import { eventBus, initializeEventBus } from '../events'; // Assuming initializeEventBus might be called here or in a main initializer
+import { eventBus, initializeEventBus as _initializeEventBus } from '../events'; // Assuming initializeEventBus might be called here or in a main initializer
 import type { GlobalSettings } from '../types/stores';
 import { createLogger } from '@extension/shared/lib/logger';
 // Placeholder for initializePluginRegistry - will be properly imported when plugin system is built
@@ -113,7 +113,7 @@ export const useAppStore = create<AppState>()(
 
 // Listen to chrome.runtime.onMessage for site changes from background or popup
 if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
     if (message.type === 'NAVIGATION_COMPLETED' && message.url) {
       const newUrl = new URL(message.url);
       const currentHost = useAppStore.getState().currentHost;

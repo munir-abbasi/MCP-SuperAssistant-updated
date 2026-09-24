@@ -7,16 +7,30 @@ import { createLogger } from '@extension/shared/lib/logger';
 
 const logger = createLogger('DOMUtils');
 
-let scriptSanitizerPolicy: any | null = null;
-if (typeof window !== 'undefined' && (window as any).trustedTypes && (window as any).trustedTypes.createPolicy) {
+interface TrustedTypesPolicyLike {
+  createHTML(input: string): string;
+}
+
+interface TrustedTypesFactoryLike {
+  createPolicy(name: string, rules: { createHTML(input: string): string }): TrustedTypesPolicyLike;
+  policies?: { get(name: string): TrustedTypesPolicyLike | undefined };
+}
+
+const trustedTypes =
+  typeof window !== 'undefined'
+    ? (window as Window & { trustedTypes?: TrustedTypesFactoryLike }).trustedTypes
+    : undefined;
+
+let scriptSanitizerPolicy: TrustedTypesPolicyLike | null = null;
+if (trustedTypes?.createPolicy) {
   try {
-    scriptSanitizerPolicy = (window as any).trustedTypes.createPolicy('scriptSanitizerPolicy', {
+    scriptSanitizerPolicy = trustedTypes.createPolicy('scriptSanitizerPolicy', {
       createHTML: (input: string) => input,
     });
   } catch (e) {
     // Policy might already exist or creation failed
-    if ((window as any).trustedTypes && (window as any).trustedTypes.policies) {
-      scriptSanitizerPolicy = (window as any).trustedTypes.policies.get('scriptSanitizerPolicy') || null;
+    if (trustedTypes.policies) {
+      scriptSanitizerPolicy = trustedTypes.policies.get('scriptSanitizerPolicy') || null;
     }
     if (!scriptSanitizerPolicy && console) {
       logger.warn('Could not create or retrieve Trusted Types policy "scriptSanitizerPolicy".', e);
@@ -33,7 +47,7 @@ export const decodeHtml = (html: string): string => {
   if (scriptSanitizerPolicy) {
     // Assign TrustedHTML directly to innerHTML
     txt.innerHTML = scriptSanitizerPolicy.createHTML(html);
-  } else if (typeof window !== 'undefined' && !(window as any).trustedTypes) {
+  } else if (!trustedTypes) {
     // Fallback ONLY if Trusted Types are not supported/enforced
     txt.innerHTML = html;
   } else {
@@ -58,7 +72,7 @@ export const formatOsascript = (cmd: string): string => {
 export const safelySetContent = (
   element: ParamValueElement,
   content: string | null | undefined,
-  isHtml = false,
+  _isHtml = false,
 ): void => {
   try {
     content = content || ''; // Ensure content is not null/undefined

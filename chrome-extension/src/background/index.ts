@@ -24,6 +24,8 @@ import type {
   McpMessageType,
   CallToolRequest,
   GetToolsRequest,
+  HeartbeatRequest,
+  UpdateServerConfigRequest,
   ConnectionStatusChangedBroadcast,
   ToolUpdateBroadcast,
   ServerConfigUpdatedBroadcast,
@@ -830,39 +832,40 @@ async function handleMcpMessage(
       }
 
       case 'mcp:update-server-config': {
-        const { config } = payload;
+        const { config } = payload as UpdateServerConfigRequest;
         if (!config || typeof config.uri !== 'string') {
           throw new Error('Invalid server config: uri is required');
         }
+        const newUri = config.uri;
 
         // Auto-detect connection type from URI if not specified
         let newType = config.connectionType as ConnectionType;
         logger.debug(`Received connection type: ${config.connectionType}, parsed as: ${newType}`);
         if (!newType) {
           try {
-            const url = new URL(config.uri);
+            const url = new URL(newUri);
             newType = url.protocol === 'ws:' || url.protocol === 'wss:' ? 'websocket' : 'sse';
           } catch {
             newType = connectionType; // fallback to current type
           }
         }
-        logger.debug(`Updating server config to: ${config.uri} (${newType})`);
+        logger.debug(`Updating server config to: ${newUri} (${newType})`);
 
         // Update storage and background script state
         await chrome.storage.local.set({
-          mcpServerUrl: config.uri,
+          mcpServerUrl: newUri,
           mcpConnectionType: newType,
         });
-        updateServerConfig(config.uri, newType);
+        updateServerConfig(newUri, newType);
 
         // Broadcast config update immediately
-        broadcastConfigUpdateToContentScripts({ uri: config.uri, connectionType: newType });
+        broadcastConfigUpdateToContentScripts({ uri: newUri, connectionType: newType });
 
         // Start async reconnection but don't block the response
         const reconnectPromise = (async () => {
           try {
             logger.debug('[Background] Starting async reconnection after config update...');
-            await forceReconnectToMcpServer(config.uri, newType);
+            await forceReconnectToMcpServer(newUri, newType);
             const isConnected = await checkMcpServerConnection();
             updateConnectionStatus(isConnected);
             broadcastConnectionStatusToContentScripts(isConnected);
@@ -871,7 +874,7 @@ async function handleMcpMessage(
             // If connected, fetch and broadcast tools
             if (isConnected) {
               try {
-                const primitives = await getPrimitivesWithBackwardsCompatibility(config.uri, true, newType);
+                const primitives = await getPrimitivesWithBackwardsCompatibility(newUri, true, newType);
                 const tools = normalizeTools(primitives);
                 broadcastToolsUpdateToContentScripts(tools);
                 logger.debug(`Broadcasted ${tools.length} normalized tools after config update`);
@@ -899,7 +902,7 @@ async function handleMcpMessage(
 
       case 'mcp:heartbeat': {
         // Handle heartbeat from content script
-        const { timestamp } = payload;
+        const { timestamp } = payload as HeartbeatRequest;
         const isConnected = isMcpServerConnected();
 
         result = {

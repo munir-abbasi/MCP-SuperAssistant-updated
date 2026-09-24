@@ -13,13 +13,13 @@ const logger = createLogger('DOMUtils');
 
 export function createElement<K extends keyof HTMLElementTagNameMap>(
   tag: K,
-  attrs: Record<string, any> = {},
+  attrs: Record<string, unknown> = {},
   children: (Node | string)[] = [],
 ): HTMLElementTagNameMap[K] {
   const element = document.createElement(tag);
   for (const key in attrs) {
     if (Object.prototype.hasOwnProperty.call(attrs, key)) {
-      element.setAttribute(key, attrs[key]);
+      element.setAttribute(key, String(attrs[key]));
     }
   }
   children.forEach(child => {

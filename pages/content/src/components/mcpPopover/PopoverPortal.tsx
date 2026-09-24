@@ -1,11 +1,11 @@
 import type React from 'react';
-import { useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
 interface PopoverPortalProps {
   children: React.ReactNode;
   isOpen: boolean;
-  triggerRef: React.RefObject<any>;
+  triggerRef: React.RefObject<HTMLElement | null>;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
 }
@@ -14,7 +14,7 @@ const PopoverPortal: React.FC<PopoverPortalProps> = ({ children, isOpen, trigger
   const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [_position, setPosition] = useState({ x: 0, y: 0 });
   const dragHandleRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -149,7 +149,7 @@ const PopoverPortal: React.FC<PopoverPortalProps> = ({ children, isOpen, trigger
       };
     }
     return undefined;
-  }, [isOpen, portalContainer, triggerRef]);
+  }, [isDragging, isOpen, portalContainer, triggerRef]);
 
   // Handle drag start
   const handleDragStart = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -169,25 +169,41 @@ const PopoverPortal: React.FC<PopoverPortalProps> = ({ children, isOpen, trigger
   };
 
   // Handle drag move
-  const handleDragMove = (e: MouseEvent) => {
-    if (!isDragging || !portalContainer) return;
+  const handleDragMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isDragging || !portalContainer) return;
 
-    // Calculate new position
-    const left = e.clientX - dragOffset.x;
-    const top = e.clientY - dragOffset.y;
+      // Calculate new position
+      const left = e.clientX - dragOffset.x;
+      const top = e.clientY - dragOffset.y;
 
-    // Apply the new position
+      // Apply the new position
+      portalContainer.style.left = `${left}px`;
+      portalContainer.style.top = `${top}px`;
+      portalContainer.style.transform = 'none';
+
+      // Update the position state
+      setPosition({ x: left, y: top });
+    },
+    [dragOffset.x, dragOffset.y, isDragging, portalContainer],
+  );
+
+  // Handle drag end
+  const handleDragEnd = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  const handleDragKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!portalContainer || !['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+
+    event.preventDefault();
+    const rect = portalContainer.getBoundingClientRect();
+    const left = rect.left + (event.key === 'ArrowLeft' ? -10 : event.key === 'ArrowRight' ? 10 : 0);
+    const top = rect.top + (event.key === 'ArrowUp' ? -10 : event.key === 'ArrowDown' ? 10 : 0);
     portalContainer.style.left = `${left}px`;
     portalContainer.style.top = `${top}px`;
     portalContainer.style.transform = 'none';
-
-    // Update the position state
     setPosition({ x: left, y: top });
-  };
-
-  // Handle drag end
-  const handleDragEnd = () => {
-    setIsDragging(false);
   };
 
   // Add and remove event listeners for drag
@@ -204,7 +220,7 @@ const PopoverPortal: React.FC<PopoverPortalProps> = ({ children, isOpen, trigger
       window.removeEventListener('mousemove', handleDragMove);
       window.removeEventListener('mouseup', handleDragEnd);
     };
-  }, [isDragging]);
+  }, [handleDragEnd, handleDragMove, isDragging]);
 
   if (!portalContainer || !isOpen) return null;
 
@@ -221,7 +237,16 @@ const PopoverPortal: React.FC<PopoverPortalProps> = ({ children, isOpen, trigger
           transition: 'opacity 0.15s ease, backdrop-filter 0.15s ease, background-color 0.15s ease',
         }}>
         {children}
-        <div ref={dragHandleRef} className="mcp-drag-handle" onMouseDown={handleDragStart} title="Drag to move" />
+        <div
+          ref={dragHandleRef}
+          className="mcp-drag-handle"
+          onMouseDown={handleDragStart}
+          onKeyDown={handleDragKeyDown}
+          role="button"
+          aria-label="Drag to move popover"
+          tabIndex={0}
+          title="Drag to move"
+        />
       </div>
     </div>,
     portalContainer,

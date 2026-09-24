@@ -9,6 +9,12 @@ import { createLogger } from '@extension/shared/lib/logger';
 
 const logger = createLogger('mcpPopover');
 
+declare global {
+  interface WindowEventMap {
+    'ui:sidebar-toggle': CustomEvent<{ visible: boolean; reason?: string }>;
+  }
+}
+
 export interface MCPToggleState {
   mcpEnabled: boolean;
   autoInsert: boolean;
@@ -589,7 +595,7 @@ const ToggleItem: React.FC<ToggleItemProps> = ({ id, label, checked, disabled, o
           justifyContent: 'flex-start',
         }}>
         <div style={{ width: '36px', marginRight: '10px' }}>
-          <label className="mcp-toggle-checkbox" style={{ display: 'block' }}>
+          <label aria-label={`Toggle ${label}`} className="mcp-toggle-checkbox" style={{ display: 'block' }}>
             <input
               type="checkbox"
               id={id}
@@ -653,7 +659,7 @@ export const MCPPopover: React.FC<MCPPopoverProps> = ({ toggleStateManager, adap
       instructionsLength: instructionsState.instructions.length,
       preferences: preferences,
     });
-  }, [instructionsState.instructions, preferences]);
+  }, [preferences]);
 
   // Color scheme for the popover
   const theme = {
@@ -712,7 +718,7 @@ export const MCPPopover: React.FC<MCPPopoverProps> = ({ toggleStateManager, adap
   // Update state from manager
   const updateState = useCallback(() => {
     const currentState = toggleStateManager.getState();
-    setState(prevState => ({
+    setState(_prevState => ({
       ...currentState,
       mcpEnabled: mcpEnabledFromStore, // Always sync with persistent MCP state from store
     }));
@@ -787,13 +793,13 @@ export const MCPPopover: React.FC<MCPPopoverProps> = ({ toggleStateManager, adap
       setIsSidebarVisible(visible);
     };
 
-    window.addEventListener('ui:sidebar-toggle' as any, handleSidebarVisibilityChange);
+    window.addEventListener('ui:sidebar-toggle', handleSidebarVisibilityChange);
 
     // Also check activeSidebarManager if available
     const checkSidebarVisibility = () => {
-      const manager = (window as any).activeSidebarManager;
-      if (manager && manager._isVisible !== undefined) {
-        setIsSidebarVisible(manager._isVisible);
+      const manager = window.activeSidebarManager;
+      if (manager) {
+        setIsSidebarVisible(manager.getIsVisible());
       }
     };
 
@@ -802,7 +808,7 @@ export const MCPPopover: React.FC<MCPPopoverProps> = ({ toggleStateManager, adap
     const intervalId = setInterval(checkSidebarVisibility, 1000);
 
     return () => {
-      window.removeEventListener('ui:sidebar-toggle' as any, handleSidebarVisibilityChange);
+      window.removeEventListener('ui:sidebar-toggle', handleSidebarVisibilityChange);
       clearInterval(intervalId);
     };
   }, []);
@@ -934,7 +940,7 @@ export const MCPPopover: React.FC<MCPPopoverProps> = ({ toggleStateManager, adap
     logger.debug(`Toggle sidebar requested. Current state: ${isSidebarVisible}`);
 
     try {
-      const manager = (window as any).activeSidebarManager;
+      const manager = window.activeSidebarManager;
 
       if (manager) {
         if (isSidebarVisible) {
@@ -994,7 +1000,7 @@ export const MCPPopover: React.FC<MCPPopoverProps> = ({ toggleStateManager, adap
 
       const isPerplexity = activePlugin.name === 'Perplexity';
       const isGemini = activePlugin.name === 'Gemini';
-      let fileType = isPerplexity || isGemini ? 'text/plain' : 'text/markdown';
+      const fileType = isPerplexity || isGemini ? 'text/plain' : 'text/markdown';
       const fileExtension = fileType === 'text/plain' ? '.txt' : '.md';
       const fileName = `mcp_superassistant_instructions${fileExtension}`;
       const file = new File([instructions], fileName, { type: fileType });

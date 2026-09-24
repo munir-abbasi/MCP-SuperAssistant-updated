@@ -39,6 +39,16 @@ const ResizeHandle: React.FC<ResizeHandleProps> = ({
     document.body.style.userSelect = 'none';
   };
 
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+
+    event.preventDefault();
+    const delta = event.key === 'ArrowLeft' ? 10 : -10;
+    const newWidth = Math.max(minWidth, Math.min(maxWidth, currentWidthRef.current + delta));
+    currentWidthRef.current = newWidth;
+    onResize(newWidth);
+  };
+
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDragging) return;
@@ -109,7 +119,15 @@ const ResizeHandle: React.FC<ResizeHandleProps> = ({
         isDragging ? 'bg-blue-500' : 'bg-transparent hover:bg-blue-400/30',
         className,
       )}
-      onMouseDown={handleMouseDown}>
+      onMouseDown={handleMouseDown}
+      onKeyDown={handleKeyDown}
+      role="slider"
+      aria-label="Resize sidebar"
+      aria-orientation="vertical"
+      aria-valuemin={minWidth}
+      aria-valuemax={maxWidth}
+      aria-valuenow={currentWidthRef.current}
+      tabIndex={0}>
       <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1/2 h-16 w-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
         <div className="h-10 w-1 rounded-full bg-blue-500/70 shadow-md"></div>
       </div>

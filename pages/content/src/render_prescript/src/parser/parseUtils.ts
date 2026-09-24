@@ -78,7 +78,7 @@ export const stripNonASCIIPrefix = (content: string): string => {
   const prefix = content.substring(0, firstBrace);
 
   // Check if prefix contains only non-ASCII characters and whitespace
-  const hasNonASCII = /[^\x00-\x7F]/.test(prefix);
+  const hasNonASCII = /[^\p{ASCII}]/u.test(prefix);
   const hasValidJSONPrefix = /^(?:\s*[a-zA-Z_]+\s*:\s*)?$/.test(prefix);
 
   // If prefix has non-ASCII or looks like invalid JSON, strip it
@@ -186,7 +186,7 @@ export const extractJSONParameterValues = (content: string): Map<string, string>
       const value = typeof parsed.value === 'string' ? parsed.value : JSON.stringify(parsed.value);
       parameters.set(parsed.key, unescapeJSONString(value));
     }
-  } catch (e) {
+  } catch (_e) {
     // Fall back to regex extraction for partial/streaming content
     const paramPattern =
       /"type"\s*:\s*"parameter"[\s\S]*?"key"\s*:\s*"([^"]+)"[\s\S]*?"value"\s*:\s*"((?:[\s\S](?!""\s*}))*)/;

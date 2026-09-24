@@ -1,5 +1,5 @@
 import { BaseAdapterPlugin } from './base.adapter';
-import type { AdapterCapability, PluginContext } from '../plugin-types';
+import type { AdapterCapability, PluginContext as _PluginContext } from '../plugin-types';
 
 export class ExampleForumAdapter extends BaseAdapterPlugin {
   readonly name = 'ExampleForumAdapter';

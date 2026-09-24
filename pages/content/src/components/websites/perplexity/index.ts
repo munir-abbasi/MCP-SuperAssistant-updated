@@ -12,6 +12,3 @@ export * from './chatInputHandler';
 
 // Export sidebar components from common
 export { SidebarManager } from '@src/components/sidebar';
-
-// Export all functions from the perplexity module
-export * from './chatInputHandler';

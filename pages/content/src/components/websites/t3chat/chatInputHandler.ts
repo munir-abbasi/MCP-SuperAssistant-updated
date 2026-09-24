@@ -74,7 +74,7 @@ export const wrapInToolOutput = (content: string): string => {
  * @param data The data to format
  * @returns Formatted JSON string
  */
-export const formatAsJson = (data: any): string => {
+export const formatAsJson = (data: unknown): string => {
   return JSON.stringify(data, null, 2);
 };
 
@@ -250,7 +250,7 @@ export const attachFileToChatInput = (file: File): boolean => {
  * Submit the chat input
  * @returns True if successful, false otherwise
  */
-export const submitChatInput = async (maxWaitTime = 5000): Promise<boolean> => {
+export const submitChatInput = async (_maxWaitTime = 5000): Promise<boolean> => {
   try {
     // Find the chat input element
     let chatInput: HTMLElement | null = null;

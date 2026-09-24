@@ -32,10 +32,10 @@ export interface LoggerConfig {
  * Logger interface
  */
 export interface ILogger {
-  debug(...args: any[]): void;
-  info(...args: any[]): void;
-  warn(...args: any[]): void;
-  error(...args: any[]): void;
+  debug(...args: unknown[]): void;
+  info(...args: unknown[]): void;
+  warn(...args: unknown[]): void;
+  error(...args: unknown[]): void;
   setLevel(level: LogLevel | LogLevelString): void;
   getLevel(): LogLevel;
   setComponentLevel(component: string, level: LogLevel | LogLevelString): void;

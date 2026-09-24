@@ -1,6 +1,6 @@
 import { createLogger } from '@extension/shared/lib/logger';
 
-const logger = createLogger('useBackgroundCommunication');
+const _logger = createLogger('useBackgroundCommunication');
 
 // // pages/content/src/utils/backgroundCommunication.ts
 

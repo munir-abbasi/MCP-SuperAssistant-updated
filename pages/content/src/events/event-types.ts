@@ -8,7 +8,18 @@ import type {
   Tool,
 } from '../types/stores';
 import type { AdapterConfig } from '../plugins/plugin-types'; // Added for plugin:config-updated
-import type { RemoteNotification, FeatureFlag } from '../stores/config.store';
+import type { RemoteNotification, FeatureFlag, NotificationTargeting } from '../stores/config.store';
+import type { BaseMessage } from '../types/messages';
+
+export interface RuntimeErrorContext {
+  component?: string;
+  operation?: string;
+  user?: string;
+  source?: string;
+  details?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+  fromEventBus?: boolean;
+}
 
 export interface EventMap {
   // App lifecycle events
@@ -49,9 +60,9 @@ export interface EventMap {
   'adapter:capability-changed': { name: string; capabilities: string[] };
 
   // Sidebar events
-  'sidebar:toggle-requested': {};
-  'sidebar:show-with-outputs': {};
-  'sidebar:refresh-content': {};
+  'sidebar:toggle-requested': Record<string, never>;
+  'sidebar:show-with-outputs': Record<string, never>;
+  'sidebar:refresh-content': Record<string, never>;
 
   // Plugin events
   'plugin:registry-initialized': { timestamp: number; registeredPlugins: number };
@@ -70,17 +81,17 @@ export interface EventMap {
   'remote-config:fetch-failed': { error: string; timestamp: number; retryCount?: number };
   'remote-config:updated': { changes: string[]; timestamp: number };
   'remote-config:initialized': { timestamp: number; version: string };
-  'remote-config:adapter-configs-updated': { adapterConfigs: Record<string, any>; timestamp: number };
+  'remote-config:adapter-configs-updated': { adapterConfigs: Record<string, unknown>; timestamp: number };
 
   // Feature Flag events
   'feature-flags:updated': { flags: Record<string, FeatureFlag>; timestamp: number };
   'feature-flags:evaluated': { flagName: string; enabled: boolean; userSegment: string };
-  'feature-flag:enabled': { flagName: string; config?: any; timestamp: number };
+  'feature-flag:enabled': { flagName: string; config?: unknown; timestamp: number };
   'feature-flag:disabled': { flagName: string; reason?: string; timestamp: number };
 
   // Notification events (enhanced)
   'notification:remote-received': { notification: RemoteNotification; timestamp: number };
-  'notification:targeted': { notificationId: string; targeting: any; matched: boolean };
+  'notification:targeted': { notificationId: string; targeting: NotificationTargeting; matched: boolean };
   'notification:frequency-limited': { notificationId: string; reason: string };
   'notification:shown': { notificationId: string; source: string; timestamp: number };
   'notification:clicked': { notificationId: string; action?: string; timestamp: number };
@@ -88,24 +99,34 @@ export interface EventMap {
 
   // User Targeting events
   'user:segment-changed': { oldSegment: string; newSegment: string; timestamp: number };
-  'user:properties-updated': { properties: Record<string, any>; timestamp: number };
+  'user:properties-updated': { properties: Record<string, unknown>; timestamp: number };
 
   // Analytics events
-  'analytics:track': { event: string; parameters: Record<string, any> };
-  'analytics:user-property': { property: string; value: any };
+  'analytics:track': { event: string; parameters: Record<string, unknown> };
+  'analytics:user-property': { property: string; value: unknown };
 
   // App version events
   'app:version-updated': { oldVersion: string; newVersion: string; timestamp: number };
   'app:changelog-requested': { version: string; timestamp: number };
 
   // Performance events
-  'performance:measurement': { name: string; duration: number; timestamp: number; context?: Record<string, any> };
+  'performance:measurement': {
+    name: string;
+    duration: number;
+    timestamp: number;
+    context?: Record<string, unknown>;
+  };
   'performance:memory-usage': { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number };
-  'performance:memory-leak-detected': { snapshots: any[]; trend: number[] };
-  'performance:slow-operation': { name: string; duration: number; timestamp: number; context?: Record<string, any> };
+  'performance:memory-leak-detected': { snapshots: unknown[]; trend: number[] };
+  'performance:slow-operation': {
+    name: string;
+    duration: number;
+    timestamp: number;
+    context?: Record<string, unknown>;
+  };
 
   // Error events
-  'error:unhandled': { error: Error; context?: string | Record<string, any> };
+  'error:unhandled': { error: Error; context?: string | RuntimeErrorContext };
   'error:recovery-attempted': { error: string | Error; strategy: string };
   'error:circuit-breaker-opened': {
     operation: string;
@@ -113,25 +134,25 @@ export interface EventMap {
     error: Error;
     failureCount: number;
     nextAttemptTime: number;
-    stats: any;
+    stats: unknown;
   };
-  'error:circuit-breaker-closed': { operation: string; state: string; stats: any };
+  'error:circuit-breaker-closed': { operation: string; state: string; stats: unknown };
   'error:circuit-breaker-blocked': { operation: string; state: string; nextAttemptTime: number; error: Error };
   'error:circuit-breaker-half-open': { operation: string; state: string };
   'error:circuit-breaker-forced-open': { state: string; nextAttemptTime: number };
   'error:circuit-breaker-forced-closed': { state: string };
 
   // Context bridge events
-  'context:message-received': { message: any; sender: any };
-  'context:tab-updated': { tabId: number; url: string; changeInfo: any };
-  'context:broadcast': { event: string; data: any; excludeOrigin?: string };
+  'context:message-received': { message: BaseMessage; sender: chrome.runtime.MessageSender };
+  'context:tab-updated': { tabId: number; url: string; changeInfo: chrome.tabs.TabChangeInfo };
+  'context:broadcast': { event: string; data: unknown; excludeOrigin?: string };
   'context:bridge-initialized': { timestamp: number };
   'context:bridge-restored': { timestamp: number };
   'context:bridge-invalidated': { timestamp: number; error: string };
 
   // Additional error and recovery events
-  'error:breadcrumb': { message: string; category: string; data?: Record<string, any>; timestamp: number };
-  'error:pattern-detected': { pattern: string; count: number; error: Error; context: any };
+  'error:breadcrumb': { message: string; category: string; data?: Record<string, unknown>; timestamp: number };
+  'error:pattern-detected': { pattern: string; count: number; error: Error; context: unknown };
   'component:reset': { component?: string };
   'app:fallback-mode': { reason: string };
 

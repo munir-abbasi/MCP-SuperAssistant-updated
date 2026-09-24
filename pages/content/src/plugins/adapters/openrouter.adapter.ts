@@ -1,6 +1,13 @@
 import { BaseAdapterPlugin } from './base.adapter';
 import type { AdapterCapability, PluginContext } from '../plugin-types';
+import type { DetectedTool, ToolExecution } from '../../types/stores';
 import { createLogger } from '@extension/shared/lib/logger';
+
+declare global {
+  interface Window {
+    __mcpClipboardData?: DataTransfer;
+  }
+}
 
 /**
  * OpenRouter Adapter for OpenRouter (openrouter.ai)
@@ -223,7 +230,7 @@ export class OpenRouterAdapter extends BaseAdapterPlugin {
       } else if (targetElement.getAttribute('contenteditable') === 'true') {
         // For contenteditable elements
         const currentText = targetElement.textContent || '';
-        const newContent = currentText ? `${currentText}\n\n${text}` : text;
+        const _newContent = currentText ? `${currentText}\n\n${text}` : text;
 
         // Use execCommand for better compatibility with contenteditable
         if (currentText) {
@@ -433,7 +440,7 @@ export class OpenRouterAdapter extends BaseAdapterPlugin {
    * Attach a file to the OpenRouter chat input
    * Enhanced with better error handling and integration with new architecture
    */
-  async attachFile(file: File, options?: { inputElement?: HTMLInputElement }): Promise<boolean> {
+  async attachFile(file: File, _options?: { inputElement?: HTMLInputElement }): Promise<boolean> {
     this.context.logger.debug(`Attempting to attach file: ${file.name} (${file.size} bytes, ${file.type})`);
 
     try {
@@ -641,7 +648,7 @@ export class OpenRouterAdapter extends BaseAdapterPlugin {
       clipboardData.items.add(file);
 
       // Firefox-specific: Set up a global clipboard state
-      (window as any).__mcpClipboardData = clipboardData;
+      window.__mcpClipboardData = clipboardData;
 
       // Create enhanced keyboard events for Firefox compatibility
       const createKeyEvent = (type: string) => {
@@ -710,7 +717,7 @@ export class OpenRouterAdapter extends BaseAdapterPlugin {
             this.context.logger.debug('Keyboard paste simulation succeeded');
 
             // Clean up global state
-            delete (window as any).__mcpClipboardData;
+            delete window.__mcpClipboardData;
 
             this.emitExecutionCompleted(
               'attachFile',
@@ -731,13 +738,13 @@ export class OpenRouterAdapter extends BaseAdapterPlugin {
       }
 
       // Clean up global state
-      delete (window as any).__mcpClipboardData;
+      delete window.__mcpClipboardData;
 
       return false;
     } catch (error) {
       this.context.logger.error('Error in keyboard paste simulation:', error);
       // Clean up global state on error
-      delete (window as any).__mcpClipboardData;
+      delete window.__mcpClipboardData;
       return false;
     }
   }
@@ -960,7 +967,7 @@ export class OpenRouterAdapter extends BaseAdapterPlugin {
    * Check if the current page/URL is supported by this adapter
    */
   isSupported(): boolean | Promise<boolean> {
-    const currentHost = window.location.hostname;
+    const _currentHost = window.location.hostname;
     const currentUrl = window.location.href;
 
     this.context.logger.debug(`Checking if OpenRouter adapter supports: ${currentUrl}`);
@@ -1241,7 +1248,7 @@ export class OpenRouterAdapter extends BaseAdapterPlugin {
     this.mcpPopoverContainer = null;
   }
 
-  private handleToolExecutionCompleted(data: any): void {
+  private handleToolExecutionCompleted(data: { execution: ToolExecution }): void {
     this.context.logger.debug('Handling tool execution completion in OpenRouter adapter:', data);
 
     // Use the base class method to check if we should handle events
@@ -1251,8 +1258,8 @@ export class OpenRouterAdapter extends BaseAdapterPlugin {
     }
 
     // Get current UI state from stores to determine auto-actions
-    const uiState = this.context.stores.ui;
-    if (uiState && data.execution) {
+    const _uiState = this.context.stores.ui;
+    if (data.execution) {
       this.context.logger.debug('Tool execution handled with new architecture integration');
     }
   }
@@ -1399,7 +1406,7 @@ export class OpenRouterAdapter extends BaseAdapterPlugin {
 
   private createToggleStateManager() {
     const context = this.context;
-    const adapterName = this.name;
+    const _adapterName = this.name;
 
     const stateManager = {
       getState: () => {
@@ -1448,16 +1455,16 @@ export class OpenRouterAdapter extends BaseAdapterPlugin {
           }
 
           // Secondary method: Control through global sidebar manager
-          const sidebarManager = (window as any).activeSidebarManager;
+          const sidebarManager = window.activeSidebarManager;
           if (sidebarManager) {
             if (enabled) {
               context.logger.debug('Showing sidebar via activeSidebarManager');
-              sidebarManager.show().catch((error: any) => {
+              sidebarManager.show().catch((error: unknown) => {
                 context.logger.error('Error showing sidebar:', error);
               });
             } else {
               context.logger.debug('Hiding sidebar via activeSidebarManager');
-              sidebarManager.hide().catch((error: any) => {
+              sidebarManager.hide().catch((error: unknown) => {
                 context.logger.error('Error hiding sidebar:', error);
               });
             }
@@ -1606,7 +1613,7 @@ export class OpenRouterAdapter extends BaseAdapterPlugin {
     });
   }
 
-  private emitExecutionCompleted(toolName: string, parameters: any, result: any): void {
+  private emitExecutionCompleted(toolName: string, parameters: Record<string, unknown>, result: unknown): void {
     this.context.eventBus.emit('tool:execution-completed', {
       execution: {
         id: this.generateCallId(),
@@ -1686,7 +1693,7 @@ export class OpenRouterAdapter extends BaseAdapterPlugin {
     }
   }
 
-  onToolDetected?(tools: any[]): void {
+  onToolDetected?(tools: DetectedTool[]): void {
     this.context.logger.debug(`Tools detected in OpenRouter adapter:`, tools);
 
     tools.forEach(tool => {
@@ -1698,7 +1705,7 @@ export class OpenRouterAdapter extends BaseAdapterPlugin {
     this.context.logger.debug('Checking sidebar state after page navigation');
 
     try {
-      const activeSidebarManager = (window as any).activeSidebarManager;
+      const activeSidebarManager = window.activeSidebarManager;
 
       if (!activeSidebarManager) {
         this.context.logger.warn('No active sidebar manager found after navigation');

@@ -1,5 +1,5 @@
 // pages/content/src/utils/instructionGenerator.ts
-import { jsonSchemaToCsn } from './schema_converter';
+import { jsonSchemaToCsn as _jsonSchemaToCsn, type JsonSchema } from './schema_converter';
 import { chatgptInstructions } from './website_specific_instruction/chatgpt';
 import { geminiInstructions } from './website_specific_instruction/gemini';
 import { createLogger } from '@extension/shared/lib/logger';
@@ -12,7 +12,7 @@ import { createLogger } from '@extension/shared/lib/logger';
  * @returns Markdown formatted instructions
  */
 
-const logger = createLogger('InstructionGeneratorJSON');
+const _logger = createLogger('InstructionGeneratorJSON');
 
 export const generateInstructionsJson = (
   tools: Array<{ name: string; schema: string; description: string }>,
@@ -26,7 +26,6 @@ export const generateInstructionsJson = (
   // Start with a header
   // let instructions = '# MCP Tools Instructions\n\n';
   let instructions = '';
-  let compressed_schema_notation = '';
 
   // Add general usage information
   // instructions += '## General Usage\n\n';
@@ -55,13 +54,13 @@ The instructions regarding function calls specify that:
 - The function call must include a "call_id" property with a unique identifier.
 - Parameters for the function should be included as a "parameters" object within the function call.
 - Include all required parameters for each function call, while optional parameters should only be included when necessary.
-- Do not refer to function/tool names when speaking directly to users - focus on what I\'m doing rather than the tool I\'m using.
+- Do not refer to function/tool names when speaking directly to users - focus on what I'm doing rather than the tool I'm using.
 - When invoking a function, ensure all necessary context is provided for the function to execute properly.
 - Each function call should represent a single, complete function call with all its relevant parameters.
 - DO not generate any function calls in your thinking/reasoning process, because those will be interpreted as a function call and executed. Just formulate the correct parameters for the function call.
 - Ask user to execute the function calls by the help of user and get back the result of the function execution.
 
-The instructions regarding \'call_id\':
+The instructions regarding 'call_id':
 - It is a unique identifier for the function call.
 - It is a number that is incremented by 1 for each new function call, starting from 1.
 
@@ -82,14 +81,14 @@ When a user makes a request:
 1. ALWAYS analyze what function calls would be appropriate for the task
 2. ALWAYS format your function call usage EXACTLY as specified in the schema
 3. NEVER skip required parameters in function calls
-4. NEVER invent functions that aren\'t available to you
+4. NEVER invent functions that aren't available to you
 5. ALWAYS wait for function call execution results before continuing
 6. After invoking a function, STOP. 
 7. NEVER invoke multiple functions in a single response
 8. DO NOT STRICTLY GENERATE or form function results.
 9. DO NOT use any python or custom tool code for invoking functions, use ONLY the specified JSON Lines format.
 
-Answer the user\'s request using the relevant tool(s), if they are available. Check that all the required parameters for each tool call are provided or can reasonably be inferred from context. IF there are no relevant tools or there are missing values for required parameters, ask the user to supply these values; otherwise proceed with the tool calls. If the user provides a specific value for a parameter (for example provided in quotes), make sure to use that value EXACTLY. DO NOT make up values for or ask about optional parameters. Carefully analyze descriptive terms in the request as they may indicate required parameter values that should be included even if not explicitly quoted.
+Answer the user's request using the relevant tool(s), if they are available. Check that all the required parameters for each tool call are provided or can reasonably be inferred from context. IF there are no relevant tools or there are missing values for required parameters, ask the user to supply these values; otherwise proceed with the tool calls. If the user provides a specific value for a parameter (for example provided in quotes), make sure to use that value EXACTLY. DO NOT make up values for or ask about optional parameters. Carefully analyze descriptive terms in the request as they may indicate required parameter values that should be included even if not explicitly quoted.
 
 
 
@@ -133,41 +132,6 @@ Do not use <thoughts> tag in your output, that is just output format reference t
   // instructions +=
   //   '```\n<use_mcp_tool>\n{\n  "tool": "toolName",\n  "args": {\n    "param1": "value1",\n    "param2": "value2"\n  }\n}\n</use_mcp_tool>\n```\n\n';
 
-  // Add a table explaining the compressed notation for schemas
-  compressed_schema_notation += `## Compressed Schema Notation Documentation
-
-The following table explains the compressed notation used in schemas:
-
-Schema Notation Table
-
-**Notation** | **Meaning** | **Example**
-------- | -------- | --------
-o | Object | o {p {name:s}}
-p {} | Contains the object's properties. |
-p {} | Properties block | p {name:s; age:i}
-s | String | name:s
-i | Integer | age:i
-n | Number | score:n
-b | Boolean | active:b
-a | Array | tags:a[s]
-e[values] | Enum | color:e["red", "green", "blue"]
-u[types] | Union | value:u[s, n]
-lit[value] | Literal | status:lit["active"]
-r | Required | name:s r
-d=value | Default value | active:b d=true
-ap f | Additional properties false | o {p {name:s} ap f}
-type(key=value, ...) | Constrained type | name:s(minLength=1)
-a[type] | Array with item type | tags:a[s]
-o {p {prop:type}} | Nested object | user:o {p {id:i; name:s}}
-?type | Optional type | ?s
-t[type1, type2, ...] | Tuple | t[s, i]
-s[type] | Set | s[i]
-d[key, value] | Dictionary | d[s, i]
-ClassName | Custom class | User
-
-`;
-
-  // instructions += compressed_schema_notation;
   // instructions += '';
   // // Add compressed schemas section
   // instructions += '## Tools and their schema\n\n';
@@ -203,7 +167,7 @@ ClassName | Custom class | User
 
     try {
       // Parse the schema to get more details
-      const schema = JSON.parse(tool.schema);
+      const schema: JsonSchema = JSON.parse(tool.schema);
 
       // Add description if available
       if (tool.description) {
@@ -215,14 +179,14 @@ ClassName | Custom class | User
         instructions += '**Parameters**:\n';
 
         const requiredParams = Array.isArray(schema.required) ? schema.required : [];
-        Object.entries(schema.properties).forEach(([paramName, paramDetails]: [string, any]) => {
+        Object.entries(schema.properties).forEach(([paramName, paramDetails]) => {
           const isRequired = requiredParams.includes(paramName);
           instructions += `- \`${paramName}\`: ${paramDetails.description ? paramDetails.description : ''} (${paramDetails.type || 'any'}) (${isRequired ? 'required' : 'optional'})\n`;
 
           // Handle nested objects
           if (paramDetails.type === 'object' && paramDetails.properties) {
             instructions += '  - Properties:\n';
-            Object.entries(paramDetails.properties).forEach(([nestedName, nestedDetails]: [string, any]) => {
+            Object.entries(paramDetails.properties).forEach(([nestedName, nestedDetails]) => {
               instructions += `    - \`${nestedName}\`: ${nestedDetails.description || 'No description'} (${nestedDetails.type || 'any'})\n`;
             });
           }
@@ -235,7 +199,7 @@ ClassName | Custom class | User
             paramDetails.items.properties
           ) {
             instructions += '  - Array items (objects) with properties:\n';
-            Object.entries(paramDetails.items.properties).forEach(([itemName, itemDetails]: [string, any]) => {
+            Object.entries(paramDetails.items.properties).forEach(([itemName, itemDetails]) => {
               instructions += `    - \`${itemName}\`: ${itemDetails.description || 'No description'} (${itemDetails.type || 'any'})\n`;
             });
           }
@@ -283,7 +247,7 @@ ClassName | Custom class | User
       // }
 
       // instructions += '\n  }\n}\n</use_mcp_tool>\n```\n\n';
-    } catch (error) {
+    } catch (_error) {
       // If schema parsing fails, provide a simpler example
       instructions += 'Schema information not available. No Tools Available';
       // instructions += '```\n<use_mcp_tool>\n{\n';
@@ -309,7 +273,7 @@ ClassName | Custom class | User
   // Add reminder about JSON code blocks
   instructions += 'IMPORTANT: You need to place function call jsonl tags in proper jsonl code block like:\n\n';
   instructions +=
-    '```jsonl\n{\"type\": \"function_call_start\", \"name\": \"function_name\", \"call_id\": 1}\n{\"type\": \"description\", \"text\": \"Short 1 line of what this function does\"}\n{\"type\": \"parameter\", \"key\": \"parameter_1\", \"value\": \"value_1\"}\n{\"type\": \"parameter\", \"key\": \"parameter_2\", \"value\": \"value_2\"}\n{\"type\": \"function_call_end\", \"call_id\": 1}\n```\n\n';
+    '```jsonl\n{"type": "function_call_start", "name": "function_name", "call_id": 1}\n{"type": "description", "text": "Short 1 line of what this function does"}\n{"type": "parameter", "key": "parameter_1", "value": "value_1"}\n{"type": "parameter", "key": "parameter_2", "value": "value_2"}\n{"type": "function_call_end", "call_id": 1}\n```\n\n';
   instructions += 'Now ask user to use these jsonl lines and get back the result of the function execution\n\n';
 
   // Add tips section

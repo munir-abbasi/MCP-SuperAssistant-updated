@@ -344,7 +344,7 @@ export const startStalledStreamDetection = (): void => {
   }
 
   // Create a custom event for rendering function calls
-  if (typeof window !== 'undefined' && !window.hasOwnProperty('customRenderEvent')) {
+  if (typeof window !== 'undefined' && !Object.prototype.hasOwnProperty.call(window, 'customRenderEvent')) {
     window.customRenderEvent = true;
 
     // Event listener for render-function-call events

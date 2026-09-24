@@ -1,4 +1,4 @@
-import type { FunctionCallRendererConfig } from './core/config';
+import type { FunctionCallRendererConfig } from './core/types';
 import { CONFIG } from './core/config';
 import { styles } from './renderer/styles';
 import {
@@ -13,13 +13,16 @@ import {
   stopFunctionResultMonitoring,
   initializeFunctionResultObserver,
   processUpdateQueue,
-  checkStreamingUpdates,
+  checkStreamingUpdates as _checkStreamingUpdates,
   checkStalledStreams,
   detectPreExistingIncompleteBlocks,
   startStalledStreamDetection,
   updateStalledStreamTimeoutConfig,
 } from './observer/index';
-import { renderFunctionCall, renderedFunctionBlocks } from './renderer/index';
+import {
+  renderFunctionCall as _renderFunctionCall,
+  renderedFunctionBlocks as _renderedFunctionBlocks,
+} from './renderer/index';
 import { createLogger } from '@extension/shared/lib/logger';
 // Import the website-specific components
 // import { initPerplexityComponents } from './websites_components/perplexity';
@@ -43,6 +46,14 @@ const injectStyles = () => {
 let codeMirrorScriptInjected = false;
 let injectionAttempted = false;
 
+declare global {
+  interface Window {
+    CodeMirrorAccessor?: unknown;
+    enableJSONDebug?: () => void;
+    disableJSONDebug?: () => void;
+  }
+}
+
 const injectCodeMirrorAccessor = () => {
   // Prevent multiple injection attempts
   if (codeMirrorScriptInjected || injectionAttempted) return;
@@ -64,7 +75,7 @@ const injectCodeMirrorAccessor = () => {
   }
 
   // Check if window.CodeMirrorAccessor already exists
-  if (typeof (window as any).CodeMirrorAccessor !== 'undefined') {
+  if (typeof window.CodeMirrorAccessor !== 'undefined') {
     if (CONFIG.debug) {
       logger.debug('CodeMirrorAccessor already exists on window, skipping injection');
     }
@@ -91,7 +102,7 @@ const injectCodeMirrorAccessor = () => {
 
       // Verify script is active after a short delay
       setTimeout(() => {
-        if (typeof (window as any).CodeMirrorAccessor !== 'undefined') {
+        if (typeof window.CodeMirrorAccessor !== 'undefined') {
           if (CONFIG.debug) {
             logger.debug('CodeMirror accessor is active and accessible');
           }
@@ -129,7 +140,7 @@ const injectCodeMirrorAccessorAlternative = () => {
   // Prevent multiple alternative injections
   if (
     document.getElementById('codemirror-accessor-script-direct') ||
-    typeof (window as any).CodeMirrorAccessor !== 'undefined'
+    typeof window.CodeMirrorAccessor !== 'undefined'
   ) {
     if (CONFIG.debug) {
       logger.debug('CodeMirror accessor already present, skipping alternative injection');
@@ -151,7 +162,7 @@ const injectCodeMirrorAccessorAlternative = () => {
 
       // Verify accessibility
       setTimeout(() => {
-        if (typeof (window as any).CodeMirrorAccessor !== 'undefined') {
+        if (typeof window.CodeMirrorAccessor !== 'undefined') {
           if (CONFIG.debug) {
             logger.debug('CodeMirror accessor is now active via direct injection');
           }
@@ -186,10 +197,7 @@ const injectCodeMirrorAccessorAlternative = () => {
 // Page context injection method - CSP-safe version
 const injectCodeMirrorAccessorPageContext = () => {
   // Prevent multiple page context injections
-  if (
-    document.getElementById('codemirror-accessor-page-context') ||
-    typeof (window as any).CodeMirrorAccessor !== 'undefined'
-  ) {
+  if (document.getElementById('codemirror-accessor-page-context') || typeof window.CodeMirrorAccessor !== 'undefined') {
     if (CONFIG.debug) {
       logger.debug('CodeMirror accessor already present, skipping page context injection');
     }
@@ -402,12 +410,12 @@ const configure = (options: Partial<FunctionCallRendererConfig>) => {
 
 // Debug helper for JSON parser
 if (typeof window !== 'undefined') {
-  (window as any).enableJSONDebug = () => {
-    (window as any).__DEBUG_JSON_PARSER = true;
+  window.enableJSONDebug = () => {
+    window.__DEBUG_JSON_PARSER = true;
     logger.debug('JSON parser debug logging enabled. Refresh or trigger a function call to see logs.');
   };
-  (window as any).disableJSONDebug = () => {
-    (window as any).__DEBUG_JSON_PARSER = false;
+  window.disableJSONDebug = () => {
+    window.__DEBUG_JSON_PARSER = false;
     logger.debug('JSON parser debug logging disabled.');
   };
 }

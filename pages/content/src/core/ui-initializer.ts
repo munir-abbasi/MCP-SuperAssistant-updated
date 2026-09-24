@@ -15,17 +15,17 @@ import { createLogger } from '@extension/shared/lib/logger';
 
 const logger = createLogger('UILogger');
 
-class UILogger {
+class _UILogger {
   constructor(private context: string) {}
 
-  log(message: string, ...args: any[]): void {
+  log(message: string, ...args: unknown[]): void {
     logMessage(`[${this.context}] ${message}`);
     if (args.length > 0) {
       logger.debug(...args);
     }
   }
 
-  error(message: string, ...args: any[]): void {
+  error(message: string, ...args: unknown[]): void {
     logger.error(`${message}`, ...args);
   }
 }
@@ -36,7 +36,7 @@ class UILogger {
 export async function initializeUIApplication(
   appComponent: React.ComponentType,
   rootElementId: string = 'root',
-  context: string = 'UI',
+  _context: string = 'UI',
 ): Promise<void> {
   logger.debug('UI application initialization started...');
 

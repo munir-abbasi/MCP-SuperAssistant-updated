@@ -4,7 +4,7 @@ import { devtools, persist, createJSONStorage } from 'zustand/middleware';
 export interface FeatureFlag {
   enabled: boolean;
   rollout: number;
-  config?: Record<string, any>;
+  config?: Record<string, unknown>;
   dependencies?: string[];
   targeting?: {
     versions?: string[];

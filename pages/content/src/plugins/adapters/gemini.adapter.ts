@@ -1,5 +1,6 @@
 import { BaseAdapterPlugin } from './base.adapter';
 import type { AdapterCapability, PluginContext } from '../plugin-types';
+import type { DetectedTool, ToolExecution } from '../../types/stores';
 import { adapterConfigManager, type AdapterConfig } from './defaultConfigs';
 import { createLogger } from '@extension/shared/lib/logger';
 
@@ -934,7 +935,7 @@ export class GeminiAdapter extends BaseAdapterPlugin {
     this.mcpPopoverContainer = null;
   }
 
-  private handleToolExecutionCompleted(data: any): void {
+  private handleToolExecutionCompleted(data: { execution: ToolExecution }): void {
     this.context.logger.debug('Handling tool execution completion in Gemini adapter:', data);
 
     // Use the base class method to check if we should handle events
@@ -944,8 +945,8 @@ export class GeminiAdapter extends BaseAdapterPlugin {
     }
 
     // Get current UI state from stores to determine auto-actions
-    const uiState = this.context.stores.ui;
-    if (uiState && data.execution) {
+    const _uiState = this.context.stores.ui;
+    if (data.execution) {
       // Handle auto-insert, auto-submit based on store state
       // This integrates with the new architecture's state management
       this.context.logger.debug('Tool execution handled with new architecture integration');
@@ -1127,16 +1128,16 @@ export class GeminiAdapter extends BaseAdapterPlugin {
           }
 
           // Secondary method: Control through global sidebar manager as additional safeguard
-          const sidebarManager = (window as any).activeSidebarManager;
+          const sidebarManager = window.activeSidebarManager;
           if (sidebarManager) {
             if (enabled) {
               context.logger.debug('Showing sidebar via activeSidebarManager');
-              sidebarManager.show().catch((error: any) => {
+              sidebarManager.show().catch((error: unknown) => {
                 context.logger.error('Error showing sidebar:', error);
               });
             } else {
               context.logger.debug('Hiding sidebar via activeSidebarManager');
-              sidebarManager.hide().catch((error: any) => {
+              sidebarManager.hide().catch((error: unknown) => {
                 context.logger.error('Error hiding sidebar:', error);
               });
             }
@@ -1350,7 +1351,7 @@ export class GeminiAdapter extends BaseAdapterPlugin {
     });
   }
 
-  private emitExecutionCompleted(toolName: string, parameters: any, result: any): void {
+  private emitExecutionCompleted(toolName: string, parameters: Record<string, unknown>, result: unknown): void {
     this.context.eventBus.emit('tool:execution-completed', {
       execution: {
         id: this.generateCallId(),
@@ -1383,7 +1384,7 @@ export class GeminiAdapter extends BaseAdapterPlugin {
 
     try {
       // Check if there's an active sidebar manager
-      const activeSidebarManager = (window as any).activeSidebarManager;
+      const activeSidebarManager = window.activeSidebarManager;
 
       if (!activeSidebarManager) {
         this.context.logger.warn('No active sidebar manager found after navigation');
@@ -1467,7 +1468,7 @@ export class GeminiAdapter extends BaseAdapterPlugin {
     }
   }
 
-  onToolDetected?(tools: any[]): void {
+  onToolDetected?(tools: DetectedTool[]): void {
     this.context.logger.debug(`Tools detected in Gemini adapter:`, tools);
 
     // Forward to tool store

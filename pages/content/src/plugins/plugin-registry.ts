@@ -1,8 +1,8 @@
 // plugins/plugin-registry.ts
 import { eventBus } from '../events/event-bus';
 import type { EventMap } from '../events';
-import performanceMonitor from '../core/performance';
-import globalErrorHandler from '../core/error-handler';
+import { performanceMonitor } from '../core/performance';
+import { globalErrorHandler } from '../core/error-handler';
 import { useAdapterStore } from '../stores/adapter.store';
 import { useAppStore } from '../stores/app.store';
 import { useConnectionStore } from '../stores/connection.store';
@@ -18,7 +18,7 @@ import type {
   PluginType,
 } from './plugin-types';
 import { createLogger } from '@extension/shared/lib/logger';
-import { DefaultAdapter } from './adapters/default.adapter';
+import { DefaultAdapter as _DefaultAdapter } from './adapters/default.adapter';
 
 // import { ExampleForumAdapter } from './adapters/example-forum.adapter';
 import { GeminiAdapter } from './adapters/gemini.adapter';
@@ -1162,7 +1162,7 @@ export async function initializePluginRegistry(): Promise<void> {
     utils: {
       createElement: <K extends keyof HTMLElementTagNameMap>(
         tag: K,
-        attrs?: Record<string, any>,
+        attrs?: Record<string, unknown>,
         children?: (Node | string)[],
       ) => {
         const element = document.createElement(tag);
@@ -1214,21 +1214,22 @@ export async function initializePluginRegistry(): Promise<void> {
         observer.observe(targetNode, options);
         return observer;
       },
-      debounce: <T extends (...args: any[]) => any>(func: T, delay: number) => {
+      debounce: <T extends (...args: never[]) => unknown>(func: T, delay: number) => {
         let timeoutId: NodeJS.Timeout;
-        return ((...args: any[]) => {
+        return ((...args: Parameters<T>) => {
           clearTimeout(timeoutId);
           timeoutId = setTimeout(() => func(...args), delay);
         }) as T;
       },
-      throttle: <T extends (...args: any[]) => any>(func: T, delay: number) => {
+      throttle: <T extends (...args: never[]) => unknown>(func: T, delay: number) => {
         let lastCall = 0;
-        return ((...args: any[]) => {
+        return ((...args: Parameters<T>) => {
           const now = Date.now();
           if (now - lastCall >= delay) {
             lastCall = now;
             return func(...args);
           }
+          return undefined;
         }) as T;
       },
       getUniqueId: (prefix: string = 'id') => `${prefix}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
@@ -1245,10 +1246,10 @@ export async function initializePluginRegistry(): Promise<void> {
             storage: {} as typeof chrome.storage,
           },
     logger: {
-      debug: (...args: any[]) => logger.debug('[Plugin]', ...args),
-      info: (...args: any[]) => logger.info('[Plugin]', ...args),
-      warn: (...args: any[]) => logger.warn('[Plugin]', ...args),
-      error: (...args: any[]) => logger.error('[Plugin]', ...args),
+      debug: (...args: unknown[]) => logger.debug('[Plugin]', ...args),
+      info: (...args: unknown[]) => logger.info('[Plugin]', ...args),
+      warn: (...args: unknown[]) => logger.warn('[Plugin]', ...args),
+      error: (...args: unknown[]) => logger.error('[Plugin]', ...args),
     },
     cleanupFunctions: [],
   };

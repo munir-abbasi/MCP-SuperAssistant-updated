@@ -11,7 +11,7 @@ export class RemoteConfigPlugin implements AdapterPlugin {
   private context: PluginContext | null = null;
   private isActive = false;
   private fetchInterval: NodeJS.Timeout | null = null;
-  private userProperties: Record<string, any> = {};
+  private userProperties: Record<string, unknown> = {};
   private retryCount = 0;
   private maxRetries = 3;
 
@@ -198,12 +198,15 @@ export class RemoteConfigPlugin implements AdapterPlugin {
     }
   }
 
-  private async processFeatureFlagsFromBackground(allConfigs: Record<string, any>, changes: string[]): Promise<void> {
+  private async processFeatureFlagsFromBackground(
+    allConfigs: Record<string, unknown>,
+    changes: string[],
+  ): Promise<void> {
     try {
       const featuresString = allConfigs.features;
 
       if (featuresString) {
-        const features = JSON.parse(featuresString) as Record<string, FeatureFlag>;
+        const features = JSON.parse(String(featuresString)) as Record<string, FeatureFlag>;
 
         // Basic validation
         if (features && typeof features === 'object') {
@@ -226,12 +229,15 @@ export class RemoteConfigPlugin implements AdapterPlugin {
     }
   }
 
-  private async processNotificationsFromBackground(allConfigs: Record<string, any>, changes: string[]): Promise<void> {
+  private async processNotificationsFromBackground(
+    allConfigs: Record<string, unknown>,
+    changes: string[],
+  ): Promise<void> {
     try {
       const notificationsString = allConfigs.active_notifications;
 
       if (notificationsString) {
-        const notifications = JSON.parse(notificationsString) as RemoteNotification[];
+        const notifications = JSON.parse(String(notificationsString)) as RemoteNotification[];
 
         // Basic validation
         if (Array.isArray(notifications)) {
@@ -274,7 +280,7 @@ export class RemoteConfigPlugin implements AdapterPlugin {
   }
 
   private async processUserConfigurationFromBackground(
-    allConfigs: Record<string, any>,
+    allConfigs: Record<string, unknown>,
     changes: string[],
   ): Promise<void> {
     try {
@@ -282,7 +288,7 @@ export class RemoteConfigPlugin implements AdapterPlugin {
       const notificationConfigString = allConfigs.notifications_config;
 
       if (notificationConfigString) {
-        const notificationConfig = JSON.parse(notificationConfigString);
+        const notificationConfig = JSON.parse(String(notificationConfigString));
 
         // Basic validation
         if (notificationConfig && typeof notificationConfig === 'object') {
@@ -312,7 +318,7 @@ export class RemoteConfigPlugin implements AdapterPlugin {
   // Utility methods
   private async initializeUserProperties(): Promise<void> {
     try {
-      const appStore = this.context?.stores.app?.();
+      const _appStore = this.context?.stores.app?.();
       const configStore = this.context?.stores.config?.();
 
       const userProperties = {

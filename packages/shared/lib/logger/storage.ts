@@ -1,5 +1,4 @@
-import type { ILoggerStorage } from './types.js';
-import { LogLevel } from './types.js';
+import type { ILoggerStorage, LogLevel } from './types.js';
 
 const STORAGE_KEY = 'mcp_logger_config';
 

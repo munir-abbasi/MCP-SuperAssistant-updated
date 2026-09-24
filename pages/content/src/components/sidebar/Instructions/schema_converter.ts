@@ -125,12 +125,13 @@ const reverseTypeMapping: Record<string, string> = {
 
 interface JsonSchema {
   type?: string;
+  description?: string;
   properties?: Record<string, JsonSchema>;
   required?: string[];
   additionalProperties?: boolean;
   items?: JsonSchema;
-  enum?: any[];
-  const?: any;
+  enum?: unknown[];
+  const?: unknown;
   anyOf?: JsonSchema[];
   minLength?: number;
   maxLength?: number;
@@ -139,8 +140,8 @@ interface JsonSchema {
   maximum?: number;
   exclusiveMinimum?: number;
   exclusiveMaximum?: number;
-  default?: any;
-  [key: string]: any;
+  default?: unknown;
+  [key: string]: unknown;
 }
 
 export function jsonSchemaToCsn(schema: JsonSchema): string {
@@ -393,7 +394,7 @@ function parseCsnType(typeStr: string): JsonSchema {
 }
 
 // --- New helper function added ---
-function extractCoreAndFlags(typeInfo: string): { core: string; flags: string[] } {
+function _extractCoreAndFlags(typeInfo: string): { core: string; flags: string[] } {
   typeInfo = typeInfo.trim();
   let core = '';
   let flags: string[] = [];
@@ -420,7 +421,7 @@ function extractCoreAndFlags(typeInfo: string): { core: string; flags: string[] 
 }
 
 // --- New helper function added ---
-function extractPropertiesBlock(content: string): string | null {
+function _extractPropertiesBlock(content: string): string | null {
   const pIndex = content.indexOf('p {');
   if (pIndex === -1) return null;
   const braceStart = content.indexOf('{', pIndex);

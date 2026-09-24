@@ -3,7 +3,14 @@ import { mcpClient } from '../core/mcp-client';
 import { useConnectionStatus, useAvailableTools, useServerConfig, useToolEnablement } from './useStores';
 import { useToolStore } from '../stores/tool.store';
 import { logMessage } from '../utils/helpers';
-import type { ServerConfig, Tool, ConnectionType } from '../types/stores';
+import type { ServerConfig, Tool, ConnectionType as _ConnectionType } from '../types/stores';
+
+interface LegacyToolInput {
+  name?: string;
+  args?: Record<string, unknown>;
+  toolName?: string;
+  rawArguments?: string;
+}
 
 /**
  * useMcpCommunication – Enhanced facade over mcpClient that provides a stable,
@@ -25,7 +32,7 @@ export const useMcpCommunication = () => {
   const { tools } = useAvailableTools();
   const { config, setConfig } = useServerConfig();
   const { isToolEnabled, isLoadingEnablement } = useToolEnablement();
-  const toolActions = useToolStore();
+  const setAvailableTools = useToolStore(state => state.setAvailableTools);
 
   // Local state for operation tracking
   const [isInitialized, setIsInitialized] = useState(false);
@@ -117,7 +124,7 @@ export const useMcpCommunication = () => {
           logMessage(`[useMcpCommunication] Filtered out ${updated.length - validatedTools.length} invalid tools`);
         }
 
-        toolActions.setAvailableTools(validatedTools);
+        setAvailableTools(validatedTools);
         logMessage(`[useMcpCommunication] Successfully refreshed ${validatedTools.length} tools`);
 
         return validatedTools;
@@ -127,7 +134,7 @@ export const useMcpCommunication = () => {
         throw new Error(`Failed to refresh tools: ${errorMessage}`);
       }
     },
-    [isInitialized],
+    [isInitialized, setAvailableTools],
   );
 
   /**
@@ -245,7 +252,7 @@ export const useMcpCommunication = () => {
    * Supports both new and old tool formats
    */
   const sendMessage = useCallback(
-    async (tool: any): Promise<string> => {
+    async (tool: LegacyToolInput): Promise<string> => {
       try {
         let toolName = tool.name;
         let toolArgs: Record<string, unknown> = tool.args || {};
@@ -287,7 +294,7 @@ export const useMcpCommunication = () => {
       name: tool.name,
       description: tool.description || '',
       // Ensure schema is always a string for legacy compatibility
-      schema: typeof (tool as any).schema === 'string' ? (tool as any).schema : JSON.stringify(tool.input_schema || {}),
+      schema: typeof tool.schema === 'string' ? tool.schema : JSON.stringify(tool.input_schema || {}),
       // Keep original input_schema for new components
       input_schema: tool.input_schema,
     }));
@@ -317,7 +324,7 @@ export const useMcpCommunication = () => {
           .join(', ')}${toolCount > 3 ? `...and ${toolCount - 3} more` : ''}`,
       );
     }
-  }, [normalizedTools.length]); // Only depend on length, not the full array
+  }, [normalizedTools]);
 
   // Simplified schema status logging - only run once when tools are loaded
   useEffect(() => {
@@ -330,7 +337,7 @@ export const useMcpCommunication = () => {
       );
       logMessage(`  ${toolsWithSchema.length}/${normalizedTools.length} tools have valid schemas`);
     }
-  }, [normalizedTools.length]); // Only run when tool count changes
+  }, [normalizedTools]);
 
   // Enhanced status with more granular information
   const serverStatus = connection.status as 'connected' | 'disconnected' | 'reconnecting' | 'error';

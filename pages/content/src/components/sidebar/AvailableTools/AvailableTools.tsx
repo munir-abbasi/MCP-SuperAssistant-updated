@@ -15,6 +15,13 @@ interface ExtendedTool extends Tool {
   originalName?: string;
 }
 
+/** Resolve a tool's schema across legacy (`schema`) and current (`input_schema`) shapes. */
+function getToolSchema(tool: ExtendedTool): unknown {
+  if (tool.schema) return tool.schema;
+  if ('input_schema' in tool) return tool.input_schema;
+  return undefined;
+}
+
 interface AvailableToolsProps {
   tools: Tool[];
   onExecute: (tool: Tool) => void;
@@ -25,7 +32,7 @@ interface AvailableToolsProps {
 const AvailableTools: React.FC<AvailableToolsProps> = ({ tools, onExecute, onRefresh, isRefreshing }) => {
   // Use Zustand hooks for tool management
   const { tools: storeTools } = useAvailableTools();
-  const { executions, isExecuting } = useToolExecution();
+  const { executions: _executions, isExecuting: _isExecuting } = useToolExecution();
   const {
     enabledTools,
     enableTool,
@@ -126,8 +133,8 @@ const AvailableTools: React.FC<AvailableToolsProps> = ({ tools, onExecute, onRef
     Object.keys(grouped).forEach(serverName => {
       grouped[serverName].sort((a, b) => {
         if (!hasUnsavedChanges) {
-          const aEnabled = isToolEnabled(a.originalName || a.name);
-          const bEnabled = isToolEnabled(b.originalName || b.name);
+          const aEnabled = enabledTools.has(a.originalName || a.name);
+          const bEnabled = enabledTools.has(b.originalName || b.name);
 
           if (aEnabled && !bEnabled) return -1;
           if (!aEnabled && bEnabled) return 1;
@@ -142,8 +149,8 @@ const AvailableTools: React.FC<AvailableToolsProps> = ({ tools, onExecute, onRef
     // Sort ungrouped tools
     ungrouped.sort((a, b) => {
       if (!hasUnsavedChanges) {
-        const aEnabled = isToolEnabled(a.name);
-        const bEnabled = isToolEnabled(b.name);
+        const aEnabled = enabledTools.has(a.name);
+        const bEnabled = enabledTools.has(b.name);
 
         if (aEnabled && !bEnabled) return -1;
         if (!aEnabled && bEnabled) return 1;
@@ -155,7 +162,7 @@ const AvailableTools: React.FC<AvailableToolsProps> = ({ tools, onExecute, onRef
     return { groupedTools: grouped, ungroupedTools: ungrouped };
   }, [effectiveTools, searchTerm, enabledTools, hasUnsavedChanges]);
 
-  const handleExecute = (tool: Tool) => {
+  const _handleExecute = (tool: Tool) => {
     logMessage(`[AvailableTools] Executing tool: ${tool.name}`);
     onExecute(tool);
   };
@@ -488,7 +495,15 @@ const AvailableTools: React.FC<AvailableToolsProps> = ({ tools, onExecute, onRef
                                     ? 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
                                     : 'hover:bg-slate-50 dark:hover:bg-slate-800/30 opacity-60',
                                 )}
-                                onClick={() => toggleToolExpansion(toolName)}>
+                                onClick={() => toggleToolExpansion(toolName)}
+                                onKeyDown={event => {
+                                  if (event.key === 'Enter' || event.key === ' ') {
+                                    event.preventDefault();
+                                    toggleToolExpansion(toolName);
+                                  }
+                                }}
+                                role="button"
+                                tabIndex={0}>
                                 <div className="flex items-center">
                                   <Icon
                                     name="chevron-right"
@@ -562,14 +577,14 @@ const AvailableTools: React.FC<AvailableToolsProps> = ({ tools, onExecute, onRef
                                       )}>
                                       {(() => {
                                         try {
-                                          const schema = (tool as any).schema || (tool as any).input_schema;
+                                          const schema = getToolSchema(tool);
                                           if (!schema) return 'No schema available';
 
                                           const schemaObject = typeof schema === 'string' ? JSON.parse(schema) : schema;
                                           return JSON.stringify(schemaObject, null, 2);
                                         } catch (error) {
                                           logger.error('Error processing tool schema:', error);
-                                          const schema = (tool as any).schema || (tool as any).input_schema;
+                                          const schema = getToolSchema(tool);
                                           return typeof schema === 'string' ? schema : 'Invalid schema format';
                                         }
                                       })()}
@@ -613,7 +628,15 @@ const AvailableTools: React.FC<AvailableToolsProps> = ({ tools, onExecute, onRef
                                 ? 'hover:bg-slate-50 dark:hover:bg-slate-800/50'
                                 : 'hover:bg-slate-50 dark:hover:bg-slate-800/30 opacity-60',
                             )}
-                            onClick={() => toggleToolExpansion(tool.name)}>
+                            onClick={() => toggleToolExpansion(tool.name)}
+                            onKeyDown={event => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                toggleToolExpansion(tool.name);
+                              }
+                            }}
+                            role="button"
+                            tabIndex={0}>
                             <div className="flex items-center">
                               <Icon
                                 name="chevron-right"
@@ -687,14 +710,14 @@ const AvailableTools: React.FC<AvailableToolsProps> = ({ tools, onExecute, onRef
                                   )}>
                                   {(() => {
                                     try {
-                                      const schema = (tool as any).schema || (tool as any).input_schema;
+                                      const schema = getToolSchema(tool);
                                       if (!schema) return 'No schema available';
 
                                       const schemaObject = typeof schema === 'string' ? JSON.parse(schema) : schema;
                                       return JSON.stringify(schemaObject, null, 2);
                                     } catch (error) {
                                       logger.error('Error processing tool schema:', error);
-                                      const schema = (tool as any).schema || (tool as any).input_schema;
+                                      const schema = getToolSchema(tool);
                                       return typeof schema === 'string' ? schema : 'Invalid schema format';
                                     }
                                   })()}

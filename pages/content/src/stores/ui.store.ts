@@ -1,13 +1,25 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import { devtools } from 'zustand/middleware'; // persist is now imported with createJSONStorage
+import { createJSONStorage, devtools, persist } from 'zustand/middleware';
 import { eventBus } from '../events';
 import type { UserPreferences, SidebarState, Notification, GlobalSettings } from '../types/stores';
-import type { RemoteNotification, NotificationAction } from './config.store';
+import { useConfigStore, type RemoteNotification, type NotificationAction } from './config.store';
 import { useAppStore, type AppState } from './app.store'; // Assuming AppState includes theme
 import { createLogger } from '@extension/shared/lib/logger';
 
 const logger = createLogger('useUIStore');
+
+type StoredRemoteNotification = Notification & {
+  source: 'remote';
+  campaignId?: string;
+  actions?: NotificationAction[];
+  priority?: number;
+};
+
+const isRemoteNotification = (notification: Notification): notification is StoredRemoteNotification =>
+  'source' in notification && notification.source === 'remote';
+
+const getNotificationPriority = (notification: Notification): number =>
+  'priority' in notification && typeof notification.priority === 'number' ? notification.priority : 1;
 
 export interface UIState {
   sidebar: SidebarState;
@@ -150,8 +162,6 @@ export const useUIStore = create<UIState>()(
         },
 
         addRemoteNotification: (notification: RemoteNotification): string => {
-          // Import config store to check notification limits
-          const { useConfigStore } = require('./config.store');
           const configStore = useConfigStore.getState();
 
           // Check if notifications are enabled
@@ -163,7 +173,7 @@ export const useUIStore = create<UIState>()(
           // Check frequency limits
           const today = new Date().toDateString();
           const todayNotifications = get().notifications.filter(
-            n => new Date(n.timestamp).toDateString() === today && (n as any).source === 'remote',
+            n => new Date(n.timestamp).toDateString() === today && isRemoteNotification(n),
           ).length;
 
           if (todayNotifications >= configStore.notificationConfig.maxPerDay) {
@@ -176,12 +186,7 @@ export const useUIStore = create<UIState>()(
           }
 
           // Create enhanced notification
-          const newNotification: Notification & {
-            source: 'remote';
-            campaignId?: string;
-            actions?: NotificationAction[];
-            priority?: number;
-          } = {
+          const newNotification: StoredRemoteNotification = {
             id: notification.id || `remote_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
             type: notification.type,
             title: notification.title,
@@ -197,7 +202,7 @@ export const useUIStore = create<UIState>()(
           // Add to notifications list, sorting by priority
           set(state => ({
             notifications: [...state.notifications, newNotification].sort(
-              (a, b) => ((b as any).priority || 1) - ((a as any).priority || 1),
+              (a, b) => getNotificationPriority(b) - getNotificationPriority(a),
             ),
           }));
 
@@ -238,7 +243,7 @@ export const useUIStore = create<UIState>()(
           const notification = get().notifications.find(n => n.id === id);
           if (notification) {
             // Track dismissal for remote notifications
-            if ((notification as any).source === 'remote') {
+            if (isRemoteNotification(notification)) {
               eventBus.emit('notification:dismissed', {
                 notificationId: id,
                 reason: reason || 'user_dismissed',
@@ -250,7 +255,7 @@ export const useUIStore = create<UIState>()(
                 event: 'notification_dismissed',
                 parameters: {
                   notification_id: id,
-                  campaign_id: (notification as any).campaignId,
+                  campaign_id: notification.campaignId,
                   reason: reason || 'user_dismissed',
                   source: 'remote',
                 },

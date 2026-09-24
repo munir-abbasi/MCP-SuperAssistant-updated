@@ -3,6 +3,14 @@ export type { DetectedTool };
 // EventMap, EventCallback, UnsubscribeFunction will be imported from '../../events/index.ts'
 // which exports them from '../../events/event-types.ts'
 import type { EventMap, TypedEventCallback, UnsubscribeFunction } from '../events';
+import type { AppState } from '../stores/app.store';
+import type { ConnectionState } from '../stores/connection.store';
+import type { ToolState } from '../stores/tool.store';
+import type { UIState } from '../stores/ui.store';
+import type { AdapterState } from '../stores/adapter.store';
+import type { ConfigState } from '../stores/config.store';
+
+export type StoreAccessor<T> = (() => T) & Partial<T> & { getState?: () => T };
 
 // Interface for the EventBus that will be part of PluginContext
 // This defines the contract the plugin expects from an event bus.
@@ -31,14 +39,12 @@ export type PluginType = 'sidebar' | 'website-adapter' | 'core-ui' | 'extension'
 export interface PluginContext {
   eventBus: PluginEventBus; // Use the defined PluginEventBus interface
   stores: {
-    // These 'any' types are placeholders as per original spec.
-    // In a fully typed system, these would be specific store instances or slices.
-    app: any;
-    connection: any;
-    tool: any;
-    ui: any;
-    adapter: any;
-    config: any; // Added config store
+    app: StoreAccessor<AppState>;
+    connection: StoreAccessor<ConnectionState>;
+    tool: StoreAccessor<ToolState>;
+    ui: StoreAccessor<UIState>;
+    adapter: StoreAccessor<AdapterState>;
+    config: StoreAccessor<ConfigState>;
   };
   utils: PluginUtils;
   chrome: {
@@ -47,27 +53,27 @@ export interface PluginContext {
     tabs?: typeof chrome.tabs;
   };
   logger: {
-    debug: (...args: any[]) => void;
-    info: (...args: any[]) => void;
-    warn: (...args: any[]) => void;
-    error: (...args: any[]) => void;
+    debug: (...args: unknown[]) => void;
+    info: (...args: unknown[]) => void;
+    warn: (...args: unknown[]) => void;
+    error: (...args: unknown[]) => void;
   };
   // Add a way to get the plugin's own configuration
-  getConfig?: <T extends Record<string, any>>() => T | undefined;
+  getConfig?: <T extends Record<string, unknown>>() => T | undefined;
   cleanupFunctions?: (() => void)[]; // Added for plugin cleanup management
 }
 
 export interface PluginUtils {
   createElement: <K extends keyof HTMLElementTagNameMap>(
     tag: K,
-    attrs?: Record<string, any>,
+    attrs?: Record<string, unknown>,
     children?: (Node | string)[],
   ) => HTMLElementTagNameMap[K];
   waitForElement: (selector: string, timeout?: number, root?: Document | Element) => Promise<HTMLElement | null>;
   injectCSS: (css: string, id?: string) => HTMLStyleElement;
   observeChanges: (targetNode: Node, callback: MutationCallback, options: MutationObserverInit) => MutationObserver;
-  debounce: <T extends (...args: any[]) => any>(func: T, delay: number) => T;
-  throttle: <T extends (...args: any[]) => any>(func: T, delay: number) => T;
+  debounce: <T extends (...args: never[]) => unknown>(func: T, delay: number) => T;
+  throttle: <T extends (...args: never[]) => unknown>(func: T, delay: number) => T;
   getUniqueId: (prefix?: string) => string;
 }
 
@@ -114,7 +120,7 @@ export interface AdapterConfig {
   version: string; // Version of the adapter configuration or the adapter it's for
   enabled: boolean;
   priority: number;
-  settings?: Record<string, any>;
+  settings?: Record<string, unknown>;
   customSelectors?: Record<string, string>;
   features?: Partial<Record<AdapterCapability, boolean>>;
 }

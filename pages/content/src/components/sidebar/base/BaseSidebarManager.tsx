@@ -133,16 +133,22 @@ export abstract class BaseSidebarManager {
 
       // Debug logging to verify styles are applied
       logMessage(`[BaseSidebarManager] Push mode enabled with width: ${width}px`);
-      logMessage(`[BaseSidebarManager] Applied styles - margin-right: ${document.documentElement.style.marginRight}, width: ${document.documentElement.style.width}`);
+      logMessage(
+        `[BaseSidebarManager] Applied styles - margin-right: ${document.documentElement.style.marginRight}, width: ${document.documentElement.style.width}`,
+      );
       logMessage(`[BaseSidebarManager] HTML classes: ${document.documentElement.className}`);
 
       // Check if styles are being overridden
       const computedStyle = window.getComputedStyle(document.documentElement);
-      logMessage(`[BaseSidebarManager] Computed styles - margin-right: ${computedStyle.marginRight}, width: ${computedStyle.width}`);
+      logMessage(
+        `[BaseSidebarManager] Computed styles - margin-right: ${computedStyle.marginRight}, width: ${computedStyle.width}`,
+      );
 
       // Also check body styles
       const bodyComputedStyle = window.getComputedStyle(document.body);
-      logMessage(`[BaseSidebarManager] Body computed styles - margin-right: ${bodyComputedStyle.marginRight}, max-width: ${bodyComputedStyle.maxWidth}`);
+      logMessage(
+        `[BaseSidebarManager] Body computed styles - margin-right: ${bodyComputedStyle.marginRight}, max-width: ${bodyComputedStyle.maxWidth}`,
+      );
 
       // When push mode is enabled, ensure the sidebar is visible
       if (!this._isVisible || (this.shadowHost && this.shadowHost.style.display !== 'block')) {

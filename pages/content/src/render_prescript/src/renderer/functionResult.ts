@@ -381,7 +381,12 @@ export const renderFunctionResult = (block: HTMLElement, isProcessingRef: { curr
     let content = block.textContent || '';
 
     // Check if it contains MCP SuperAssistant system message tags
-    if (content.includes('<SYSTEM>') || content.includes('</SYSTEM>') || content.includes('<system>') || content.includes('</system>')) {
+    if (
+      content.includes('<SYSTEM>') ||
+      content.includes('</SYSTEM>') ||
+      content.includes('<system>') ||
+      content.includes('</system>')
+    ) {
       // Extract content between SYSTEM tags
       const systemMatch = content;
       if (systemMatch) {
@@ -399,7 +404,6 @@ export const renderFunctionResult = (block: HTMLElement, isProcessingRef: { curr
     // Generate a unique ID for this block
     const blockId = `result-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     block.setAttribute('data-block-id', blockId);
-    
 
     // Parse the function result content
     let resultContent = '';

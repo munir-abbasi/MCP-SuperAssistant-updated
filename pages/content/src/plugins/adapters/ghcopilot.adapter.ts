@@ -22,7 +22,7 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
     'text-insertion',
     'form-submission',
     'file-attachment',
-    'dom-manipulation'
+    'dom-manipulation',
   ];
 
   // CSS selectors for GitHub Copilot's UI elements
@@ -31,20 +31,25 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
     // Primary chat input selector
     CHAT_INPUT: '#copilot-chat-textarea, .ChatInput-module__input--iApWs, textarea[placeholder*="How can I help"]',
     // Submit button selectors (multiple fallbacks)
-    SUBMIT_BUTTON: 'button[aria-labelledby*="Send"], button:has(.octicon-paper-airplane), .ChatInput-module__toolbarRight--PiQJn button[type="button"]:last-child',
+    SUBMIT_BUTTON:
+      'button[aria-labelledby*="Send"], button:has(.octicon-paper-airplane), .ChatInput-module__toolbarRight--PiQJn button[type="button"]:last-child',
     // File upload related selectors
-    FILE_UPLOAD_BUTTON: 'button[data-testid="attachment-menu-button"], button[aria-label*="Attach"], button:has(.octicon-paperclip)',
-    FILE_INPUT: '#image-uploader, input[type="file"][accept*=".md"], input[type="file"][accept*=".txt"], input[type="file"][hidden], input[type="file"][multiple]',
+    FILE_UPLOAD_BUTTON:
+      'button[data-testid="attachment-menu-button"], button[aria-label*="Attach"], button:has(.octicon-paperclip)',
+    FILE_INPUT:
+      '#image-uploader, input[type="file"][accept*=".md"], input[type="file"][accept*=".txt"], input[type="file"][hidden], input[type="file"][multiple]',
     // Main panel and container selectors
     MAIN_PANEL: '.Layout-module__chatInputContainer--DXrKy, .ChatInput-module__container--NFzCy, main',
     // Drop zones for file attachment
-    DROP_ZONE: '.ChatInput-module__inputContainer--BcExV, .Layout-module__chatInputContainer--DXrKy, #copilot-chat-textarea',
+    DROP_ZONE:
+      '.ChatInput-module__inputContainer--BcExV, .Layout-module__chatInputContainer--DXrKy, #copilot-chat-textarea',
     // File preview elements
     FILE_PREVIEW: '.file-preview, .attachment-preview, .ChatInput-module__attachment',
     // Button insertion points (for MCP popover)
-    BUTTON_INSERTION_CONTAINER: '.ChatInput-module__toolbarLeft--cjV2H, .ChatInput-module__toolbar--ZtCiG, .ChatInput-module__toolbarRight--PiQJn',
+    BUTTON_INSERTION_CONTAINER:
+      '.ChatInput-module__toolbarLeft--cjV2H, .ChatInput-module__toolbar--ZtCiG, .ChatInput-module__toolbarRight--PiQJn',
     // Alternative insertion points
-    FALLBACK_INSERTION: '.ChatInput-module__container--NFzCy, .Layout-module__chatInputContainer--DXrKy'
+    FALLBACK_INSERTION: '.ChatInput-module__container--NFzCy, .Layout-module__chatInputContainer--DXrKy',
   };
 
   // URL patterns for navigation tracking
@@ -55,12 +60,12 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
   private mcpPopoverContainer: HTMLElement | null = null;
   private mutationObserver: MutationObserver | null = null;
   private popoverCheckInterval: NodeJS.Timeout | null = null;
-  
+
   // Setup state tracking
   private storeEventListenersSetup: boolean = false;
   private domObserversSetup: boolean = false;
   private uiIntegrationSetup: boolean = false;
-  
+
   // Instance tracking for debugging
   private static instanceCount = 0;
   private instanceId: number;
@@ -78,7 +83,9 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
   async initialize(context: PluginContext): Promise<void> {
     // Guard against multiple initialization
     if (this.currentStatus === 'initializing' || this.currentStatus === 'active') {
-      this.context?.logger.warn(`GitHub Copilot adapter instance #${this.instanceId} already initialized or active, skipping re-initialization`);
+      this.context?.logger.warn(
+        `GitHub Copilot adapter instance #${this.instanceId} already initialized or active, skipping re-initialization`,
+      );
       return;
     }
 
@@ -99,7 +106,9 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
   async activate(): Promise<void> {
     // Guard against multiple activation
     if (this.currentStatus === 'active') {
-      this.context?.logger.warn(`GitHub Copilot adapter instance #${this.instanceId} already active, skipping re-activation`);
+      this.context?.logger.warn(
+        `GitHub Copilot adapter instance #${this.instanceId} already active, skipping re-activation`,
+      );
       return;
     }
 
@@ -116,7 +125,7 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
     // Emit activation event for store synchronization
     this.context.eventBus.emit('adapter:activated', {
       pluginName: this.name,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -142,7 +151,7 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
     // Emit deactivation event
     this.context.eventBus.emit('adapter:deactivated', {
       pluginName: this.name,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -173,7 +182,7 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
     // Final cleanup
     this.cleanupUIIntegration();
     this.cleanupDOMObservers();
-    
+
     // Reset all setup flags
     this.storeEventListenersSetup = false;
     this.domObserversSetup = false;
@@ -185,7 +194,9 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
    * Enhanced with better selector handling and event integration
    */
   async insertText(text: string, options?: { targetElement?: HTMLElement }): Promise<boolean> {
-    this.context.logger.debug(`Attempting to insert text into GitHub Copilot chat input: ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}`);
+    this.context.logger.debug(
+      `Attempting to insert text into GitHub Copilot chat input: ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}`,
+    );
 
     let targetElement: HTMLElement | null = null;
 
@@ -228,7 +239,10 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
       targetElement.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
 
       // Trigger React's change detection if needed
-      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLTextAreaElement.prototype,
+        'value',
+      )?.set;
       if (nativeInputValueSetter) {
         nativeInputValueSetter.call(targetElement, newContent);
         const event = new Event('input', { bubbles: true });
@@ -236,14 +250,20 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
       }
 
       // Emit success event to the new event system
-      this.emitExecutionCompleted('insertText', { text }, {
-        success: true,
-        originalLength: originalValue.length,
-        newLength: text.length,
-        totalLength: newContent.length
-      });
+      this.emitExecutionCompleted(
+        'insertText',
+        { text },
+        {
+          success: true,
+          originalLength: originalValue.length,
+          newLength: text.length,
+          totalLength: newContent.length,
+        },
+      );
 
-      this.context.logger.debug(`Text inserted successfully. Original: ${originalValue.length}, Added: ${text.length}, Total: ${newContent.length}`);
+      this.context.logger.debug(
+        `Text inserted successfully. Original: ${originalValue.length}, Added: ${text.length}, Total: ${newContent.length}`,
+      );
       return true;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -298,13 +318,17 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
       submitButton.click();
 
       // Emit success event to the new event system
-      this.emitExecutionCompleted('submitForm', {
-        formElement: options?.formElement?.tagName || 'unknown'
-      }, {
-        success: true,
-        method: 'submitButton.click',
-        buttonSelector: selectors.find(s => document.querySelector(s.trim()) === submitButton)
-      });
+      this.emitExecutionCompleted(
+        'submitForm',
+        {
+          formElement: options?.formElement?.tagName || 'unknown',
+        },
+        {
+          success: true,
+          method: 'submitButton.click',
+          buttonSelector: selectors.find(s => document.querySelector(s.trim()) === submitButton),
+        },
+      );
 
       this.context.logger.debug('GitHub Copilot chat input submitted successfully');
       return true;
@@ -336,12 +360,12 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
       //   'text/plain', 'text/markdown', 'text/csv', 'text/tab-separated-values',
       //   'application/json', 'application/xml', 'text/xml'
       // ];
-      // const isSupported = supportedTypes.some(type => 
-      //   file.type === type || 
+      // const isSupported = supportedTypes.some(type =>
+      //   file.type === type ||
       //   file.type.includes(type.split('/')[1]) ||
       //   (file.type === '' && file.name.match(/\.(md|txt|json|xml|csv|tsv)$/i))
       // );
-      
+
       // if (!isSupported) {
       //   this.emitExecutionFailed('attachFile', `Unsupported file type: ${file.type}. GitHub Copilot supports: ${supportedTypes.join(', ')}`);
       //   return false;
@@ -381,7 +405,6 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
 
       this.emitExecutionFailed('attachFile', 'Could not find file input or upload button');
       return false;
-
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.context.logger.error(`Error attaching file to GitHub Copilot: ${errorMessage}`);
@@ -416,10 +439,10 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
 
     // Check if we're on a supported GitHub Copilot page
     const supportedPatterns = [
-      /^https:\/\/github\.com\/copilot$/,                    // Main copilot page
-      /^https:\/\/github\.com\/copilot\/.*$/,                // Copilot sub-pages
-      /^https:\/\/github\.com\/features\/copilot.*$/,        // Features pages
-      /^https:\/\/copilot\.github\.com\/.*$/                 // Copilot subdomain if exists
+      /^https:\/\/github\.com\/copilot$/, // Main copilot page
+      /^https:\/\/github\.com\/copilot\/.*$/, // Copilot sub-pages
+      /^https:\/\/github\.com\/features\/copilot.*$/, // Features pages
+      /^https:\/\/copilot\.github\.com\/.*$/, // Copilot subdomain if exists
     ];
 
     const isSupported = supportedPatterns.some(pattern => pattern.test(currentUrl));
@@ -479,20 +502,20 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
       // Log the found input element for debugging
       // this.context.logger.debug(`Using file input: ${fileInput.id || fileInput.className}, accept: ${fileInput.accept}`);
       this.context.logger.debug(`Using file input: ${fileInput.id || fileInput.className}`);
-      
+
       // Create a DataTransfer object to set files
       const dataTransfer = new DataTransfer();
       dataTransfer.items.add(file);
-      
+
       // Set the files property using proper descriptor
       const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'files');
       if (descriptor && descriptor.set) {
         descriptor.set.call(fileInput, dataTransfer.files);
       } else {
         // Fallback for browsers that don't support the descriptor approach
-        Object.defineProperty(fileInput, 'files', { 
-          value: dataTransfer.files, 
-          writable: false 
+        Object.defineProperty(fileInput, 'files', {
+          value: dataTransfer.files,
+          writable: false,
         });
       }
 
@@ -506,24 +529,28 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
       const changeEvent = new Event('change', { bubbles: true, cancelable: true });
       Object.defineProperty(changeEvent, 'target', { writable: false, value: fileInput });
       Object.defineProperty(changeEvent, 'currentTarget', { writable: false, value: fileInput });
-      
+
       // Dispatch the change event
       fileInput.dispatchEvent(changeEvent);
-      
+
       // Also dispatch input event for additional compatibility
       const inputEvent = new Event('input', { bubbles: true, cancelable: true });
       Object.defineProperty(inputEvent, 'target', { writable: false, value: fileInput });
       fileInput.dispatchEvent(inputEvent);
 
-      this.emitExecutionCompleted('attachFile', {
-        fileName: file.name,
-        fileType: file.type,
-        fileSize: file.size,
-        inputElement: fileInput.tagName
-      }, {
-        success: true,
-        method: 'direct-file-input'
-      });
+      this.emitExecutionCompleted(
+        'attachFile',
+        {
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+          inputElement: fileInput.tagName,
+        },
+        {
+          success: true,
+          method: 'direct-file-input',
+        },
+      );
 
       this.context.logger.debug(`File attached successfully via input element: ${file.name}`);
       return true;
@@ -550,14 +577,14 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
       //       this.context.logger.debug('Found file input after button click, setting files');
       //       const dataTransfer = new DataTransfer();
       //       dataTransfer.items.add(file);
-            
+
       //       const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'files');
       //       if (descriptor && descriptor.set) {
       //         descriptor.set.call(newFileInput, dataTransfer.files);
       //       } else {
       //         newFileInput.files = dataTransfer.files;
       //       }
-            
+
       //       newFileInput.dispatchEvent(new Event('change', { bubbles: true }));
       //     }
       //     resolve();
@@ -580,7 +607,7 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
       const chatTextarea = document.querySelector('#copilot-chat-textarea');
       if (chatTextarea) {
         this.context.logger.debug('Simulating drag and drop on chat textarea');
-        await new Promise<void>((resolve) => {
+        await new Promise<void>(resolve => {
           setTimeout(() => {
             this.simulateFileDrop(chatTextarea, file);
             resolve();
@@ -588,14 +615,18 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
         });
       }
 
-      this.emitExecutionCompleted('attachFile', {
-        fileName: file.name,
-        fileType: file.type,
-        fileSize: file.size
-      }, {
-        success: true,
-        method: 'upload-button-trigger'
-      });
+      this.emitExecutionCompleted(
+        'attachFile',
+        {
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+        },
+        {
+          success: true,
+          method: 'upload-button-trigger',
+        },
+      );
 
       this.context.logger.debug(`File attachment initiated via upload button: ${file.name}`);
       return true;
@@ -633,17 +664,19 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
       return;
     }
 
-    this.context.logger.debug(`Setting up store event listeners for GitHub Copilot adapter instance #${this.instanceId}`);
+    this.context.logger.debug(
+      `Setting up store event listeners for GitHub Copilot adapter instance #${this.instanceId}`,
+    );
 
     // Listen for tool execution events from the store
-    this.context.eventBus.on('tool:execution-completed', (data) => {
+    this.context.eventBus.on('tool:execution-completed', data => {
       this.context.logger.debug('Tool execution completed:', data);
       // Handle auto-actions based on store state
       this.handleToolExecutionCompleted(data);
     });
 
     // Listen for UI state changes
-    this.context.eventBus.on('ui:sidebar-toggle', (data) => {
+    this.context.eventBus.on('ui:sidebar-toggle', data => {
       this.context.logger.debug('Sidebar toggled:', data);
     });
 
@@ -659,10 +692,10 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
     this.context.logger.debug(`Setting up DOM observers for GitHub Copilot adapter instance #${this.instanceId}`);
 
     // Set up mutation observer to detect page changes and re-inject UI if needed
-    this.mutationObserver = new MutationObserver((mutations) => {
+    this.mutationObserver = new MutationObserver(mutations => {
       let shouldReinject = false;
 
-      mutations.forEach((mutation) => {
+      mutations.forEach(mutation => {
         if (mutation.type === 'childList') {
           // Check if our MCP popover was removed
           if (!document.getElementById('mcp-popover-container')) {
@@ -684,9 +717,9 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
     // Start observing
     this.mutationObserver.observe(document.body, {
       childList: true,
-      subtree: true
+      subtree: true,
     });
-    
+
     this.domObserversSetup = true;
   }
 
@@ -694,19 +727,23 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
     // Allow multiple calls for UI integration (for re-injection after page changes)
     // but log it for debugging
     if (this.uiIntegrationSetup) {
-      this.context.logger.debug(`UI integration already set up for instance #${this.instanceId}, re-injecting for page changes`);
+      this.context.logger.debug(
+        `UI integration already set up for instance #${this.instanceId}, re-injecting for page changes`,
+      );
     } else {
       this.context.logger.debug(`Setting up UI integration for GitHub Copilot adapter instance #${this.instanceId}`);
       this.uiIntegrationSetup = true;
     }
 
     // Wait for page to be ready, then inject MCP popover
-    this.waitForPageReady().then(() => {
-      this.injectMCPPopoverWithRetry();
-    }).catch((error) => {
-      this.context.logger.warn('Failed to wait for page ready:', error);
-      // Don't retry if we can't find insertion point
-    });
+    this.waitForPageReady()
+      .then(() => {
+        this.injectMCPPopoverWithRetry();
+      })
+      .catch(error => {
+        this.context.logger.warn('Failed to wait for page ready:', error);
+        // Don't retry if we can't find insertion point
+      });
 
     // Set up periodic check to ensure popover stays injected
     // this.setupPeriodicPopoverCheck();
@@ -716,7 +753,7 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
     return new Promise((resolve, reject) => {
       let attempts = 0;
       const maxAttempts = 5; // Maximum 10 seconds (20 * 500ms)
-      
+
       const checkReady = () => {
         attempts++;
         const insertionPoint = this.findButtonInsertionPoint();
@@ -834,10 +871,7 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
     }
 
     // Try other fallback selectors
-    const fallbackSelectors = [
-      '.ChatInput-module__container--NFzCy',
-      '.Layout-module__chatInputContainer--DXrKy'
-    ];
+    const fallbackSelectors = ['.ChatInput-module__container--NFzCy', '.Layout-module__chatInputContainer--DXrKy'];
 
     for (const selector of fallbackSelectors) {
       const container = document.querySelector(selector);
@@ -894,40 +928,46 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
 
     try {
       // Import React and ReactDOM dynamically to avoid bundling issues
-      import('react').then(React => {
-        import('react-dom/client').then(ReactDOM => {
-          import('../../components/mcpPopover/mcpPopover').then(({ MCPPopover }) => {
-            // Create toggle state manager that integrates with new stores
-            const toggleStateManager = this.createToggleStateManager();
+      import('react')
+        .then(React => {
+          import('react-dom/client')
+            .then(ReactDOM => {
+              import('../../components/mcpPopover/mcpPopover')
+                .then(({ MCPPopover }) => {
+                  // Create toggle state manager that integrates with new stores
+                  const toggleStateManager = this.createToggleStateManager();
 
-            // GitHub-specific button styling configuration
-            const adapterButtonConfig = {
-              className: 'mcp-gh-button-base',
-              contentClassName: 'mcp-gh-button-content',
-              textClassName: 'mcp-gh-button-text',
-              activeClassName: 'mcp-button-active'
-            };
+                  // GitHub-specific button styling configuration
+                  const adapterButtonConfig = {
+                    className: 'mcp-gh-button-base',
+                    contentClassName: 'mcp-gh-button-content',
+                    textClassName: 'mcp-gh-button-text',
+                    activeClassName: 'mcp-button-active',
+                  };
 
-            // Create React root and render
-            const root = ReactDOM.createRoot(container);
-            root.render(
-              React.createElement(MCPPopover, {
-                toggleStateManager: toggleStateManager,
-                adapterButtonConfig: adapterButtonConfig,
-                adapterName: this.name
-              })
-            );
+                  // Create React root and render
+                  const root = ReactDOM.createRoot(container);
+                  root.render(
+                    React.createElement(MCPPopover, {
+                      toggleStateManager: toggleStateManager,
+                      adapterButtonConfig: adapterButtonConfig,
+                      adapterName: this.name,
+                    }),
+                  );
 
-            this.context.logger.debug('MCP popover rendered successfully with GitHub styling');
-          }).catch(error => {
-            this.context.logger.error('Failed to import MCPPopover component:', error);
-          });
-        }).catch(error => {
-          this.context.logger.error('Failed to import ReactDOM:', error);
+                  this.context.logger.debug('MCP popover rendered successfully with GitHub styling');
+                })
+                .catch(error => {
+                  this.context.logger.error('Failed to import MCPPopover component:', error);
+                });
+            })
+            .catch(error => {
+              this.context.logger.error('Failed to import ReactDOM:', error);
+            });
+        })
+        .catch(error => {
+          this.context.logger.error('Failed to import React:', error);
         });
-      }).catch(error => {
-        this.context.logger.error('Failed to import React:', error);
-      });
     } catch (error) {
       this.context.logger.error('Failed to render MCP popover:', error);
     }
@@ -943,7 +983,7 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
         try {
           // Get state from UI store - MCP enabled state should be the persistent MCP toggle state
           const uiState = context.stores.ui;
-          
+
           // Get the persistent MCP enabled state and other preferences
           const mcpEnabled = uiState?.mcpEnabled ?? false;
           const autoSubmitEnabled = uiState?.preferences?.autoSubmit ?? false;
@@ -954,7 +994,7 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
             mcpEnabled: mcpEnabled, // Use the persistent MCP state
             autoInsert: autoSubmitEnabled,
             autoSubmit: autoSubmitEnabled,
-            autoExecute: false // Default for now, can be extended
+            autoExecute: false, // Default for now, can be extended
           };
         } catch (error) {
           context.logger.error('Error getting toggle state:', error);
@@ -963,13 +1003,15 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
             mcpEnabled: false,
             autoInsert: false,
             autoSubmit: false,
-            autoExecute: false
+            autoExecute: false,
           };
         }
       },
 
       setMCPEnabled: (enabled: boolean) => {
-        context.logger.debug(`Setting MCP ${enabled ? 'enabled' : 'disabled'} - controlling sidebar visibility via MCP state`);
+        context.logger.debug(
+          `Setting MCP ${enabled ? 'enabled' : 'disabled'} - controlling sidebar visibility via MCP state`,
+        );
 
         try {
           // Primary method: Control MCP state through UI store (which will automatically control sidebar)
@@ -978,7 +1020,7 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
             context.logger.debug(`MCP state set to: ${enabled} via UI store`);
           } else {
             context.logger.warn('UI store setMCPEnabled method not available');
-            
+
             // Fallback: Control sidebar visibility directly if MCP state setter not available
             if (context.stores.ui?.setSidebarVisibility) {
               context.stores.ui.setSidebarVisibility(enabled, 'mcp-popover-toggle-fallback');
@@ -1004,7 +1046,9 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
             context.logger.warn('activeSidebarManager not available on window - will rely on UI store only');
           }
 
-          context.logger.debug(`MCP toggle completed: MCP ${enabled ? 'enabled' : 'disabled'}, sidebar ${enabled ? 'shown' : 'hidden'}`);
+          context.logger.debug(
+            `MCP toggle completed: MCP ${enabled ? 'enabled' : 'disabled'}, sidebar ${enabled ? 'shown' : 'hidden'}`,
+          );
         } catch (error) {
           context.logger.error('Error in setMCPEnabled:', error);
         }
@@ -1048,11 +1092,11 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
         if (popoverContainer) {
           const currentState = stateManager.getState();
           const event = new CustomEvent('mcp:update-toggle-state', {
-            detail: { toggleState: currentState }
+            detail: { toggleState: currentState },
           });
           popoverContainer.dispatchEvent(event);
         }
-      }
+      },
     };
 
     return stateManager;
@@ -1096,8 +1140,8 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
         parameters,
         result,
         timestamp: Date.now(),
-        status: 'success'
-      }
+        status: 'success',
+      },
     });
   }
 
@@ -1105,7 +1149,7 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
     this.context.eventBus.emit('tool:execution-failed', {
       toolName,
       error,
-      callId: this.generateCallId()
+      callId: this.generateCallId(),
     });
   }
 
@@ -1122,7 +1166,7 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
     try {
       // Check if there's an active sidebar manager
       const activeSidebarManager = (window as any).activeSidebarManager;
-      
+
       if (!activeSidebarManager) {
         this.context.logger.warn('No active sidebar manager found after navigation');
         return;
@@ -1130,7 +1174,6 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
 
       // Sidebar manager exists, just ensure MCP popover connection is working
       this.ensureMCPPopoverConnection();
-      
     } catch (error) {
       this.context.logger.error('Error checking sidebar state after navigation:', error);
     }
@@ -1141,7 +1184,7 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
    */
   private ensureMCPPopoverConnection(): void {
     this.context.logger.debug('Ensuring MCP popover connection after navigation');
-    
+
     try {
       // Check if MCP popover is still injected
       if (!this.isMCPPopoverInjected()) {
@@ -1155,7 +1198,7 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
     }
   }
 
-    // Event handlers - Enhanced for new architecture integration
+  // Event handlers - Enhanced for new architecture integration
   onPageChanged?(url: string, oldUrl?: string): void {
     this.context.logger.debug(`GitHub Copilot page changed: from ${oldUrl || 'N/A'} to ${url}`);
 
@@ -1186,7 +1229,7 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
     // Emit page change event to stores
     this.context.eventBus.emit('app:site-changed', {
       site: url,
-      hostname: window.location.hostname
+      hostname: window.location.hostname,
     });
   }
 
@@ -1200,7 +1243,7 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
       // Emit deactivation event using available event type
       this.context.eventBus.emit('adapter:deactivated', {
         pluginName: this.name,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     } else {
       // Re-setup for new host
@@ -1220,9 +1263,9 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
   /**
    * Get GitHub Copilot specific button styles that match the native UI
    * Mimics the styling of GitHub's Primer React Components
-   * 
+   *
    * @returns CSS string with GitHub-specific button styles
-   * 
+   *
    * @example
    * // For other adapters, implement a similar method:
    * // private getAdapterButtonStyles(): string {
@@ -1370,23 +1413,23 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
 
   /**
    * Inject GitHub-specific button styles into the page
-   * 
+   *
    * @example
    * // Template for other adapters:
-   * // 
+   * //
    * // private injectAdapterButtonStyles(): void {
    * //   if (this.adapterStylesInjected) return;
-   * //   
+   * //
    * //   try {
    * //     const styleId = 'mcp-[adapter-name]-button-styles';
    * //     const existingStyles = document.getElementById(styleId);
    * //     if (existingStyles) existingStyles.remove();
-   * //     
+   * //
    * //     const styleElement = document.createElement('style');
    * //     styleElement.id = styleId;
    * //     styleElement.textContent = this.getAdapterButtonStyles();
    * //     document.head.appendChild(styleElement);
-   * //     
+   * //
    * //     this.adapterStylesInjected = true;
    * //     this.context.logger.debug('[Adapter] button styles injected successfully');
    * //   } catch (error) {
@@ -1397,7 +1440,7 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
    * // Then in renderMCPPopover method:
    * // const adapterButtonConfig = {
    * //   className: 'mcp-[adapter]-button-base',
-   * //   contentClassName: 'mcp-[adapter]-button-content', 
+   * //   contentClassName: 'mcp-[adapter]-button-content',
    * //   textClassName: 'mcp-[adapter]-button-text',
    * //   activeClassName: 'mcp-button-active'
    * // };
@@ -1410,7 +1453,7 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
 
     try {
       const styleId = 'mcp-github-copilot-button-styles';
-      
+
       // Remove existing styles if any
       const existingStyles = document.getElementById(styleId);
       if (existingStyles) {
@@ -1446,19 +1489,19 @@ export class GitHubCopilotAdapter extends BaseAdapterPlugin {
       const dragEnterEvent = new DragEvent('dragenter', {
         bubbles: true,
         cancelable: true,
-        dataTransfer: dataTransfer
+        dataTransfer: dataTransfer,
       });
 
       const dragOverEvent = new DragEvent('dragover', {
         bubbles: true,
         cancelable: true,
-        dataTransfer: dataTransfer
+        dataTransfer: dataTransfer,
       });
 
       const dropEvent = new DragEvent('drop', {
         bubbles: true,
         cancelable: true,
-        dataTransfer: dataTransfer
+        dataTransfer: dataTransfer,
       });
 
       // Dispatch the events in sequence

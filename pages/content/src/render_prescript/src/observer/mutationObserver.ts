@@ -230,8 +230,7 @@ export const startDirectMonitoring = (): void => {
             // Also check if the content of any text nodes might contain function call patterns (XML or JSON)
             if (element.textContent) {
               const hasXMLPattern =
-                element.textContent.includes('<function_calls>') ||
-                element.textContent.includes('<invoke');
+                element.textContent.includes('<function_calls>') || element.textContent.includes('<invoke');
 
               // Be lenient for JSON - allow partial/streaming content
               const looksLikeJSONStart = element.textContent.trim().startsWith('{');
@@ -259,9 +258,7 @@ export const startDirectMonitoring = (): void => {
             // Also check text nodes for function call patterns (XML or JSON)
             const textContent = node.textContent || '';
 
-            const hasXMLPattern =
-              textContent.includes('<function_calls>') ||
-              textContent.includes('<invoke');
+            const hasXMLPattern = textContent.includes('<function_calls>') || textContent.includes('<invoke');
 
             // Be lenient for JSON - allow partial/streaming content
             const looksLikeJSONStart = textContent.trim().startsWith('{');
@@ -281,9 +278,7 @@ export const startDirectMonitoring = (): void => {
         // Check if the characterData mutation might be adding function call content (XML or JSON)
         const textContent = mutation.target.textContent || '';
 
-        const hasXMLPattern =
-          textContent.includes('<function_calls>') ||
-          textContent.includes('<invoke');
+        const hasXMLPattern = textContent.includes('<function_calls>') || textContent.includes('<invoke');
 
         // Be lenient for JSON detection - allow partial/streaming content
         // Check if it looks like JSON start, not just complete patterns

@@ -41,6 +41,6 @@ if (process.env.NODE_ENV === 'development') {
     async initialize() {
       const { initializePluginRegistry } = await import('./plugin-registry');
       return initializePluginRegistry();
-    }
+    },
   };
 }

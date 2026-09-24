@@ -75,8 +75,7 @@ export class OpenRouterAdapter extends BaseAdapterPlugin {
     super();
     OpenRouterAdapter.instanceCount++;
     this.instanceId = OpenRouterAdapter.instanceCount;
-    logger.debug(`Instance #${this.instanceId} created. Total instances: ${OpenRouterAdapter.instanceCount}`,
-    );
+    logger.debug(`Instance #${this.instanceId} created. Total instances: ${OpenRouterAdapter.instanceCount}`);
   }
 
   async initialize(context: PluginContext): Promise<void> {
@@ -557,7 +556,6 @@ export class OpenRouterAdapter extends BaseAdapterPlugin {
 
       this.context.logger.debug('All copy-paste methods failed');
       return false;
-
     } catch (error) {
       this.context.logger.error('Error in copy-paste attachment:', error);
       return false;
@@ -603,20 +601,24 @@ export class OpenRouterAdapter extends BaseAdapterPlugin {
           this.context.logger.debug(`Dispatching paste event on: ${target.tagName}.${target.className || 'no-class'}`);
           target.dispatchEvent(pasteEvent);
           await new Promise(resolve => setTimeout(resolve, 200));
-          
+
           // Check immediately after each dispatch
           const previewFound = await this.checkFilePreview();
           if (previewFound) {
             this.context.logger.debug('Direct paste event succeeded');
-            this.emitExecutionCompleted('attachFile', {
-              fileName: file.name,
-              fileType: file.type,
-              fileSize: file.size,
-            }, {
-              success: true,
-              previewFound: true,
-              method: 'direct-paste-event',
-            });
+            this.emitExecutionCompleted(
+              'attachFile',
+              {
+                fileName: file.name,
+                fileType: file.type,
+                fileSize: file.size,
+              },
+              {
+                success: true,
+                previewFound: true,
+                method: 'direct-paste-event',
+              },
+            );
             return true;
           }
         }
@@ -654,11 +656,11 @@ export class OpenRouterAdapter extends BaseAdapterPlugin {
           composed: true,
           view: window,
         });
-        
+
         // Firefox-specific properties
         Object.defineProperty(event, 'ctrlKey', { value: true, writable: false });
         Object.defineProperty(event, 'metaKey', { value: false, writable: false });
-        
+
         return event;
       };
 
@@ -668,25 +670,19 @@ export class OpenRouterAdapter extends BaseAdapterPlugin {
       const keyupEvent = createKeyEvent('keyup');
 
       // Try on multiple targets with keyboard events followed by paste events
-      const targets = [
-        chatInput,
-        chatInput.parentElement,
-        document.activeElement,
-        document,
-        window,
-      ].filter(Boolean);
+      const targets = [chatInput, chatInput.parentElement, document.activeElement, document, window].filter(Boolean);
 
       for (const target of targets) {
         if (target) {
           this.context.logger.debug(`Trying keyboard simulation on: ${target.constructor.name}`);
-          
+
           // Dispatch keyboard sequence
           target.dispatchEvent(keydownEvent);
           await new Promise(resolve => setTimeout(resolve, 50));
-          
+
           target.dispatchEvent(keypressEvent);
           await new Promise(resolve => setTimeout(resolve, 50));
-          
+
           target.dispatchEvent(keyupEvent);
           await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -712,19 +708,23 @@ export class OpenRouterAdapter extends BaseAdapterPlugin {
           const previewFound = await this.checkFilePreview();
           if (previewFound) {
             this.context.logger.debug('Keyboard paste simulation succeeded');
-            
+
             // Clean up global state
             delete (window as any).__mcpClipboardData;
-            
-            this.emitExecutionCompleted('attachFile', {
-              fileName: file.name,
-              fileType: file.type,
-              fileSize: file.size,
-            }, {
-              success: true,
-              previewFound: true,
-              method: 'keyboard-paste-simulation',
-            });
+
+            this.emitExecutionCompleted(
+              'attachFile',
+              {
+                fileName: file.name,
+                fileType: file.type,
+                fileSize: file.size,
+              },
+              {
+                success: true,
+                previewFound: true,
+                method: 'keyboard-paste-simulation',
+              },
+            );
             return true;
           }
         }
@@ -732,7 +732,7 @@ export class OpenRouterAdapter extends BaseAdapterPlugin {
 
       // Clean up global state
       delete (window as any).__mcpClipboardData;
-      
+
       return false;
     } catch (error) {
       this.context.logger.error('Error in keyboard paste simulation:', error);
@@ -765,11 +765,9 @@ export class OpenRouterAdapter extends BaseAdapterPlugin {
       for (const mimeType of mimeTypeAttempts) {
         try {
           this.context.logger.debug(`Attempting Clipboard API with MIME type: ${mimeType}`);
-          
+
           // Create a new File object with the fallback MIME type if needed
-          const fileForClipboard = mimeType === file.type 
-            ? file 
-            : new File([file], file.name, { type: mimeType });
+          const fileForClipboard = mimeType === file.type ? file : new File([file], file.name, { type: mimeType });
 
           const clipboardItem = new ClipboardItem({
             [mimeType]: fileForClipboard,
@@ -777,7 +775,7 @@ export class OpenRouterAdapter extends BaseAdapterPlugin {
 
           await navigator.clipboard.write([clipboardItem]);
           this.context.logger.debug(`Successfully wrote to clipboard with MIME type: ${mimeType}`);
-          
+
           await new Promise(resolve => setTimeout(resolve, 300));
 
           // Create paste event with clipboard data
@@ -811,25 +809,28 @@ export class OpenRouterAdapter extends BaseAdapterPlugin {
             if (target) {
               target.dispatchEvent(pasteEvent);
               await new Promise(resolve => setTimeout(resolve, 200));
-              
+
               // Check for file preview
               const previewFound = await this.checkFilePreview();
               if (previewFound) {
                 this.context.logger.debug(`Clipboard API approach succeeded with MIME type: ${mimeType}`);
-                this.emitExecutionCompleted('attachFile', {
-                  fileName: file.name,
-                  fileType: file.type,
-                  fileSize: file.size,
-                }, {
-                  success: true,
-                  previewFound: true,
-                  method: 'clipboard-api',
-                });
+                this.emitExecutionCompleted(
+                  'attachFile',
+                  {
+                    fileName: file.name,
+                    fileType: file.type,
+                    fileSize: file.size,
+                  },
+                  {
+                    success: true,
+                    previewFound: true,
+                    method: 'clipboard-api',
+                  },
+                );
                 return true;
               }
             }
           }
-
         } catch (mimeError) {
           const errorMessage = mimeError instanceof Error ? mimeError.message : String(mimeError);
           this.context.logger.debug(`MIME type ${mimeType} failed:`, errorMessage);
@@ -897,16 +898,18 @@ export class OpenRouterAdapter extends BaseAdapterPlugin {
 
       for (const target of targets) {
         if (target) {
-          this.context.logger.debug(`Trying Firefox input simulation on: ${target.tagName}.${target.className || 'no-class'}`);
-          
+          this.context.logger.debug(
+            `Trying Firefox input simulation on: ${target.tagName}.${target.className || 'no-class'}`,
+          );
+
           // Dispatch beforeinput first
           target.dispatchEvent(beforeInputEvent);
           await new Promise(resolve => setTimeout(resolve, 100));
-          
+
           // Then input event
           target.dispatchEvent(inputEvent);
           await new Promise(resolve => setTimeout(resolve, 200));
-          
+
           // Follow up with a paste event
           const pasteEvent = new ClipboardEvent('paste', {
             bubbles: true,
@@ -928,15 +931,19 @@ export class OpenRouterAdapter extends BaseAdapterPlugin {
           const previewFound = await this.checkFilePreview();
           if (previewFound) {
             this.context.logger.debug('Firefox input simulation succeeded');
-            this.emitExecutionCompleted('attachFile', {
-              fileName: file.name,
-              fileType: file.type,
-              fileSize: file.size,
-            }, {
-              success: true,
-              previewFound: true,
-              method: 'firefox-input-simulation',
-            });
+            this.emitExecutionCompleted(
+              'attachFile',
+              {
+                fileName: file.name,
+                fileType: file.type,
+                fileSize: file.size,
+              },
+              {
+                success: true,
+                previewFound: true,
+                method: 'firefox-input-simulation',
+              },
+            );
             return true;
           }
         }
@@ -1172,10 +1179,7 @@ export class OpenRouterAdapter extends BaseAdapterPlugin {
 
       // Only attempt re-injection if we're on a chat page
       const currentUrl = window.location.href;
-      if (
-        !currentUrl.includes('/chat') ||
-        !this.isSupported()
-      ) {
+      if (!currentUrl.includes('/chat') || !this.isSupported()) {
         this.context.logger.debug('Not on a supported chat page, skipping MCP popover injection');
         return;
       }
@@ -1522,7 +1526,9 @@ export class OpenRouterAdapter extends BaseAdapterPlugin {
           document.querySelector('.rounded-xl.overflow-hidden.p-2.border.border-slate-4');
         if (chatContainer) {
           // Look for the file preview area that appears after file drop
-          const filePreviewArea = chatContainer.querySelector('.duration-200.bg-accent\\/80.flex.w-full.shadow-inner.p-2');
+          const filePreviewArea = chatContainer.querySelector(
+            '.duration-200.bg-accent\\/80.flex.w-full.shadow-inner.p-2',
+          );
           if (filePreviewArea) {
             this.context.logger.debug('Found OpenRouter file preview area');
             resolve(true);

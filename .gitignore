@@ -97,14 +97,36 @@ clients.md
 **/test-results/
 
 # documentation, plans, skills, archives, cache, and scripts (not extension code)
-plugin-upgrade-plan/
-troubleshoot-mcp-superassistant/
-scratch/
+.archive/stale-advice/
 .codegraph
 .omo/
-docs/
 MCP-SuperAssistant-*-source.tar.gz
 stabilization_status.md
 STABILIZATION_STATUS.md
 TROUBLESHOOTING_PLAN.md
 WORKING_DIRECTORIES.md
+
+# local agent/tool state — never ship
+.tmp/
+.freebuff/
+.serena/
+.omx/
+.packaging/
+packages/e2e/.tmp/
+packages/e2e/playwright-report/
+packages/e2e/test-results/
+
+# local-only probes and skill (kept out of the public tree by decision #3)
+troubleshoot-mcp-superassistant/
+packages/e2e/stage9-inspect.mjs
+packages/e2e/test-ack-recovery.mjs
+packages/e2e/test-c6-recovery.mjs
+packages/e2e/list-receipts.mjs
+packages/e2e/list-receipts2.mjs
+packages/e2e/check-ls.mjs
+packages/e2e/check-ls-keys.mjs
+packages/e2e/list-pages.mjs
+packages/e2e/setup-ack.mjs
+packages/e2e/restore-prefs.mjs
+packages/e2e/tests/adapters/
+packages/e2e/fixtures/

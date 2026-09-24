@@ -6,10 +6,10 @@ export class ExampleForumAdapter extends BaseAdapterPlugin {
   readonly version = '1.0.0';
   readonly hostnames = ['forum.example.com', 'www.forum.example.com']; // Specific hostnames for this adapter
   readonly capabilities: AdapterCapability[] = [
-    'text-insertion', 
-    'form-submission', 
+    'text-insertion',
+    'form-submission',
     'url-navigation', // Can navigate to specific URLs
-    'dom-manipulation' // Might need to interact with specific DOM elements
+    'dom-manipulation', // Might need to interact with specific DOM elements
   ];
 
   constructor() {
@@ -19,7 +19,9 @@ export class ExampleForumAdapter extends BaseAdapterPlugin {
 
   // Override or implement methods specific to ExampleForum
   async insertText(text: string, options?: { targetElement?: HTMLElement }): Promise<boolean> {
-    this.context.logger.debug(`Attempting to insert text into ${options?.targetElement ? 'specified element' : 'active element'}`);
+    this.context.logger.debug(
+      `Attempting to insert text into ${options?.targetElement ? 'specified element' : 'active element'}`,
+    );
     let targetElement: HTMLElement | null = null;
 
     if (options?.targetElement) {
@@ -32,7 +34,7 @@ export class ExampleForumAdapter extends BaseAdapterPlugin {
       (targetElement as HTMLInputElement | HTMLTextAreaElement).value = text;
       targetElement.dispatchEvent(new Event('input', { bubbles: true })); // Ensure reactivity
       this.context.logger.debug('Text inserted successfully.');
-      
+
       // Emit event for tracking
       this.context.eventBus.emit('tool:execution-completed', {
         execution: {
@@ -41,10 +43,10 @@ export class ExampleForumAdapter extends BaseAdapterPlugin {
           parameters: { text },
           result: { success: true },
           timestamp: Date.now(),
-          status: 'success'
-        }
+          status: 'success',
+        },
       });
-      
+
       return true;
     }
     this.context.logger.error('Failed to insert text. Target element not suitable or not found.');
@@ -103,7 +105,7 @@ export class ExampleForumAdapter extends BaseAdapterPlugin {
     }
     submitButton.click();
     this.context.logger.debug('Reply submitted successfully.');
-    
+
     // Emit event for tracking
     this.context.eventBus.emit('tool:execution-completed', {
       execution: {
@@ -112,10 +114,10 @@ export class ExampleForumAdapter extends BaseAdapterPlugin {
         parameters: { threadId, content },
         result: { success: true },
         timestamp: Date.now(),
-        status: 'success'
-      }
+        status: 'success',
+      },
     });
-    
+
     return true;
   }
 
@@ -127,16 +129,16 @@ export class ExampleForumAdapter extends BaseAdapterPlugin {
         '.thread-header h1',
         '[data-thread-title]',
         '.post-title h1',
-        '.topic-title'
+        '.topic-title',
       ];
-      
+
       for (const selector of titleSelectors) {
         const titleElement = document.querySelector<HTMLElement>(selector);
         if (titleElement) {
           return titleElement.textContent?.trim() || null;
         }
       }
-      
+
       // Fallback to page title
       return document.title || null;
     } catch (error) {
@@ -148,15 +150,10 @@ export class ExampleForumAdapter extends BaseAdapterPlugin {
   protected async initializePlugin(): Promise<void> {
     this.context.logger.debug('Initializing ExampleForumAdapter...');
     // Specific initialization, e.g., check for forum-specific global JS objects or DOM elements
-    
+
     // Check if we're on a forum page
-    const forumIndicators = [
-      '.forum-container',
-      '.thread-list',
-      '.post-container',
-      '[data-forum]'
-    ];
-    
+    const forumIndicators = ['.forum-container', '.thread-list', '.post-container', '[data-forum]'];
+
     const isForumPage = forumIndicators.some(selector => document.querySelector(selector));
     if (isForumPage) {
       this.context.logger.debug('Forum page detected, adapter ready for forum-specific operations');
@@ -168,10 +165,10 @@ export class ExampleForumAdapter extends BaseAdapterPlugin {
   protected async activatePlugin(): Promise<void> {
     this.context.logger.debug('Activating ExampleForumAdapter...');
     // Add event listeners specific to forum interactions, if needed
-    
+
     // Listen for thread navigation
     document.addEventListener('click', this.handleThreadClick.bind(this));
-    
+
     // Listen for form submissions
     document.addEventListener('submit', this.handleFormSubmit.bind(this));
   }
@@ -179,7 +176,7 @@ export class ExampleForumAdapter extends BaseAdapterPlugin {
   protected async deactivatePlugin(): Promise<void> {
     this.context.logger.debug('Deactivating ExampleForumAdapter...');
     // Remove event listeners added during activation
-    
+
     document.removeEventListener('click', this.handleThreadClick.bind(this));
     document.removeEventListener('submit', this.handleFormSubmit.bind(this));
   }
@@ -198,7 +195,7 @@ export class ExampleForumAdapter extends BaseAdapterPlugin {
         // Could emit an event here for tracking
         this.context.eventBus.emit('app:site-changed', {
           site: href,
-          hostname: window.location.hostname
+          hostname: window.location.hostname,
         });
       }
     }
@@ -216,8 +213,8 @@ export class ExampleForumAdapter extends BaseAdapterPlugin {
           parameters: { formType: 'forum' },
           result: { success: true },
           timestamp: Date.now(),
-          status: 'success'
-        }
+          status: 'success',
+        },
       });
     }
   }

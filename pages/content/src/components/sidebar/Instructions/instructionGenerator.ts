@@ -320,7 +320,6 @@ ClassName | Custom class | User
   instructions += 'IMPORTANT: You need to place function call xml tags in proper xml code block like:\n\n';
   instructions += '```xml\n<function_calls>\n...\n</function_calls>\n```\n\n';
 
-
   // Add tips section
   // instructions += '## Tips\n\n';
   // instructions += '- Make sure to use valid JSON within the `<use_mcp_tool>` tags\n';

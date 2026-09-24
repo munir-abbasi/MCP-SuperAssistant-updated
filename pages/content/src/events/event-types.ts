@@ -1,4 +1,12 @@
-import type { DetectedTool, ToolExecution, ConnectionStatus, UserPreferences, Notification, GlobalSettings, Tool } from '../types/stores';
+import type {
+  DetectedTool,
+  ToolExecution,
+  ConnectionStatus,
+  UserPreferences,
+  Notification,
+  GlobalSettings,
+  Tool,
+} from '../types/stores';
 import type { AdapterConfig } from '../plugins/plugin-types'; // Added for plugin:config-updated
 import type { RemoteNotification, FeatureFlag } from '../stores/config.store';
 
@@ -63,13 +71,13 @@ export interface EventMap {
   'remote-config:updated': { changes: string[]; timestamp: number };
   'remote-config:initialized': { timestamp: number; version: string };
   'remote-config:adapter-configs-updated': { adapterConfigs: Record<string, any>; timestamp: number };
-  
+
   // Feature Flag events
   'feature-flags:updated': { flags: Record<string, FeatureFlag>; timestamp: number };
   'feature-flags:evaluated': { flagName: string; enabled: boolean; userSegment: string };
   'feature-flag:enabled': { flagName: string; config?: any; timestamp: number };
   'feature-flag:disabled': { flagName: string; reason?: string; timestamp: number };
-  
+
   // Notification events (enhanced)
   'notification:remote-received': { notification: RemoteNotification; timestamp: number };
   'notification:targeted': { notificationId: string; targeting: any; matched: boolean };
@@ -77,15 +85,15 @@ export interface EventMap {
   'notification:shown': { notificationId: string; source: string; timestamp: number };
   'notification:clicked': { notificationId: string; action?: string; timestamp: number };
   'notification:dismissed': { notificationId: string; reason: string; timestamp: number };
-  
+
   // User Targeting events
   'user:segment-changed': { oldSegment: string; newSegment: string; timestamp: number };
   'user:properties-updated': { properties: Record<string, any>; timestamp: number };
-  
+
   // Analytics events
   'analytics:track': { event: string; parameters: Record<string, any> };
   'analytics:user-property': { property: string; value: any };
-  
+
   // App version events
   'app:version-updated': { oldVersion: string; newVersion: string; timestamp: number };
   'app:changelog-requested': { version: string; timestamp: number };
@@ -99,7 +107,14 @@ export interface EventMap {
   // Error events
   'error:unhandled': { error: Error; context?: string | Record<string, any> };
   'error:recovery-attempted': { error: string | Error; strategy: string };
-  'error:circuit-breaker-opened': { operation: string; state: string; error: Error; failureCount: number; nextAttemptTime: number; stats: any };
+  'error:circuit-breaker-opened': {
+    operation: string;
+    state: string;
+    error: Error;
+    failureCount: number;
+    nextAttemptTime: number;
+    stats: any;
+  };
   'error:circuit-breaker-closed': { operation: string; state: string; stats: any };
   'error:circuit-breaker-blocked': { operation: string; state: string; nextAttemptTime: number; error: Error };
   'error:circuit-breaker-half-open': { operation: string; state: string };
@@ -119,7 +134,7 @@ export interface EventMap {
   'error:pattern-detected': { pattern: string; count: number; error: Error; context: any };
   'component:reset': { component?: string };
   'app:fallback-mode': { reason: string };
-  
+
   // Test event (example from migration guide)
   'test:event': Record<string, never> | object | undefined;
 }

@@ -1,15 +1,15 @@
-name: Build And Upload Extension Zip Via Artifact
+name: CI
 
 on:
   push:
     branches: [ main ]
   pull_request:
+    branches: [ main ]
 
 jobs:
-  build:
-
+  verify:
+    name: Type Check, Node Tests, and Lint
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -17,11 +17,5 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: pnpm
-
-      - run: pnpm install --frozen-lockfile --prefer-offline
-
-      - run: pnpm build
-
-      - uses: actions/upload-artifact@v4
-        with:
-          path: dist/*
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm type-check && pnpm --filter chrome-extension test && pnpm lint

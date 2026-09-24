@@ -1,6 +1,6 @@
 /**
  * Core Architecture Components
- * 
+ *
  * Exports all core architectural components for the MCP SuperAssistant.
  */
 
@@ -17,12 +17,12 @@ export { performanceMonitor, PerformanceMonitor } from './performance';
 export type { PerformanceMeasurement, MemoryUsage, PerformanceStats } from './performance';
 
 // Main initialization system (Session 10)
-export { 
-  applicationInit, 
-  applicationCleanup, 
+export {
+  applicationInit,
+  applicationCleanup,
   getInitializationStatus,
   forceReinitialization,
-  initializationUtils
+  initializationUtils,
 } from './main-initializer';
 
 // UI initialization utilities
@@ -32,7 +32,7 @@ export {
   initializeOptionsApp,
   setupUICleanup,
   setupPopupApp,
-  setupOptionsApp
+  setupOptionsApp,
 } from './ui-initializer';
 
 // Import for default export

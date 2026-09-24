@@ -4,7 +4,8 @@ export interface PerformanceMetric {
   unit?: 'ms' | 'bytes' | 'count'; // Unit of the metric value
   timestamp: number; // Unix timestamp (ms) when the metric was recorded
   startTime?: number; // Optional: Start time for duration metrics
-  memory?: { // Detailed memory information from performance.memory API
+  memory?: {
+    // Detailed memory information from performance.memory API
     jsHeapSizeLimit: number;
     totalJSHeapSize: number;
     usedJSHeapSize: number;
@@ -85,7 +86,8 @@ export interface BaseStoreState {
   version?: string; // Version of the store's data structure or schema
 }
 
-export interface ContextBridgeMessage<P = any, R = any> { // Generic for payload (P) and response (R)
+export interface ContextBridgeMessage<P = any, R = any> {
+  // Generic for payload (P) and response (R)
   messageId: string; // Unique ID for this message, for tracking and replies
   type: string; // Defines the action or event type
   payload?: P;
@@ -106,7 +108,8 @@ export interface MigrationBridgeConfig {
   fallbackToOldArchitecture: boolean; // If new system fails, attempt to use old one
   trackUsageStats: boolean; // Collect anonymous usage data for migrated features
   featureFlags?: Record<string, boolean>; // Granular control over specific migrated features or components
-  apiEndpoints?: { // Configuration for any new API endpoints used by the new architecture
+  apiEndpoints?: {
+    // Configuration for any new API endpoints used by the new architecture
     [serviceName: string]: string;
   };
   performanceMonitoring?: {

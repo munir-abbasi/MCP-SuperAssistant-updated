@@ -11,8 +11,7 @@ export const streamingContentLengths = new Map<string, number>();
  */
 const isJSONFormat = (content: string): boolean => {
   const trimmed = content.trim();
-  return trimmed.includes('"type"') &&
-         (trimmed.includes('function_call_start') || trimmed.includes('parameter'));
+  return trimmed.includes('"type"') && (trimmed.includes('function_call_start') || trimmed.includes('parameter'));
 };
 
 /**
@@ -27,8 +26,8 @@ const extractParametersFromJSON = (content: string, blockId: string | null = nul
   const newPartialState: PartialParameterState = {};
 
   // Check if streaming (no function_call_end)
-  const isStreaming = !content.includes('"type":"function_call_end"') &&
-                      !content.includes('"type": "function_call_end"');
+  const isStreaming =
+    !content.includes('"type":"function_call_end"') && !content.includes('"type": "function_call_end"');
 
   Object.entries(jsonParams).forEach(([name, value]) => {
     const displayValue = typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value);

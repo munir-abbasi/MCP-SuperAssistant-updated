@@ -13,10 +13,10 @@ export class DefaultAdapter extends BaseAdapterPlugin {
     if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
       const inputElement = activeElement as HTMLInputElement | HTMLTextAreaElement;
       inputElement.value = text;
-      
+
       // Trigger input event to ensure reactivity
       inputElement.dispatchEvent(new Event('input', { bubbles: true }));
-      
+
       // Emit event for tracking
       this.context.eventBus.emit('tool:execution-completed', {
         execution: {
@@ -25,10 +25,10 @@ export class DefaultAdapter extends BaseAdapterPlugin {
           parameters: { text },
           result: { success: true, elementType: activeElement.tagName },
           timestamp: Date.now(),
-          status: 'success'
-        }
+          status: 'success',
+        },
       });
-      
+
       this.context.logger.debug('Text inserted successfully into', activeElement.tagName);
       return true;
     }
@@ -37,10 +37,10 @@ export class DefaultAdapter extends BaseAdapterPlugin {
     const editableElement = document.querySelector('[contenteditable="true"]') as HTMLElement;
     if (editableElement) {
       editableElement.textContent = text;
-      
+
       // Trigger input event
       editableElement.dispatchEvent(new Event('input', { bubbles: true }));
-      
+
       this.context.eventBus.emit('tool:execution-completed', {
         execution: {
           id: this.generateCallId(),
@@ -48,10 +48,10 @@ export class DefaultAdapter extends BaseAdapterPlugin {
           parameters: { text },
           result: { success: true, elementType: 'contenteditable' },
           timestamp: Date.now(),
-          status: 'success'
-        }
+          status: 'success',
+        },
       });
-      
+
       this.context.logger.debug('Text inserted successfully into contenteditable element');
       return true;
     }
@@ -60,9 +60,9 @@ export class DefaultAdapter extends BaseAdapterPlugin {
     this.context.eventBus.emit('tool:execution-failed', {
       toolName: 'insertText',
       error: 'No suitable input element found',
-      callId: this.generateCallId()
+      callId: this.generateCallId(),
     });
-    
+
     return false;
   }
 
@@ -75,7 +75,7 @@ export class DefaultAdapter extends BaseAdapterPlugin {
         const formElement = (activeElement as HTMLInputElement).form;
         if (formElement) {
           formElement.submit();
-          
+
           this.context.eventBus.emit('tool:execution-completed', {
             execution: {
               id: this.generateCallId(),
@@ -83,10 +83,10 @@ export class DefaultAdapter extends BaseAdapterPlugin {
               parameters: {},
               result: { success: true, method: 'activeElement.form' },
               timestamp: Date.now(),
-              status: 'success'
-            }
+              status: 'success',
+            },
           });
-          
+
           this.context.logger.debug('Form submitted successfully via active element');
           return true;
         }
@@ -96,11 +96,13 @@ export class DefaultAdapter extends BaseAdapterPlugin {
     }
 
     // Try to find and click a submit button
-    const submitButton = document.querySelector('button[type="submit"], input[type="submit"]') as HTMLButtonElement | HTMLInputElement;
+    const submitButton = document.querySelector('button[type="submit"], input[type="submit"]') as
+      | HTMLButtonElement
+      | HTMLInputElement;
     if (submitButton) {
       try {
         submitButton.click();
-        
+
         this.context.eventBus.emit('tool:execution-completed', {
           execution: {
             id: this.generateCallId(),
@@ -108,10 +110,10 @@ export class DefaultAdapter extends BaseAdapterPlugin {
             parameters: {},
             result: { success: true, method: 'submitButton.click' },
             timestamp: Date.now(),
-            status: 'success'
-          }
+            status: 'success',
+          },
         });
-        
+
         this.context.logger.debug('Form submitted successfully via submit button');
         return true;
       } catch (error) {
@@ -124,7 +126,7 @@ export class DefaultAdapter extends BaseAdapterPlugin {
     if (form) {
       try {
         form.submit();
-        
+
         this.context.eventBus.emit('tool:execution-completed', {
           execution: {
             id: this.generateCallId(),
@@ -132,10 +134,10 @@ export class DefaultAdapter extends BaseAdapterPlugin {
             parameters: {},
             result: { success: true, method: 'form.submit' },
             timestamp: Date.now(),
-            status: 'success'
-          }
+            status: 'success',
+          },
         });
-        
+
         this.context.logger.debug('Form submitted successfully via form element');
         return true;
       } catch (error) {
@@ -147,9 +149,9 @@ export class DefaultAdapter extends BaseAdapterPlugin {
     this.context.eventBus.emit('tool:execution-failed', {
       toolName: 'submitForm',
       error: 'No form found to submit',
-      callId: this.generateCallId()
+      callId: this.generateCallId(),
     });
-    
+
     return false;
   }
 

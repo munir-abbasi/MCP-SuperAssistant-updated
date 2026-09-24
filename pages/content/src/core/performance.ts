@@ -1,13 +1,12 @@
 /**
  * Performance Monitor
- * 
+ *
  * Monitors application performance, tracks metrics, and provides
  * insights for optimization and debugging.
  */
 
 import { eventBus } from '../events/event-bus';
 import { createLogger } from '@extension/shared/lib/logger';
-
 
 const logger = createLogger('PerformanceMonitor');
 
@@ -70,7 +69,7 @@ class PerformanceMonitor {
   private setupPerformanceObserver(): void {
     if (typeof PerformanceObserver !== 'undefined') {
       try {
-        this.performanceObserver = new PerformanceObserver((list) => {
+        this.performanceObserver = new PerformanceObserver(list => {
           const entries = list.getEntries();
           entries.forEach(entry => {
             if (entry.duration > 0) {
@@ -126,10 +125,10 @@ class PerformanceMonitor {
    */
   time<T>(name: string, fn: () => T | Promise<T>, context?: Record<string, any>): T | Promise<T> {
     const start = performance.now();
-    
+
     try {
       const result = fn();
-      
+
       if (result instanceof Promise) {
         return result.finally(() => {
           const duration = performance.now() - start;
@@ -184,15 +183,13 @@ class PerformanceMonitor {
   measure(name: string, startMark: string, endMark?: string): PerformanceMeasurement | null {
     const measurements = this.measurements;
     const startEntry = measurements.find(m => m.name === startMark);
-    
+
     if (!startEntry) {
       logger.warn(`Start mark '${startMark}' not found`);
       return null;
     }
 
-    const endEntry = endMark ? 
-      measurements.find(m => m.name === endMark) : 
-      { timestamp: Date.now() };
+    const endEntry = endMark ? measurements.find(m => m.name === endMark) : { timestamp: Date.now() };
 
     if (!endEntry) {
       logger.warn(`End mark '${endMark}' not found`);
@@ -257,7 +254,7 @@ class PerformanceMonitor {
 
     const recent = this.memorySnapshots.slice(-5);
     const trend = recent.map(snapshot => snapshot.usedJSHeapSize);
-    
+
     // Simple trend analysis - if memory keeps growing
     let increasing = 0;
     for (let i = 1; i < trend.length; i++) {
@@ -278,7 +275,7 @@ class PerformanceMonitor {
    */
   private recordMeasurement(measurement: PerformanceMeasurement): void {
     this.measurements.push(measurement);
-    
+
     // Keep only the most recent measurements
     if (this.measurements.length > this.maxMeasurements) {
       this.measurements.shift();
@@ -299,14 +296,17 @@ class PerformanceMonitor {
    */
   getStats(): PerformanceStats {
     const slowOperations = this.measurements.filter(m => m.duration > this.slowThreshold);
-    
+
     // Calculate average durations by operation name
     const averageDurations: Record<string, number> = {};
-    const operationGroups = this.measurements.reduce((groups, measurement) => {
-      if (!groups[measurement.name]) groups[measurement.name] = [];
-      groups[measurement.name].push(measurement.duration);
-      return groups;
-    }, {} as Record<string, number[]>);
+    const operationGroups = this.measurements.reduce(
+      (groups, measurement) => {
+        if (!groups[measurement.name]) groups[measurement.name] = [];
+        groups[measurement.name].push(measurement.duration);
+        return groups;
+      },
+      {} as Record<string, number[]>,
+    );
 
     Object.entries(operationGroups).forEach(([name, durations]) => {
       if (durations.length > 0) {
@@ -338,7 +338,7 @@ class PerformanceMonitor {
     const stats = this.getStats();
     const totalMeasurements = stats.measurements.length;
     const slowOperationsCount = stats.slowOperations.length;
-    const slowPercentage = totalMeasurements > 0 ? (slowOperationsCount / totalMeasurements * 100).toFixed(2) : '0';
+    const slowPercentage = totalMeasurements > 0 ? ((slowOperationsCount / totalMeasurements) * 100).toFixed(2) : '0';
 
     let report = `Performance Report:\n`;
     report += `Total measurements: ${totalMeasurements}\n`;
@@ -348,7 +348,7 @@ class PerformanceMonitor {
     if (Object.keys(stats.averageDurations).length > 0) {
       report += `Average durations:\n`;
       Object.entries(stats.averageDurations)
-        .sort(([,a], [,b]) => b - a)
+        .sort(([, a], [, b]) => b - a)
         .slice(0, 10)
         .forEach(([name, duration]) => {
           report += `  ${name}: ${duration.toFixed(2)}ms\n`;

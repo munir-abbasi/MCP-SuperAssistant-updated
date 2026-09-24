@@ -22,7 +22,7 @@ export class QwenAdapter extends BaseAdapterPlugin {
     'text-insertion',
     'form-submission',
     'file-attachment',
-    'dom-manipulation'
+    'dom-manipulation',
   ];
 
   // CSS selectors for Qwen's UI elements
@@ -31,9 +31,11 @@ export class QwenAdapter extends BaseAdapterPlugin {
     // Primary chat input selectors - new message-input-textarea class
     CHAT_INPUT: 'textarea.message-input-textarea, #chat-input, textarea.chat-input',
     // Submit button selectors (multiple fallbacks) - new omni-button and ant-btn classes
-    SUBMIT_BUTTON: 'button.omni-button-content-btn, div.message-input-right-button-send button, button.send-button, div.chat-prompt-send-button button, #send-message-button',
+    SUBMIT_BUTTON:
+      'button.omni-button-content-btn, div.message-input-right-button-send button, button.send-button, div.chat-prompt-send-button button, #send-message-button',
     // File upload related selectors - new mode-select container
-    FILE_UPLOAD_BUTTON: 'div.mode-select .ant-dropdown-trigger, div.mode-select-open, button.chat-prompt-upload-group-btn, div.upload-group button',
+    FILE_UPLOAD_BUTTON:
+      'div.mode-select .ant-dropdown-trigger, div.mode-select-open, button.chat-prompt-upload-group-btn, div.upload-group button',
     FILE_INPUT: 'input#filesUpload, input[type="file"][multiple]',
     // Main panel and container selectors - new message-input-container
     MAIN_PANEL: 'div.message-input-container, div.message-input-container-area, div.prompt-input-container',
@@ -117,7 +119,7 @@ export class QwenAdapter extends BaseAdapterPlugin {
     // Emit activation event for store synchronization
     this.context.eventBus.emit('adapter:activated', {
       pluginName: this.name,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -143,7 +145,7 @@ export class QwenAdapter extends BaseAdapterPlugin {
     // Emit deactivation event
     this.context.eventBus.emit('adapter:deactivated', {
       pluginName: this.name,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -595,15 +597,15 @@ export class QwenAdapter extends BaseAdapterPlugin {
     try {
       // Try multiple drop zone selectors for new UI
       const dropZoneSelectors = [
-        'div.message-input-container',           // New UI main container
-        'div.message-input-container-area',      // New UI inner area
-        'textarea.message-input-textarea',       // New UI textarea
-        this.selectors.CHAT_INPUT,               // Fallback to configured selectors
-        'div.prompt-input-container',            // Legacy container
+        'div.message-input-container', // New UI main container
+        'div.message-input-container-area', // New UI inner area
+        'textarea.message-input-textarea', // New UI textarea
+        this.selectors.CHAT_INPUT, // Fallback to configured selectors
+        'div.prompt-input-container', // Legacy container
       ];
 
       let dropTarget: HTMLElement | null = null;
-      
+
       for (const selector of dropZoneSelectors) {
         dropTarget = document.querySelector(selector) as HTMLElement;
         if (dropTarget) {
@@ -652,11 +654,11 @@ export class QwenAdapter extends BaseAdapterPlugin {
 
       // Dispatch the full drag sequence
       dropTarget.dispatchEvent(dragEnterEvent);
-      
+
       // Small delay between events for more realistic simulation
       await new Promise(resolve => setTimeout(resolve, 50));
       dropTarget.dispatchEvent(dragOverEvent);
-      
+
       await new Promise(resolve => setTimeout(resolve, 50));
       dropTarget.dispatchEvent(dropEvent);
 
@@ -852,7 +854,7 @@ export class QwenAdapter extends BaseAdapterPlugin {
     // Start observing
     this.mutationObserver.observe(document.body, {
       childList: true,
-      subtree: true
+      subtree: true,
     });
 
     this.domObserversSetup = true;
@@ -862,7 +864,9 @@ export class QwenAdapter extends BaseAdapterPlugin {
     // Allow multiple calls for UI integration (for re-injection after page changes)
     // but log it for debugging
     if (this.uiIntegrationSetup) {
-      this.context.logger.debug(`UI integration already set up for instance #${this.instanceId}, re-injecting for page changes`);
+      this.context.logger.debug(
+        `UI integration already set up for instance #${this.instanceId}, re-injecting for page changes`,
+      );
     } else {
       this.context.logger.debug(`Setting up UI integration for Qwen adapter instance #${this.instanceId}`);
       this.uiIntegrationSetup = true;
@@ -985,7 +989,11 @@ export class QwenAdapter extends BaseAdapterPlugin {
     }
   }
 
-  private findButtonInsertionPoint(): { container: Element; insertAfter: Element | null; insertBefore?: Element | null } | null {
+  private findButtonInsertionPoint(): {
+    container: Element;
+    insertAfter: Element | null;
+    insertBefore?: Element | null;
+  } | null {
     this.context.logger.debug('Finding button insertion point for MCP popover');
 
     // New UI: Find the message-input-right-button container (contains thinking, voice, send buttons)
@@ -1058,9 +1066,13 @@ export class QwenAdapter extends BaseAdapterPlugin {
     }
 
     // Fallback 4: Look for the chat input container (new or legacy)
-    const messageInputContainer = document.querySelector('div.message-input-container-area, div.prompt-input-container');
+    const messageInputContainer = document.querySelector(
+      'div.message-input-container-area, div.prompt-input-container',
+    );
     if (messageInputContainer) {
-      const actionBarEl = messageInputContainer.querySelector('div.message-input-right-button, div.prompt-input-action-bar');
+      const actionBarEl = messageInputContainer.querySelector(
+        'div.message-input-right-button, div.prompt-input-action-bar',
+      );
       if (actionBarEl) {
         this.context.logger.debug('Found action bar in message input container');
         return { container: actionBarEl, insertAfter: null };
@@ -1071,7 +1083,11 @@ export class QwenAdapter extends BaseAdapterPlugin {
     return null;
   }
 
-  private injectMCPPopover(insertionPoint: { container: Element; insertAfter: Element | null; insertBefore?: Element | null }): void {
+  private injectMCPPopover(insertionPoint: {
+    container: Element;
+    insertAfter: Element | null;
+    insertBefore?: Element | null;
+  }): void {
     this.context.logger.debug('Injecting MCP popover into Qwen interface');
 
     try {
@@ -1318,8 +1334,8 @@ export class QwenAdapter extends BaseAdapterPlugin {
         parameters,
         result,
         timestamp: Date.now(),
-        status: 'success'
-      }
+        status: 'success',
+      },
     });
   }
 

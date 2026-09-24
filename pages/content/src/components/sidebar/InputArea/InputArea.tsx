@@ -6,7 +6,6 @@ import { cn } from '@src/lib/utils';
 import { Card, CardHeader, CardContent } from '@src/components/ui/card';
 import { createLogger } from '@extension/shared/lib/logger';
 
-
 const logger = createLogger('InputArea');
 
 interface InputAreaProps {

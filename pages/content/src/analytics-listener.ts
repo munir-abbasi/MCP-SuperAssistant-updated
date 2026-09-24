@@ -16,7 +16,7 @@ export function initializeAnalyticsListeners(): void {
   logger.debug('[AnalyticsListener] Initializing event listeners...');
 
   // Track adapter activation
-  eventBus.on('adapter:activated', async (data) => {
+  eventBus.on('adapter:activated', async data => {
     try {
       // Get additional context from stores if available
       const hostname = window.location.hostname;
@@ -36,7 +36,7 @@ export function initializeAnalyticsListeners(): void {
   });
 
   // Track feature usage from UI events
-  eventBus.on('ui:sidebar-toggle', async (data) => {
+  eventBus.on('ui:sidebar-toggle', async data => {
     try {
       await analyticsService.trackFeatureUsage({
         feature_name: 'sidebar_toggle',
@@ -48,7 +48,7 @@ export function initializeAnalyticsListeners(): void {
     }
   });
 
-  eventBus.on('ui:sidebar-minimize', async (data) => {
+  eventBus.on('ui:sidebar-minimize', async data => {
     try {
       await analyticsService.trackFeatureUsage({
         feature_name: 'sidebar_minimize',
@@ -61,7 +61,7 @@ export function initializeAnalyticsListeners(): void {
   });
 
   // Track errors with enhanced context
-  eventBus.on('error:unhandled', async (data) => {
+  eventBus.on('error:unhandled', async data => {
     try {
       const errorCategory = determineErrorCategory(data.context);
 
@@ -93,7 +93,7 @@ export function initializeAnalyticsListeners(): void {
  * Determine error category from context
  */
 function determineErrorCategory(
-  context?: string | Record<string, any>
+  context?: string | Record<string, any>,
 ): 'connection' | 'tool_execution' | 'adapter' | 'ui' | 'unknown' {
   if (!context) return 'unknown';
 
@@ -128,14 +128,17 @@ export function startPeriodicSessionTracking(): void {
   }
 
   // Track session summary every 5 minutes
-  sessionSummaryInterval = window.setInterval(async () => {
-    try {
-      await analyticsService.trackSessionSummary();
-      logger.debug('[AnalyticsListener] Tracked periodic session summary');
-    } catch (error) {
-      logger.warn('[AnalyticsListener] Failed to track periodic session summary:', error);
-    }
-  }, 5 * 60 * 1000); // 5 minutes
+  sessionSummaryInterval = window.setInterval(
+    async () => {
+      try {
+        await analyticsService.trackSessionSummary();
+        logger.debug('[AnalyticsListener] Tracked periodic session summary');
+      } catch (error) {
+        logger.warn('[AnalyticsListener] Failed to track periodic session summary:', error);
+      }
+    },
+    5 * 60 * 1000,
+  ); // 5 minutes
 
   logger.debug('[AnalyticsListener] Started periodic session tracking');
 }

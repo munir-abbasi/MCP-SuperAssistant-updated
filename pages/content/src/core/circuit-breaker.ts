@@ -1,13 +1,12 @@
 /**
  * Circuit Breaker Pattern Implementation
- * 
+ *
  * Prevents cascading failures by monitoring failures and temporarily disabling
  * failing operations when failure rate exceeds thresholds.
  */
 
 import { eventBus } from '../events/event-bus';
 import { createLogger } from '@extension/shared/lib/logger';
-
 
 const logger = createLogger('CircuitBreaker');
 
@@ -41,7 +40,7 @@ class CircuitBreaker {
       failureThreshold: 5,
       resetTimeout: 60000, // 1 minute
       monitoringWindow: 300000, // 5 minutes
-    }
+    },
   ) {}
 
   initialize(config?: { eventBus?: typeof eventBus }): void {
@@ -123,7 +122,7 @@ class CircuitBreaker {
 
   private onSuccess(operationName: string): void {
     this.successCount++;
-    
+
     if (this.state === 'half-open') {
       // Successful operation in half-open state - close the circuit
       this.state = 'closed';
@@ -149,7 +148,7 @@ class CircuitBreaker {
     if (this.failureCount >= this.config.failureThreshold) {
       this.state = 'open';
       this.nextAttemptTime = Date.now() + this.config.resetTimeout;
-      
+
       this.eventBus?.emit('error:circuit-breaker-opened', {
         operation: operationName,
         state: this.state,

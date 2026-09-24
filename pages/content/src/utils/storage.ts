@@ -198,7 +198,8 @@ export const getToolEnablementState = async (): Promise<Set<string>> => {
     }
 
     const result = await chrome.storage.local.get(TOOL_ENABLEMENT_KEY);
-    const enabledToolsArray = result && typeof result === 'object' ? (result[TOOL_ENABLEMENT_KEY] as string[]) : undefined;
+    const enabledToolsArray =
+      result && typeof result === 'object' ? (result[TOOL_ENABLEMENT_KEY] as string[]) : undefined;
 
     if (!enabledToolsArray || !Array.isArray(enabledToolsArray)) {
       logMessage('[Storage] No stored tool enablement state found, returning empty set');
@@ -230,7 +231,9 @@ export const saveToolEnablementState = async (enabledTools: Set<string>): Promis
     await chrome.storage.local.set({ [TOOL_ENABLEMENT_KEY]: enabledToolsArray });
     logMessage(`[Storage] Saved tool enablement state: ${enabledToolsArray.length} enabled tools`);
   } catch (error) {
-    logMessage(`[Storage] Error saving tool enablement state: ${error instanceof Error ? error.message : String(error)}`);
+    logMessage(
+      `[Storage] Error saving tool enablement state: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 };
 
@@ -247,6 +250,8 @@ export const clearToolEnablementState = async (): Promise<void> => {
     await chrome.storage.local.remove(TOOL_ENABLEMENT_KEY);
     logMessage('[Storage] Cleared tool enablement state from storage');
   } catch (error) {
-    logMessage(`[Storage] Error clearing tool enablement state: ${error instanceof Error ? error.message : String(error)}`);
+    logMessage(
+      `[Storage] Error clearing tool enablement state: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 };

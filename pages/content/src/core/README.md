@@ -25,7 +25,7 @@ await applicationCleanup(); // Clean up on unload
 
 Within the core-services step, `initializeCoreServices()` performs environment/debug setup, event-bus initialization, architectural service initialization, global event handlers, and store initialization. The numbered comments inside that function describe its local setup order; they are not a formal eight-phase system architecture.
 
-`pages/content/src/index.ts` owns additional entry-point work around this function, including early renderer initialization and later service initialization. Use `SYSTEM.md` for the system-wide initialization model.
+`pages/content/src/index.ts` owns additional entry-point work around this function, including early renderer initialization and later service initialization.
 
 ### `circuit-breaker.ts` — Circuit Breaker
 

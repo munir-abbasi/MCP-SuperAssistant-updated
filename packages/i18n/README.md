@@ -48,7 +48,7 @@ You can manage translations in the `locales` directory.
 
 ## Add a new language
 
-Create folder inside `locales` with name from [languages](https://developer.chrome.com/docs/extensions/reference/api/i18n?hl=pl#support_multiple_languages), which need include `message.json` file.
+Create a folder inside `locales` with a name from the [supported languages](https://developer.chrome.com/docs/extensions/reference/api/i18n?hl=pl#support_multiple_languages) list. It must contain a `messages.json` file.
 
 ## Usage
 

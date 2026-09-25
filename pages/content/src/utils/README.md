@@ -23,4 +23,4 @@ The exact argument and return types are defined by the source modules. Do not do
 
 ## Maintenance
 
-Keep each helper focused and update this README only when the public export surface or ownership boundary changes. For behavior changes, inspect callers and run the narrow content/type verification selected in `AGENT_GUIDE.md`.
+Keep each helper focused and update this README only when the public export surface or ownership boundary changes. For behavior changes, inspect callers and run the workspace type-check and lint (`pnpm type-check`, `pnpm lint`).

@@ -327,7 +327,7 @@ What this fork changes compared with the upstream [MCP SuperAssistant](https://g
 - **Active-call cancellation.** Disconnect rejects active tool calls, and you can cancel explicitly with `AbortSignal`.
 - **Streamable HTTP fixes.** Correct JSON and SSE-framed tool discovery, proper `Accept` and session headers, fragmented chunk handling.
 - **MCP protocol preservation.** `outputSchema`, `annotations`, `structuredContent`, and other valid MCP fields survive instead of getting stripped.
-- **Hardened site adapter contract.** 13 requirements per supported site: idempotent mounting, SPA navigation survival, semantic selectors, verified insertion and submission, clean teardown.
+- **Hardened site adapter contract.** Every supported site adapter follows the same rules: idempotent mounting, SPA navigation survival, semantic selectors, verified insertion and submission, clean teardown.
 - **Chrome/Firefox qualification evidence.** A packaged Chrome/Firefox-on-Linux qualification snapshot dated 2026-07-30 was recorded. Revalidate after relevant source, build, or browser changes before describing a newer artifact as qualified. Firefox conversion retains Manifest V3 in the current implementation.
 - **Payload safety.** Explicit size budgets, no megabyte-base64 DOM injection, bounded previews for oversized results.
 - **Deterministic testing.** Regression tests come before every fix, the core flow runs in a real browser, and release artifacts carry integrity-checked SHA-256 hashes.

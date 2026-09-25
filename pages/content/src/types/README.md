@@ -34,8 +34,7 @@ Chrome extension message types:
 **Current contract debt:** do not infer the live wire shape from `McpMessageMap` alone. The source
 re-audit recorded response-wrapper drift for `mcp:call-tool`, `mcp:get-tools`, and
 `mcp:get-server-config`, plus a `mcp:tool-update` producer/consumer payload mismatch. Inspect the
-background producer and content consumer together and use `docs/qualification/issue-coverage-ledger.md`
-until the executable contracts are aligned.
+background producer and content consumer together until the executable contracts are aligned.
 
 ### Plugin Types
 

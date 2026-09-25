@@ -35,7 +35,7 @@ Do not reference one store directly from another when an existing typed event or
 
 ## Initialization and Observation
 
-`initializeAllStores()` establishes the current store instances and initializes configuration-derived user properties. Development observation surfaces are documented in `ARCHITECTURE.md`; do not assume a store is exposed through a browser global unless that map says so.
+`initializeAllStores()` establishes the current store instances and initializes configuration-derived user properties. Development observation surfaces live in the implementation; do not assume a store is exposed through a browser global unless the source exposes it.
 
 ## Verification
 
@@ -43,5 +43,5 @@ For a store contract change:
 
 1. Inspect the store implementation and all selectors/actions that consume the changed field.
 2. Inspect typed event producers/consumers only when the state crosses that interface.
-3. Run the narrow content/type checks selected by `AGENT_GUIDE.md`.
+3. Run the workspace type-check and lint (`pnpm type-check`, `pnpm lint`).
 4. Update this ownership table only if the domain boundary changed.

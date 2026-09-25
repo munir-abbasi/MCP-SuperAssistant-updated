@@ -4,7 +4,7 @@ Concrete implementations of the `AdapterPlugin` interface, tailored to specific 
 
 ## Current Adapters
 
-The following site adapters are currently registered as **lazy factories** in `plugin-registry.ts` and are instantiated only when their hostname matches. Registration does not imply runtime qualification; see `docs/qualification/support-matrix.md` for verified support status.
+The following site adapters are currently registered as **lazy factories** in `plugin-registry.ts` and are instantiated only when their hostname matches. Registration does not imply runtime qualification; verify support status against the live site before relying on an adapter.
 
 | Adapter | File | Hostnames | Capabilities |
 |---------|------|-----------|-------------|

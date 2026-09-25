@@ -52,5 +52,3 @@ Three channels:
 1. **Content ↔ Background** — Chrome runtime messages
 2. **Background MCP client ↔ MCP Server** — Via transport plugins; content requests pass through runtime messaging
 3. **Internal** — Typed event bus
-
-See `SYSTEM.md` for the complete data flow.

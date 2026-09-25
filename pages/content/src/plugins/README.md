@@ -64,7 +64,7 @@ PluginRegistry
   └─ Lazy adapter factories — instantiated only when a hostname matches
 ```
 
-The registry is the implementation source for registered factories. The adapters README describes the local adapter contract; `docs/qualification/support-matrix.md` separately records qualified scope. `DefaultAdapter` and `ExampleForumAdapter` remain source-only reference implementations unless the registry says otherwise.
+The registry is the implementation source for registered factories. The adapters README describes the local adapter contract; runtime qualification is a separate per-site verification. `DefaultAdapter` and `ExampleForumAdapter` remain source-only reference implementations unless the registry says otherwise.
 
 `RemoteConfigPlugin` still emits `remote-config:*` messages/events on the content side. The former Firebase/background handlers are absent from the current background implementation, so this module must not be described as a functioning Firebase Remote Config backend integration.
 

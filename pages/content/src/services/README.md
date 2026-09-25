@@ -1,8 +1,7 @@
 # Services
 
 Local contract for the content-script services layer — the operation-and-delivery heart of the
-runtime operation contract (`ARCHITECTURE.md` §Runtime Operation Contract; implementation status
-table lives there). Each service below has exactly one job and one kind of state.
+runtime operation contract. Each service below has exactly one job and one kind of state.
 
 ## Driving card (copy into your working context when driving the runtime)
 
@@ -12,7 +11,7 @@ ONE OPERATION — SEVEN FACETS (lenses, not stores)
 CHECKPOINT LADDER   C1 detect → C2 render → C3 execute → C4 receive → C5 deliver → C6 submit  [C7 outside]
                     claims cite the HIGHEST confirmed checkpoint; unknown ≠ failed; C5/C6 evidence is monotonic
 EFFECT CLASSES      read-only / replay-safe / reconcilable-write / non-replayable-unknown
-                    no layer silently redispatches past C3 (AGENTS.md → Effect-Class Rule)
+                    no layer silently redispatches past C3 (Effect-Class Rule)
 OBSERVE (dev only)  __automationService.formatOperations()   one line per operation
                     __automationService.observeOperations()  structured snapshot
                     localStorage['mcp_delivery_receipts']     receipts survive reload (30-min TTL)

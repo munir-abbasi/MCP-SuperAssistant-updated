@@ -1,6 +1,6 @@
 # Release Notes — v0.7.0
 
-**Release date:** 2026-09-24
+**Release date:** 2026-09-25
 
 MCP SuperAssistant v0.7.0 adds an end-to-end runtime operation contract, bounded
 delivery recovery, agent-facing control documentation, and repository gates for the

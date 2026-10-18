@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.7.0] — 2026-09-24
+## [0.7.0] — 2026-09-25
 
 ### Added
 - Operation identity and attempt tracking across renderer, content, background, and MCP

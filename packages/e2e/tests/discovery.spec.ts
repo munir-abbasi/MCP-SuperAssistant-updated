@@ -31,16 +31,17 @@ export const test = base.extend<{
   },
 });
 
-test('extension loads and service worker is active', async ({ extensionId }) => {
+test('extension loads and service worker is active', async ({ context, extensionId }) => {
   // Verify the extension loaded and has a valid extensionId
   expect(extensionId).toMatch(/^[a-z]{32}$/);
 
-  // Verify the manifest is accessible (extension loads without fatal errors)
-  const manifestUrl = `chrome-extension://${extensionId}/manifest.json`;
-  const response = await fetch(manifestUrl);
-  expect(response.ok).toBeTruthy();
+  // Verify the manifest is accessible inside the service worker context
+  let [background] = context.serviceWorkers();
+  if (!background) {
+    background = await context.waitForEvent('serviceworker');
+  }
 
-  const manifest = await response.json();
+  const manifest = await background.evaluate(() => chrome.runtime.getManifest());
   expect(manifest.name).toBe('MCP SuperAssistant');
   expect(manifest.manifest_version).toBe(3);
 });

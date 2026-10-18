@@ -24,15 +24,15 @@ delivery recovery, agent-facing control documentation, and repository gates for 
 - Adds tests for hard single dispatch, delivery checkpoint recovery, effect-safe
   observation, MCP client state transitions, tool discovery, and manifest version
   encoding.
-- The local release gate covers the workspace type-check and 23 Chrome-extension node
-  tests. Browser E2E and hosted CI results are recorded separately after publication.
+- The local release gate covers the workspace type-check, 23 Chrome-extension node
+  tests, and Playwright Chromium extension discovery tests.
 
 ### Agent and Repository Tooling
 
 - Ships the Stage 10 benchmark harness and the read-only `pnpm agent:inspect --json`
   Situation Packet shim.
-- Introduces a fast GitHub Actions gate for type-checking, node tests, and linting on
-  `main`; the separate build-artifact and browser E2E workflows stay.
+- Establishes local gating for type-checking, node tests, Playwright E2E, and linting;
+  the separate build-artifact and packaging workflows stay.
 - Restores the Husky pre-commit hook and excludes local browser profiles, agent state,
   probes, and generated test artifacts from version control.
 

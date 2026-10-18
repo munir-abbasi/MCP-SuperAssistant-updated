@@ -65,6 +65,7 @@ experimental or unsupported until someone verifies it.
 - [Google AI Studio](https://aistudio.google.com/)
 - [OpenRouter Chat](https://openrouter.ai/chat)
 - [DeepSeek](https://chat.deepseek.com/)
+- [Kagi Assistant](https://kagi.com/assistant)
 - [T3 Chat](https://t3.chat/)
 - [GitHub Copilot](https://github.com/copilot)
 - [Mistral AI](https://chat.mistral.ai/)
@@ -99,7 +100,7 @@ The Model Context Protocol (MCP) is an open standard from Anthropic that connect
 
 ## Key Features
 
-- **Multiple AI Platform Adapters**: ChatGPT, Perplexity, Google Gemini, Grok, Google AI Studio, OpenRouter Chat, DeepSeek, T3 Chat, GitHub Copilot, Mistral AI, Kimi, Qwen Chat, and Z Chat; qualification status varies by site
+- **Multiple AI Platform Adapters**: ChatGPT, Perplexity, Google Gemini, Grok, Google AI Studio, OpenRouter Chat, DeepSeek, Kagi Assistant, T3 Chat, GitHub Copilot, Mistral AI, Kimi, Qwen Chat, and Z Chat; qualification status varies by site
 - **Tool Detection**: the extension finds MCP tool calls in AI responses
 - **Tool Execution**: one click runs the tool
 - **Tool Result Integration**: results go back into the AI conversation
@@ -282,8 +283,9 @@ Run the local gates before every push:
 
 ```bash
 pnpm type-check                          # TypeScript across all packages
-pnpm --filter chrome-extension test      # node test suite
-pnpm lint                                # eslint across all packages
+pnpm --filter chrome-extension test      # Node test suite (23 unit & integration tests)
+pnpm e2e                                 # Chromium E2E extension discovery test
+pnpm lint                                # ESLint across all packages
 ```
 
 `pnpm prettier` checks formatting, and `pnpm zip` builds the packaged extension artifact

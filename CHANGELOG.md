@@ -20,8 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   MCP client state transitions, discovery, and browser-safe manifest versions.
 - Agent control documentation, a machine-readable control map, scoped qualification
   evidence, the Stage 10 benchmark harness, and the `agent:inspect` command.
-- A fast GitHub Actions gate for type-checking, node regression tests, and linting on
-  `main`.
+- A local release gate for type-checking, node regression tests, Playwright Chromium
+  E2E discovery, and linting.
 
 ### Changed
 - Consolidated workflow triggers on `main` and restored the Husky pre-commit hook.
